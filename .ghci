@@ -1,0 +1,4 @@
+:seti -XOverloadedStrings
+:seti -XScopedTypeVariables
+:set prompt "\x03BB> "
+:set prompt-cont " > "

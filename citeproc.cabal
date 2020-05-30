@@ -1,9 +1,12 @@
-cabal-version:       2.0
+cabal-version:       2.2
 name:                citeproc
 version:             0.0.0
-synopsis:            Generates citations and bibliography from CSL style.
-description:         Generates citations and bibliography from CSL style.
-license:             BSD2
+synopsis:            Generates citations and bibliography from CSL styles.
+description:         citeproc parses CSL style files and uses them to
+                     generate a list of formatted citations and bibliography
+                     entries.  For more information about CSL, see
+                     <https://citationstyles.org/developers/>.
+license:             BSD-2-Clause
 license-file:        LICENSE
 author:              John MacFarlane
 maintainer:          jgm@berkeley.edu
@@ -12,14 +15,56 @@ category:            Text
 build-type:          Simple
 extra-doc-files:     README.md
                    , CHANGELOG.md
+extra-source-files:  locales/*.xml
+                     locales/locales.json
+                     test/NOTES.md
+                     test/csl/*.txt
+                     test/overrides/*.txt
+
 tested-with:         GHC == 8.8.3
 
+flag icu
+  description: Use Haskell bindings to the ICU library
+  default:     False
+
+common hie-options
+  if impl(ghc >= 8.8)
+     ghc-options:  -fwrite-ide-info -hiedir=.hie
+
 library
+  import:              hie-options
   hs-source-dirs:      src
   exposed-modules:     Citeproc
+                       Citeproc.Types
+                       Citeproc.Locale
+                       Citeproc.Style
+                       Citeproc.Element
+                       Citeproc.CslJson
+                       Citeproc.Eval
+                       Citeproc.CaseTransform
+                       Citeproc.Data
 
-
-  build-depends:       base >= 4.12.0.0
+  build-depends:       base >= 4.10 && < 5
+                     , safe
+                     , bytestring
+                     , text
+                     , containers
+                     , transformers
+                     , vector
+                     , scientific
+                     , uniplate
+                     , xml-conduit
+                     , attoparsec
+                     , data-default
+                     , aeson
+                     , filepath
+                     , file-embed
+                     -- Can remove later:
+                     , pretty-show
+  if flag(icu)
+     build-depends:  text-icu
+  else
+     build-depends:  rfc5051 >= 0.2 && < 0.3
 
   ghc-options:         -Wall
                        -Wincomplete-uni-patterns
@@ -33,13 +78,25 @@ library
 
   default-language:    Haskell2010
 
-test-suite citeproc-test
+test-suite spec
+  import:              hie-options
   type:                exitcode-stdio-1.0
   hs-source-dirs:      test
   main-is:             Spec.hs
 
-  build-depends:       base >= 4.12.0.0
+  build-depends:       base >= 4.10 && < 5
                      , citeproc
+                     , bytestring
+                     , text
+                     , containers
+                     , directory
+                     , transformers
+                     , mtl
+                     , timeit
+                     , Diff >= 0.4
+                     , pretty
+                     , filepath
+                     , aeson
 
 
   ghc-options:         -Wall
@@ -62,7 +119,7 @@ benchmark citeproc-benchmark
   hs-source-dirs:      benchmark
   main-is:             Main.hs
 
-  build-depends:       base >= 4.12.0.0
+  build-depends:       base >= 4.10 && < 5
                      , gauge
                      , citeproc
 

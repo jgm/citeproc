@@ -1,0 +1,8 @@
+*~
+test-suite-upstream/
+locales-upstream/
+dist/
+dist-newstyle/
+.stack-work
+stack.yaml.lock
+cabal.project.local
