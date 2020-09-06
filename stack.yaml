@@ -1,4 +1,5 @@
 resolver: lts-15.14
-
+extra-deps:
+- rfc5051-0.2
 ghc-options:
   "$locals": -fhide-source-paths
