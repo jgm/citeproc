@@ -459,6 +459,7 @@ instance Semigroup Formatting where
 
 instance Monoid Formatting where
  mempty = defaultFormatting
+ mappend = (<>)
 
 data TextCase =
      Lowercase
@@ -733,6 +734,7 @@ instance Semigroup Locale where
 
 instance Monoid Locale where
  mempty = Locale Nothing Nothing Nothing mempty mempty
+ mappend = (<>)
 
 data Reference a =
   Reference{ referenceId             :: ItemId
