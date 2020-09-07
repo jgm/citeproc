@@ -29,6 +29,23 @@ jobs:
       with:
         ghc-version: ${{ matrix.versions.ghc }}
         cabal-version: ${{ matrix.versions.cabal }}
+
+    - name: Cache cabal global package db
+      id:   cabal-global
+      uses: actions/cache@v2
+      with:
+        path: |
+          ~/.cabal
+        key: ${{ runner.os }}-${{ matrix.versions.ghc }}-${{ matrix.versions.cabal }}-cabal-global-${{ hashFiles('cabal.project') }}
+
+    - name: Cache cabal work
+      id:   cabal-local
+      uses: actions/cache@v2
+      with:
+        path: |
+          dist-newstyle
+        key: ${{ runner.os }}-${{ matrix.versions.ghc }}-${{ matrix.versions.cabal }}-cabal-local
+
     - name: Install dependencies
       run: |
           cabal v2-update
@@ -51,6 +68,23 @@ jobs:
       with:
         ghc-version: '8.8.4'
         cabal-version: 'latest'
+
+    - name: Cache cabal global package db
+      id:   cabal-global
+      uses: actions/cache@v2
+      with:
+        path: |
+          ~/.cabal
+        key: ${{ runner.os }}-${{ matrix.versions.ghc }}-${{ matrix.versions.cabal }}-cabal-global-${{ hashFiles('cabal.project') }}
+
+    - name: Cache cabal work
+      id:   cabal-local
+      uses: actions/cache@v2
+      with:
+        path: |
+          dist-newstyle
+        key: ${{ runner.os }}-${{ matrix.versions.ghc }}-${{ matrix.versions.cabal }}-cabal-local
+
     - name: Install dependencies
       run: |
           cabal v2-update
@@ -69,14 +103,29 @@ jobs:
     - name: Install recent cabal/ghc
       uses: actions/setup-haskell@v1.1
       with:
-        ghc-version: '8.6.5'
-        enable-stack: true
-        stack-version: 'latest'
+        ghc-version: '8.8.4'
+        cabal-version: 'latest'
+
+    - name: Cache cabal global package db
+      id:   cabal-global
+      uses: actions/cache@v2
+      with:
+        path: |
+          ~/.cabal
+        key: ${{ runner.os }}-${{ matrix.versions.ghc }}-${{ matrix.versions.cabal }}-cabal-global-${{ hashFiles('cabal.project') }}
+
+    - name: Cache cabal work
+      id:   cabal-local
+      uses: actions/cache@v2
+      with:
+        path: |
+          dist-newstyle
+        key: ${{ runner.os }}-${{ matrix.versions.ghc }}-${{ matrix.versions.cabal }}-cabal-local
 
     - name: Install dependencies
       run: |
-          stack update
-          stack test --dependencies-only --fast
+          cabal v2-update
+          cabal v2-build --dependencies-only --enable-tests --disable-optimization all
     - name: Build and test
       run: |
-          stack install --fast --test --haddock --no-haddock-deps --bench --no-run-benchmarks
+          cabal v2-test --disable-optimization all
