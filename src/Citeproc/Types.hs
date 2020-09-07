@@ -130,7 +130,7 @@ import qualified Data.RFC5051 as RFC5051
 ppTrace :: Show a => a -> a
 ppTrace x = trace (ppShow x) x
 
-data CiteprocOptions =
+newtype CiteprocOptions =
   CiteprocOptions
   { linkCitations :: Bool }
   deriving (Show, Eq)
@@ -245,13 +245,13 @@ data Citation a =
 
 instance FromJSON a => FromJSON (Citation a) where
  parseJSON v =
-   (withArray "Citation" $
+   withArray "Citation"
      (\ary ->
        case ary V.!? 0 of
          Just v' -> (withObject "Citation" $ \o
                       -> Citation <$> o .:? "citationID"
                                   <*> o .: "citationItems") v'
-         Nothing -> fail "Empty array")) v
+         Nothing -> fail "Empty array") v
    <|>
    (Citation Nothing <$> parseJSON v)
 
@@ -549,9 +549,9 @@ keyLEQ (x:xs) (y:ys) =
     LT -> True
  where
 #ifdef MIN_VERSION_text_icu
-  comp a b = ICU.collate (ICU.collator ICU.Current) a b
+  comp = ICU.collate (ICU.collator ICU.Current)
 #else
-  comp a b = RFC5051.compareUnicode a b
+  comp = RFC5051.compareUnicode
 #endif
 
 data Layout a =
@@ -724,9 +724,9 @@ data Locale =
 instance Semigroup Locale where
  Locale lang1 pq1 ldo1 date1 ts1 <>
    Locale lang2 pq2 ldo2 date2 ts2 =
-   Locale (maybe lang2 Just lang1)
-          (maybe pq2 Just pq1)
-          (maybe ldo2 Just ldo1)
+   Locale (lang1 <|> lang2)
+          (pq1 <|> pq2)
+          (ldo1 <|> ldo2)
           (date1 <> date2)
           (M.unionWith (<>) ts1 ts2)
 
@@ -737,7 +737,7 @@ data Reference a =
   Reference{ referenceId             :: ItemId
            , referenceType           :: Text
            , referenceDisambiguation :: Maybe DisambiguationData
-           , referenceVariables      :: (M.Map Text (Val a))
+           , referenceVariables      :: M.Map Text (Val a)
            } deriving (Show, Functor, Foldable, Traversable)
 
 instance ToJSON a => ToJSON (Reference a) where
@@ -826,7 +826,7 @@ parseReference rawmap =
             v' <- parseJSON v
             return $ M.insert k (NamesVal v') m
           UnknownVariable -> return m -- silently ignore unknown vars
-  readString v = do
+  readString v =
     case v of
        String{} -> parseJSON v
        Number{} -> T.pack . show <$> (parseJSON v :: Parser Int)
@@ -839,22 +839,22 @@ consolidateNameVariables ((k,v):kvs)
   = case variableType k of
       NameVariable
         -> (k, Array
-                 (V.fromList (map String [t | (k',t) <- kvs, k' == k]))) :
+                 (V.fromList ([String t | (k',t) <- kvs, k' == k]))) :
             consolidateNameVariables (filter ((/= k) . fst) kvs)
       _ -> (k, String v) : consolidateNameVariables kvs
 
 parseNote :: Text
           -> ([(Text, Text)], Text)
 parseNote t =
-  either (\_ -> ([],t)) id $
-    P.parseOnly ((,) <$> (P.many' pNoteField) <*> P.takeText) t
+  either (const ([],t)) id $
+    P.parseOnly ((,) <$> P.many' pNoteField <*> P.takeText) t
  where
   pNoteField = pBracedField <|> pLineField
   pLineField = do
     name <- pVarname
     _ <- P.char ':'
     val <- P.takeWhile (/='\n')
-    () <$ (P.char '\n') <|> P.endOfInput
+    () <$ P.char '\n' <|> P.endOfInput
     return (name, T.strip val)
   pBracedField = do
     _ <- P.string "{:"
@@ -1151,7 +1151,7 @@ asBool (Number n) = return $ n == 1
 asBool x          = typeMismatch "Bool" x
 
 asText :: Value -> Parser Text
-asText (String t)   = return $ t
+asText (String t)   = return t
 asText (Number n)   = return $ case S.floatingOrInteger n of
                                  Left r -> T.pack (show (r :: Double))
                                  Right i -> T.pack (show (i :: Int))
@@ -1162,7 +1162,7 @@ asInt (String t) =
   case readAsInt t of
     Just x  -> return x
     Nothing -> fail "not a number"
-asInt v@(Number{}) = parseJSON v
+asInt v@Number{} = parseJSON v
 asInt v = typeMismatch "Number" v
 
 data Date =

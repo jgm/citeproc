@@ -1,4 +1,3 @@
-{-# LANGUAGE OverloadedStrings #-}
 module Citeproc
        ( module Citeproc.Types
        , module Citeproc.Style
