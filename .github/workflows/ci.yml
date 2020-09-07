@@ -66,8 +66,8 @@ jobs:
     - name: Install recent cabal/ghc
       uses: actions/setup-haskell@v1.1
       with:
-        ghc-version: '8.8.4'
-        cabal-version: 'latest'
+        ghc-version: '8.10.1'
+        cabal-version: '3.2'
 
     - name: Cache cabal global package db
       id:   cabal-global
@@ -103,8 +103,8 @@ jobs:
     - name: Install recent cabal/ghc
       uses: actions/setup-haskell@v1.1
       with:
-        ghc-version: '8.8.4'
-        cabal-version: 'latest'
+        ghc-version: '8.10.1'
+        cabal-version: '3.2'
 
     - name: Cache cabal global package db
       id:   cabal-global
