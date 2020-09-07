@@ -48,7 +48,7 @@ library
                      , safe
                      , bytestring
                      , text
-                     , containers
+                     , containers >= 0.6.0.1 && < 0.7
                      , transformers
                      , vector
                      , scientific
