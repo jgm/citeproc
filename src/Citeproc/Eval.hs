@@ -71,7 +71,7 @@ data EvalState a =
   } deriving (Show)
 
 
-type Eval a = RWS (Context a) [Text] (EvalState a)
+type Eval a = RWS (Context a) (Set.Set Text) (EvalState a)
 
 updateVarCount :: Int -> Int -> Eval a ()
 updateVarCount total' nonempty' =
@@ -87,7 +87,7 @@ evalStyle  :: CiteprocOutput a
            -> [Citation a]
            -> ([Output a], [(Text, Output a)], [Text])
 evalStyle style mblang refs citations =
-  (citationOs, bibliographyOs, warnings)
+  (citationOs, bibliographyOs, Set.toList warnings)
  where
   ((citationOs, bibliographyOs), warnings) = evalRWS go
      Context
@@ -941,8 +941,8 @@ evalLayout isBibliography layout (citationGroupNumber, citation) = do
                   , stateUsedYearSuffix = False }))
                 $ mapM eElement (layoutElements layout)
             Nothing -> do
-              tell ["Citation " <> unItemId (citationItemId item) <>
-                     " not found"]
+              warn $ "citation " <> unItemId (citationItemId item) <>
+                     " not found"
               return [Literal $ addFontWeight BoldWeight
                  $ fromText $ unItemId (citationItemId item) <> "?"]
 
@@ -1253,7 +1253,8 @@ eText (TextVariable varForm v) = do
                               Tagged (TagCitationNumber x) $
                               Literal $ fromText (T.pack (show x))
           _ -> do
-            tell ["citation-number not defined"]
+            warn $ "citation-number not defined for " <>
+                      coerce (referenceId ref)
             return NullOutput
     _ -> do
         mbv <- if varForm == ShortForm
@@ -1278,7 +1279,7 @@ eText (TextVariable varForm v) = do
                    in Reference id' type' d' (M.delete v m') }
         return res
 eText (TextMacro name) = do
-  tell ["encountered unexpanded macro " <> name]
+  warn $ "encountered unexpanded macro " <> name
   return NullOutput
 eText (TextValue t) = return $ Literal $ fromText t
 eText (TextTerm term) = do
@@ -1386,7 +1387,7 @@ eDate :: CiteprocOutput a
        -> Eval a (Output a)
 eDate var dateType mbShowDateParts dps formatting
   | T.null var = do
-    tell ["skipping date element with no variable attribute set"]
+    warn "skipping date element with no variable attribute set"
     return NullOutput
   | otherwise = do
     datevar <- askVariable var
@@ -1409,7 +1410,7 @@ eDate var dateType mbShowDateParts dps formatting
             _ -> (filter useDatePart dps, formatting)
     case datevar of
       Nothing ->
-        -- tell ["date element for empty variable " <> var]
+        -- warn $ "date element for empty variable " <> var
         return NullOutput
       Just (DateVal date) ->
         case dateLiteral date of
@@ -1438,7 +1439,7 @@ eDate var dateType mbShowDateParts dps formatting
             return $ Tagged (TagDate date) $ formatted formatting'
                       (xs ++ maybeToList yearSuffix)
       Just _ -> do
-        tell ["date element for variable with non-date value " <> var]
+        warn $ "date element for variable with non-date value " <> var
         return NullOutput
 
 
@@ -1796,7 +1797,7 @@ formatNames namesFormat nameFormat formatting (var, Just (NamesVal names)) =
               else names'' ++ label
 
 formatNames _ _ _ (var, Just _) = do
-  tell ["ignoring non-name value for variable " <> var]
+  warn $ "ignoring non-name value for variable " <> var
   return NullOutput
 formatNames _ _ _ (_, Nothing) = return NullOutput
 
@@ -2166,7 +2167,7 @@ evalNumber form (NumVal i) = do
                 ((_,suff):_) ->
                   return $ Literal $ fromText (dectext <> suff)
                 [] -> do
-                  tell ["no ordinal suffix found for " <> dectext]
+                  warn $ "no ordinal suffix found for " <> dectext
                   return $ Literal $ fromText (T.pack (show i))
     NumberLongOrdinal
       | i >= 1
@@ -2181,6 +2182,9 @@ evalNumber _ (TextVal t) = return $ Literal $ fromText t
 evalNumber _ (FancyVal t) = return $ Literal t
 evalNumber _ _ = return NullOutput
 
+
+warn :: Text -> Eval a ()
+warn t = tell $ Set.singleton t
 
 -- | Convert number < 4000 to lowercase roman numeral.
 toRomanNumeral :: Int -> Text
