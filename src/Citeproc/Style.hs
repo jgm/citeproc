@@ -1,4 +1,5 @@
 {-# LANGUAGE OverloadedStrings #-}
+{-# LANGUAGE LambdaCase #-}
 {-# LANGUAGE TupleSections #-}
 module Citeproc.Style
   ( parseStyle )
@@ -23,7 +24,7 @@ parseStyle :: Monad m
                                -- text of independent parent
            -> Text
            -> m (Either CiteprocError (Style a))
-parseStyle getIndependentParent t = do
+parseStyle getIndependentParent t =
   -- first, see if it's a dependent or independent style
   case X.parseText def (TL.fromStrict t) of
     Left e  -> return $ Left $ CiteprocXMLError (T.pack (show e))
@@ -78,15 +79,14 @@ pStyle defaultLocale node = do
     let disambigStrategy =
           DisambiguationStrategy
           { disambiguateAddNames =
-              maybe False (== "true") $
-                lookupAttribute "disambiguate-add-names" cattr
+              lookupAttribute "disambiguate-add-names" cattr == Just "true"
           , disambiguateAddGivenNames =
               case lookupAttribute "disambiguate-add-givenname" cattr of
                 Just "true" -> Just disambiguateGivenNameRule
                 _           -> Nothing
           , disambiguateAddYearSuffix =
-              maybe False (== "true") $
-                lookupAttribute "disambiguate-add-year-suffix" cattr
+             lookupAttribute "disambiguate-add-year-suffix" cattr ==
+               Just "true"
           }
 
     let hasYearSuffixVariable
@@ -132,14 +132,13 @@ pStyle defaultLocale node = do
                      lookupAttribute "near-note-distance" attr >>= readAsInt
                  , styleCiteGroupDelimiter =
                      lookupAttribute "cite-group-delimiter" cattr <|>
-                     (const ", " <$> lookupAttribute "collapse" cattr)
+                     (", " <$ lookupAttribute "collapse" cattr)
                  , styleLineSpacing =
                      lookupAttribute "line-spacing" battr >>= readAsInt
                  , styleEntrySpacing =
                      lookupAttribute "entry-spacing" battr >>= readAsInt
                  , styleHangingIndent =
-                     maybe False (== "true") $
-                       lookupAttribute "hanging-indent" battr
+                     lookupAttribute "hanging-indent" battr == Just "true"
                  , styleSecondFieldAlign =
                      case lookupAttribute "second-field-align" battr of
                        Just "flush" -> Just SecondFieldAlignFlush
@@ -210,31 +209,31 @@ parseIf node = do
            Just "true" -> (WouldDisambiguate :)
            _           -> id) .
         (case lookupAttribute "is-numeric" attr of
-           Just t  -> \xs -> foldr (:) xs (map IsNumeric (splitVars t))
+           Just t  -> \xs -> foldr ((:) . IsNumeric) xs (splitVars t)
            _       -> id) .
         (case lookupAttribute "is-uncertain-date" attr of
-           Just t  -> \xs -> foldr (:) xs (map IsUncertainDate (splitVars t))
+           Just t  -> \xs -> foldr ((:) . IsUncertainDate) xs (splitVars t)
            _       -> id) .
         (case lookupAttribute "locator" attr of
-           Just t  -> \xs -> foldr (:) xs (map HasLocatorType (splitVars t))
+           Just t  -> \xs -> foldr ((:) . HasLocatorType) xs (splitVars t)
            _       -> id) .
         (case lookupAttribute "position" attr of
            Just t  -> \xs ->
-             foldr (\v -> case v of
-                            "first"      -> (HasPosition FirstPosition :)
-                            "ibid"       -> (HasPosition Ibid :)
-                            "ibid-with-locator"
-                                         -> (HasPosition IbidWithLocator :)
-                            "subsequent" -> (HasPosition Subsequent :)
-                            "near-note"  -> (HasPosition NearNote :)
-                            _            -> id)
+             foldr (\case
+                       "first"      -> (HasPosition FirstPosition :)
+                       "ibid"       -> (HasPosition Ibid :)
+                       "ibid-with-locator"
+                                    -> (HasPosition IbidWithLocator :)
+                       "subsequent" -> (HasPosition Subsequent :)
+                       "near-note"  -> (HasPosition NearNote :)
+                       _            -> id)
              xs (splitVars t)
            _       -> id) .
         (case lookupAttribute "type" attr of
-           Just t  -> \xs -> foldr (:) xs (map HasType (splitVars t))
+           Just t  -> \xs -> foldr ((:) . HasType) xs (splitVars t)
            _       -> id) .
         (case lookupAttribute "variable" attr of
-           Just t  -> \xs -> foldr (:) xs (map HasVariable (splitVars t))
+           Just t  -> \xs -> foldr ((:) . HasVariable) xs (splitVars t)
            _       -> id) $ []
   elts <- mapM pElement $ allChildren node
   return (match, conditions, elts)
@@ -275,7 +274,7 @@ pNames node = do
   attr <- getNameAttributes node
   let formatting = getFormatting attr
   let variables = maybe [] splitVars $ lookupAttribute "variable" attr
-  let pChild (nf,subst) n = do
+  let pChild (nf,subst) n =
        case X.nameLocalName (X.elementName n) of
          "label"      -> do
            e <- pLabel n
@@ -358,8 +357,8 @@ pName node = do
          , nameEtAlSubsequentMin      =
              lookupAttribute "et-al-subsequent-min" attr >>= readAsInt
          , nameEtAlUseLast            =
-             case (lookupAttribute "names-use-last" attr <|>
-                   lookupAttribute "et-al-use-last" attr) of
+             case lookupAttribute "names-use-last" attr <|>
+                  lookupAttribute "et-al-use-last" attr of
                Just "true" -> True
                _           -> False
          , nameForm                   =
@@ -445,7 +444,7 @@ pMacro node = do
 -- sometimes the name is different (e.g. name-form and form).
 inheritableNameAttributes :: M.Map X.Name X.Name
 inheritableNameAttributes = M.fromList $
-  map (\(x,y) -> (attname x, attname y)) $
+  map (\(x,y) -> (attname x, attname y))
   [ ("and", "and")
   , ("delimiter-precedes-et-al", "delimiter-precedes-et-al")
   , ("delimiter-precedes-last", "delimiter-precedes-last")
@@ -466,7 +465,7 @@ inheritableNameAttributes = M.fromList $
   , ("names-use-last", "names-use-last")
   ]
 
-getInheritableNameAttributes :: X.Element -> (M.Map X.Name Text)
+getInheritableNameAttributes :: X.Element -> M.Map X.Name Text
 getInheritableNameAttributes elt =
   M.foldrWithKey
     (\k v m -> case M.lookup k inheritableNameAttributes of

@@ -4,7 +4,6 @@
 {-# LANGUAGE ScopedTypeVariables #-}
 {-# LANGUAGE OverloadedStrings #-}
 {-# LANGUAGE TupleSections #-}
-{-# LANGUAGE BangPatterns #-}
 module Citeproc.Eval
   ( evalStyle
   , mergeLocales
@@ -22,9 +21,8 @@ import Control.Monad (foldM, zipWithM, when, unless)
 import qualified Data.Map as M
 import qualified Data.Set as Set
 import Data.Coerce (coerce)
-import Data.List (find, intersperse, sortBy, groupBy, foldl', transpose,
+import Data.List (find, intersperse, sortOn, groupBy, foldl', transpose,
                   sort, (\\))
-import Data.Ord (comparing)
 import Data.Text (Text)
 import qualified Data.Text as T
 import Data.Char (isSpace, isPunctuation, isDigit, isUpper, isLower, isLetter,
@@ -132,18 +130,18 @@ evalStyle style mblang refs citations =
       -- sorting of bibliography, insertion of citation-number
       (bibCitations, bibSortKeyMap) <-
         case styleBibliography style of
-          Nothing -> do
-            return ([], mempty)
+          Nothing -> return ([], mempty)
           Just biblayout -> do
             bibSortKeyMap <- M.fromList
                       <$> mapM
-                          (\citeId ->
+                          ((\citeId ->
                              (citeId,) <$> evalSortKeys biblayout citeId)
-                          (map referenceId refs)
+                             . referenceId)
+                          refs
             let sortedIds =
                   if null (layoutSortKeys biblayout)
                      then map referenceId refs
-                     else sortBy (comparing (flip M.lookup bibSortKeyMap))
+                     else sortOn (`M.lookup` bibSortKeyMap)
                               (map referenceId refs)
             assignCitationNumbers $
               case layoutSortKeys biblayout of
@@ -183,11 +181,10 @@ evalStyle style mblang refs citations =
       let sortCitationItems citation' =
             citation'{ citationItems =
                           concatMap
-                           (sortBy
-                            (comparing
+                           (sortOn
                              (\citeItem ->
                               M.lookup (citationItemId citeItem)
-                                       sortKeyMap)))
+                                       sortKeyMap))
                         $ groupBy canGroup
                         $ citationItems citation' }
       let citCitations = map sortCitationItems citations
@@ -389,7 +386,7 @@ disambiguateCitations style bibSortKeyMap citations = do
   let allNameGroups = [ns | Tagged (TagNames _ _ ns) _ <-
                               concatMap universe allCites]
   let allNames = nubOrd $ concat allNameGroups
-  let primaryNames = nubOrd $ concat $ map (take 1) allNameGroups
+  let primaryNames = nubOrd $ concatMap (take 1) allNameGroups
   allCites' <-
     case disambiguateAddGivenNames strategy of
          Nothing     -> return allCites
@@ -546,8 +543,8 @@ disambiguateCitations style bibSortKeyMap citations = do
   addYearSuffixes bibSortKeyMap' as = do
     let allitems = concat as
     let companions a =
-          sortBy
-          (comparing (\it -> M.lookup (ddItem it) bibSortKeyMap'))
+          sortOn
+          (\it -> M.lookup (ddItem it) bibSortKeyMap')
           (concat [ x | x <- as, a `elem` x ])
     let groups = Set.map companions $ Set.fromList allitems
     let addYearSuffix item suff =
@@ -563,9 +560,9 @@ disambiguateCitations style bibSortKeyMap citations = do
       [] -> return ()
       xs -> modify $ \st ->
               st{ stateRefMap = ReferenceMap
-                  $ foldr (setDisambCondition True)
+                  $ foldr (setDisambCondition True . ddItem)
                     (unReferenceMap (stateRefMap st))
-                    (map ddItem xs) }
+                    xs }
 
   alterReferenceDisambiguation f r =
         r{ referenceDisambiguation = f <$>
@@ -626,10 +623,10 @@ disambiguateCitations style bibSortKeyMap citations = do
                  case zs of
                    ("",_):_ -> Nothing  -- no printed form of citation
                    (t, _):_ -> Just (t, map toDisambData $
-                                         (nubOrdOn fst $ map snd zs))
+                                         nubOrdOn fst $ map snd zs)
                    []       -> Nothing)
         $ groupBy (\(x,_) (y,_) -> x == y)
-        $ sortBy (comparing fst)
+        $ sortOn fst
         [let (tags, texts) = unzip $ takeNamesOrDate (universe x) in
              (T.unwords texts, (iid, (getNames tags, getDates tags)))
         | (Tagged (TagItem ty iid) x) <- concatMap universe cs,
@@ -638,9 +635,9 @@ disambiguateCitations style bibSortKeyMap citations = do
   toDisambData (id', (ns', ds')) = DisambData id' ns' ds'
 
   takeNamesOrDate :: CiteprocOutput a => [Output a] -> [(Tag, Text)]
-  takeNamesOrDate (Tagged t@(TagNames _ _ _) x : xs) =
+  takeNamesOrDate (Tagged t@TagNames{} x : xs) =
     (t, outputToText x) : takeNamesOrDate xs
-  takeNamesOrDate (Tagged t@(TagDate _) x : xs) =
+  takeNamesOrDate (Tagged t@TagDate{} x : xs) =
     (t, outputToText x) : takeNamesOrDate xs
   takeNamesOrDate (_ : xs) =
     takeNamesOrDate xs
@@ -761,14 +758,15 @@ groupAndCollapseCitations citeGroupDelim yearSuffixDelim afterCollapseDelim
   isAdjacentCitationNumber _ _ = False
   sameNames (Tagged (TagItem _ _id1) (Formatted f1 xs1))
             (Tagged (TagItem _ _id2) (Formatted f2 xs2))
-    | formatSuffix f1 == Nothing
-    , formatPrefix f2 == Nothing
-    = 
+    | isNothing (formatSuffix f1)
+    , isNothing (formatPrefix f2)
+    =
     case (unFormat xs1, unFormat xs2) of
       ((Tagged (TagNames t1 _nf1 ns1) ws1 : _),
        (Tagged (TagNames t2 _nf2 ns2) ws2 : _))
        -> t1 == t2 && ns1 == ns2 &&
-          (if null ns1 then ws1 == ws2 else True) -- case where title is substituted
+          (if null ns1 then ws1 == ws2 else True)
+          -- case where title is substituted
       _ -> False
   sameNames _ _ = False
   unFormat (Formatted _ zs : ys) = unFormat zs ++ unFormat ys
@@ -807,8 +805,8 @@ mergeLocales mblang style =
                  [l | l <- styleLocales style
                     , localeLanguage l == Just lang] ++
                  -- then match to primary dialect, if different
-                 [l | l <- styleLocales style
-                    , primlang /= Just lang
+                 [l | primlang /= Just lang
+                    , l <- styleLocales style
                     , localeLanguage l == primlang] ++
                  -- then match to the two letter language
                  [l | l <- styleLocales style
@@ -958,10 +956,10 @@ evalLayout isBibliography layout (citationGroupNumber, citation) = do
         Nothing | isNote -> -- first citation
           modify $ \st ->
             st{ stateRefMap = ReferenceMap $
-                    (M.adjust (\ref -> ref{ referenceVariables =
+                    M.adjust (\ref -> ref{ referenceVariables =
                       M.insert "first-reference-note-number" notenum
                                  (referenceVariables ref)})
-                      (citationItemId item))
+                      (citationItemId item)
                    (unReferenceMap $ stateRefMap st) }
         _  -> return ()
 
@@ -1010,12 +1008,12 @@ evalLayout isBibliography layout (citationGroupNumber, citation) = do
 
 
 isNames :: Output a -> Bool
-isNames (Tagged (TagNames _ _ _) _) = True
+isNames (Tagged TagNames{} _) = True
 isNames _ = False
 
 
 removeNames :: Output a -> Output a
-removeNames (Tagged (TagNames _ _ _) _) = NullOutput
+removeNames (Tagged TagNames{} _) = NullOutput
 removeNames x = x
 
 capitalizeInitialTerm :: [Output a] -> [Output a]
@@ -1059,7 +1057,7 @@ getPosition item groupNum posInGroup = do
   -- TODO
  
 eElement :: CiteprocOutput a => Element a -> Eval a (Output a)
-eElement (Element etype formatting) = do
+eElement (Element etype formatting) =
   case etype of
     EText textType ->
       withFormatting formatting (eText textType)
@@ -1195,9 +1193,7 @@ formatPageRange mbPageRangeFormat delim t =
                          -> inRange pref [x, y']
                        | otherwise -> minimal 2 pref x y'
                    PageRangeExpanded ->
-                     if xlen > ylen
-                        then inRange mempty [pref <> x, pref <> y']
-                        else inRange mempty [pref <> x, pref <> y']
+                       inRange mempty [pref <> x, pref <> y']
                    PageRangeMinimal -> minimal 1 pref x y'
                    PageRangeMinimalTwo -> minimal 2 pref x y'
                else inRange mempty [w,v]
@@ -1242,7 +1238,7 @@ eText (TextVariable varForm v) = do
     "year-suffix" -> do
         disamb <- gets (referenceDisambiguation . stateReference)
         case disamb >>= disambYearSuffix of
-          Just x -> do
+          Just x ->
             -- we don't update var count here; this doesn't
             -- count as a variable
             return $ Tagged (TagYearSuffix x)
@@ -1260,7 +1256,7 @@ eText (TextVariable varForm v) = do
             return NullOutput
     _ -> do
         mbv <- if varForm == ShortForm
-                  then ((<|>))
+                  then (<|>)
                     <$> askVariable (v <> "-short")
                     <*> askVariable v
                   else askVariable v
@@ -1414,7 +1410,7 @@ eDate var dateType mbShowDateParts dps formatting
       Nothing ->
         -- tell ["date element for empty variable " <> var]
         return NullOutput
-      Just (DateVal date) -> do
+      Just (DateVal date) ->
         case dateLiteral date of
           Just t -> return $ formatted formatting' [Literal $ fromText t]
           Nothing -> do
@@ -1439,7 +1435,7 @@ eDate var dateType mbShowDateParts dps formatting
 
             yearSuffix <- getYearSuffix
             return $ Tagged (TagDate date) $ formatted formatting'
-                      (xs ++ maybe [] (:[]) yearSuffix)
+                      (xs ++ maybeToList yearSuffix)
       Just _ -> do
         tell ["date element for variable with non-date value " <> var]
         return NullOutput
@@ -1488,7 +1484,7 @@ formatDateParts dpSpecs (date, mbNextDate) = do
       diffsLeft' <- cleanup <$> mapM (eDP (yr,mo,da)) diffs
       diffsRight' <- cleanup <$> mapM (eDP (nextyr,nextmo,nextda)) diffs
       sames2' <- cleanup <$> mapM (eDP (yr,mo,da)) sames2
-      let rangeDelim = case sortBy (comparing dpName) diffs of
+      let rangeDelim = case sortOn dpName diffs of
                          []     -> []
                          (dp:_) -> [Literal $ fromText $ dpRangeDelimiter dp]
       return $ removeLastSuffix $
@@ -1632,7 +1628,7 @@ eNames vars namesFormat' subst formatting = do
                                st)) $ eSubstitute els
            return $
              case res of
-               Tagged (TagNames{}) _ -> res
+               Tagged TagNames{} _ -> res
                -- important to have title (or whatever) tagged as
                -- substituting for Names, for purposes of
                -- disambiguation:
@@ -1766,7 +1762,7 @@ formatNames namesFormat nameFormat formatting (var, Just (NamesVal names)) =
                 Nothing
                   | etAlUseLast ->
                     return $
-                      Formatted mempty{ formatPrefix = Just beforeEtAl } $
+                      Formatted mempty{ formatPrefix = Just beforeEtAl }
                         [literal "\x2026 "] -- ellipses
                   | otherwise   ->
                       Formatted mempty{ formatPrefix = Just beforeEtAl }
@@ -1852,9 +1848,8 @@ getNamePartSortOrder name = do
                          nameNonDroppingParticle name,
                        nameGiven name,
                        nameSuffix name]
-       else return $
-                     [nameFamily name,
-                      nameGiven name]
+       else return [nameFamily name,
+                    nameGiven name]
 
 literal :: CiteprocOutput a => Text -> Output a
 literal = Literal . fromText
@@ -2087,8 +2082,8 @@ eChoose [] = return NullOutput
 eChoose ((match, conditions, els):rest) = do
   ref <- gets stateReference
   label <- asks contextLabel
-  let disambiguate = fromMaybe False $
-                      disambCondition <$> referenceDisambiguation ref
+  let disambiguate = maybe False
+                      disambCondition (referenceDisambiguation ref)
   positions <- asks contextPosition
   hasLocator <- isJust <$> asks contextLocator
   let isNumeric t = all
@@ -2133,7 +2128,7 @@ eNumber :: CiteprocOutput a => Text -> NumberForm -> Eval a (Output a)
 eNumber var nform = do
   mbv <- askVariable var
   let nparts = case mbv of
-                 Just x@(NumVal{}) -> [x]
+                 Just x@NumVal{}   -> [x]
                  Just (FancyVal x) -> splitNums (toText x)
                  Just (TextVal t)  -> splitNums t
                  _                 -> []
@@ -2147,8 +2142,7 @@ evalNumber form (NumVal i) = do
   let onematch = numterm "ordinal-%02d" (i `mod` 10)
   let fallback = emptyTerm { termName = "ordinal" }
   case form of
-    NumberNumeric -> do
-      return $ Literal $ fromText dectext
+    NumberNumeric -> return $ Literal $ fromText dectext
     NumberOrdinal -> do
       res <- (if i > 99
                  then filter (\(t,_) -> termMatch t /= Just WholeNumber)
@@ -2159,7 +2153,7 @@ evalNumber form (NumVal i) = do
         [] -> do -- not an exact match
           res' <- (if i > 10
                       then filter (\(t,_) ->
-                             termMatch t == Nothing ||
+                             isNothing (termMatch t) ||
                              termMatch t == Just LastDigit)
                       else id) <$> lookupTerm onematch
           case res' of
@@ -2181,12 +2175,9 @@ evalNumber form (NumVal i) = do
           ((_,t):_) -> return $ Literal $ fromText t
           []        -> evalNumber NumberOrdinal (NumVal i)
       | otherwise -> evalNumber NumberOrdinal (NumVal i)
-    NumberRoman -> do
-      return $ Literal $ fromText $ toRomanNumeral i
-evalNumber _ (TextVal t) = do
-  return $ Literal $ fromText t
-evalNumber _ (FancyVal t) = do
-  return $ Literal t
+    NumberRoman -> return $ Literal $ fromText $ toRomanNumeral i
+evalNumber _ (TextVal t) = return $ Literal $ fromText t
+evalNumber _ (FancyVal t) = return $ Literal t
 evalNumber _ _ = return NullOutput
 
 
@@ -2263,14 +2254,8 @@ removeDoubleSpaces :: Text -> Text
 removeDoubleSpaces = T.replace "  " " "
 
 endsWithSpace :: Text -> Bool
-endsWithSpace t =
-  if T.null t
-     then False
-     else isSpace (T.last t)
+endsWithSpace t = not (T.null t) && isSpace (T.last t)
 
 beginsWithSpace :: Text -> Bool
-beginsWithSpace t =
-  if T.null t
-     then False
-     else isSpace (T.head t)
+beginsWithSpace t = not (T.null t) && isSpace (T.head t)
 

@@ -88,7 +88,7 @@ locales = foldr go mempty localeFiles
      | otherwise = m
 
 -- see locale fallback algorithm in CSL 1.0.1 spec
-getLocale :: Lang -> (Either CiteprocError Locale)
+getLocale :: Lang -> Either CiteprocError Locale
 getLocale lang =
   case M.lookup lang locales
         <|>

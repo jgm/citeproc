@@ -1,5 +1,4 @@
 {-# LANGUAGE OverloadedStrings #-}
-{-# LANGUAGE DeriveFunctor #-}
 module Citeproc.Element
   ( pLocale
   , pDate
@@ -53,7 +52,7 @@ getNameAttributes node = do
   nameattr <- ask
   let xattr = X.elementAttributes node <> nameattr
   let toAttribute (k,v) = (X.nameLocalName k, v)
-  return $ Attributes $ map toAttribute $ M.toList $ xattr
+  return $ Attributes $ map toAttribute $ M.toList xattr
 
 getFormatting :: Attributes -> Formatting
 getFormatting attr =
@@ -105,10 +104,10 @@ getFormatting attr =
             Just "title"            -> Just TitleCase
             _                       -> Nothing
       , formatDelimiter = lookupAttribute "delimiter" attr
-      , formatStripPeriods = maybe False (== "true") $
-          lookupAttribute "strip-periods" attr
-      , formatQuotes = maybe False (== "true") $
-          lookupAttribute "quotes" attr
+      , formatStripPeriods =
+          lookupAttribute "strip-periods" attr == Just "true"
+      , formatQuotes =
+          lookupAttribute "quotes" attr == Just "true"
       , formatAffixesInside = False -- should be true for layout only
       }
 
@@ -181,8 +180,7 @@ parseTerm m node = do
   let addToList x Nothing   = Just [x]
       addToList x (Just xs) = Just (x:xs)
   if T.null single
-     then do
-       return $ M.alter (addToList (term, txt)) (termName term) m
+     then return $ M.alter (addToList (term, txt)) (termName term) m
      else do
        let term_single = term{ termNumber = Just Singular }
        let term_plural = term{ termNumber = Just Plural }
