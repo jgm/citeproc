@@ -67,6 +67,7 @@ instance Semigroup (CslJson a) where
 
 instance Monoid (CslJson a) where
   mempty = CslEmpty
+  mappend = (<>)
 
 instance FromJSON (CslJson Text) where
   parseJSON = fmap (parseCslJson mempty) . parseJSON
