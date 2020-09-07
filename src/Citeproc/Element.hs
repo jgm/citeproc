@@ -14,6 +14,7 @@ module Citeproc.Element
   )
 where
 import Citeproc.Types
+import Data.Semigroup
 import Data.Maybe (fromMaybe)
 import Control.Monad (foldM)
 import qualified Data.Map as M

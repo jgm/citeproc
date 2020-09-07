@@ -13,6 +13,7 @@ module Citeproc.Eval
 where
 import Citeproc.Types
 import Citeproc.Locale
+import Data.Semigroup
 import Control.Monad.Trans.RWS.CPS
 import Data.Containers.ListUtils (nubOrdOn, nubOrd)
 import Safe (headMay, lastMay, initSafe, maximumMay, minimumMay)
