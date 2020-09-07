@@ -40,6 +40,7 @@ library
                        Citeproc.Style
                        Citeproc.Element
                        Citeproc.CslJson
+                       Citeproc.Pandoc
                        Citeproc.Eval
                        Citeproc.CaseTransform
                        Citeproc.Data
@@ -59,6 +60,7 @@ library
                      , aeson
                      , filepath
                      , file-embed
+                     , pandoc-types >= 1.21 && < 1.22
                      -- Can remove later:
                      , pretty-show
   if flag(icu)
