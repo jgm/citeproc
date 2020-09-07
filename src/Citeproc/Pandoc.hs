@@ -6,8 +6,7 @@
 {-# OPTIONS_GHC -fno-warn-orphans #-}
 -- | This module defines a CiteprocOutput instance for pandoc Inlines.
 module Citeproc.Pandoc
-  ( endWithPunct
-  , caseTransform
+  ( caseTransform
   )
 where
 import Text.Pandoc.Definition
