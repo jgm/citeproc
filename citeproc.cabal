@@ -44,7 +44,7 @@ library
                        Citeproc.CaseTransform
                        Citeproc.Data
 
-  build-depends:       base >= 4.10 && < 5
+  build-depends:       base >= 4.8 && < 5
                      , safe
                      , bytestring
                      , text
@@ -84,7 +84,7 @@ test-suite spec
   hs-source-dirs:      test
   main-is:             Spec.hs
 
-  build-depends:       base >= 4.10 && < 5
+  build-depends:       base >= 4.8 && < 5
                      , citeproc
                      , bytestring
                      , text
