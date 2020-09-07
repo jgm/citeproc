@@ -49,18 +49,16 @@ jobs:
     - name: Install recent cabal/ghc
       uses: actions/setup-haskell@v1.1
       with:
-        ghc-version: '8.6.5'
-        enable-stack: true
-        stack-version: 'latest'
+        ghc-version: '8.8.4'
+        cabal-version: 'latest'
     - name: Install dependencies
       run: |
-          stack update
-          stack test --dependencies-only --fast
+          cabal v2-update
+          cabal v2-build --dependencies-only --enable-tests --disable-optimization all
     - name: Build and test
-      shell: cmd
       run: |
           chcp 65001
-          stack install --fast --test --haddock --no-haddock-deps --bench --no-run-benchmarks
+          cabal v2-test --disable-optimization all
 
   macos:
 
