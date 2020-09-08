@@ -1,4 +1,4 @@
-LOCALE_DATA=$(patsubst locales-upstream/locales-%.xml,data/locales/%.xml, $(wildcard locales-upstream/*.xml)) data/locales/locales.json
+LOCALE_DATA=$(patsubst locales-upstream/locales-%.xml,locales/%.xml, $(wildcard locales-upstream/*.xml)) locales/locales.json
 
 .PHONY: test-suite locales test bench ghcid repl clean update-locales update-test-suite update-locales-upstream test-diff
 
@@ -30,10 +30,10 @@ update-locales-upstream: locales-upstream
 
 update-locales: update-locales-upstream $(LOCALE_DATA)
 
-data/locales/%.xml: locales-upstream/locales-%.xml
+locales/%.xml: locales-upstream/locales-%.xml
 	cp $< $@
 
-data/locales/locales.json: locales-upstream/locales.json
+locales/locales.json: locales-upstream/locales.json
 	cp $< $@
 
 update-test-suite: test-suite-upstream
