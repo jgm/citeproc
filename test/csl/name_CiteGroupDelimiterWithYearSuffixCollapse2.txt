@@ -803,3 +803,6 @@ citation
 1.0
 <<===== VERSION =====<<
 
+>>===== DESCRIPTION =====>>
+Cite grouping is applied only if the citations are sorted in some way, otherwise they should be rendered in entry order.
+<<===== DESCRIPTION =====<<

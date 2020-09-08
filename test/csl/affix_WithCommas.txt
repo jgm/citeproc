@@ -6,9 +6,9 @@ citation
 
 
 >>===== RESULT =====>>
-John Smith, <i>Book C</i>, 2000, and David Jones, <i>Book D</i>, 2000.
-John Smith, <i>Book C</i>, 2000 is one source, David Jones, <i>Book D</i>, 2000 is another.
-John Smith, <i>Book C</i>, 2000, 23 is one source, David Jones, <i>Book D</i>, 2000 is another.
+..[0] John Smith, <i>Book C</i>, 2000, and David Jones, <i>Book D</i>, 2000.
+..[1] Smith, <i>Book C</i> is one source, Jones, <i>Book D</i> is another.
+>>[2] Smith, <i>Book C</i>, 23 is one source, Jones, <i>Book D</i> is another.
 <<===== RESULT =====<<
 
 
@@ -981,40 +981,70 @@ John Smith, <i>Book C</i>, 2000, 23 is one source, David Jones, <i>Book D</i>, 2
 
 <<===== CSL =====<<
 
->>===== CITATION-ITEMS ====>>
+>>==== CITATIONS ====>>
 [
     [
         {
-            "id": "ITEM-1"
+            "citationID": "CITATION-1",
+            "citationItems": [
+                {
+                    "id": "ITEM-1"
+                },
+                {
+                    "id": "ITEM-2",
+                    "prefix": ", and "
+                }
+            ],
+            "properties": {
+                "noteIndex": 1
+            }
         },
-        {
-            "id": "ITEM-2",
-            "prefix": ", and "
-        }
+        [],
+        []
     ],
     [
         {
-            "id": "ITEM-1",
-            "suffix": " is one source,"
+            "citationID": "CITATION-2",
+            "citationItems": [
+                {
+                    "id": "ITEM-1",
+                    "suffix": " is one source,"
+                },
+                {
+                    "id": "ITEM-2",
+                    "suffix": " is another."
+                }
+            ],
+            "properties": {
+                "noteIndex": 2
+            }
         },
-        {
-            "id": "ITEM-2",
-            "suffix": " is another."
-        }
+        [["CITATION-1", 1]],
+        []
     ],
     [
         {
-            "id": "ITEM-1",
-            "locator": 23,
-            "suffix": " is one source,"
+            "citationID": "CITATION-3",
+            "citationItems": [
+                {
+                    "id": "ITEM-1",
+                    "locator": 23,
+                    "suffix": " is one source,"
+                },
+                {
+                    "id": "ITEM-2",
+                    "suffix": " is another."
+                }
+            ],
+            "properties": {
+                "noteIndex": 3
+            }
         },
-        {
-            "id": "ITEM-2",
-            "suffix": " is another."
-        }
+        [["CITATION-1", 1],["CITATION-2", 2]],
+        []
     ]
 ]
-<<===== CITATION-ITEMS =====<<
+<<==== CITATIONS ====<<
 
 
 
