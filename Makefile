@@ -36,7 +36,10 @@ locales/%.xml: locales-upstream/locales-%.xml
 locales/locales.json: locales-upstream/locales.json
 	cp $< $@
 
-update-test-suite: test-suite-upstream
+test-suite:
+	git clone https://github.com/citation-style-language/test-suite
+
+update-test-suite: test-suite
 	cd $< && git pull
 	cp $</processor-tests/humans/*.txt test/csl/
 
