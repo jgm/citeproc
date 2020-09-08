@@ -11,7 +11,7 @@ tests](https://github.com/jgm/citeproc/workflows/CI%20tests/badge.svg)](https://
 -->
 
 This library generates citations and bibliography formatted
-according to a [CSL] style.  Currently version 1.0.1 of the CSL
+according to a [CSL] style.  Currently version 1.0.2 of the CSL
 spec is targeted.
 
 This library is a successor to pandoc-citeproc, which was a fork
