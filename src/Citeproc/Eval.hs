@@ -156,7 +156,7 @@ evalStyle style mblang refs citations =
                   -> reverse sortedIds
                 _ -> sortedIds
             let bibCitations = map (\ident ->
-                  Citation (Just $ unItemId ident)
+                  Citation (Just $ unItemId ident) Nothing
                    [CitationItem ident Nothing Nothing
                       NormalCite Nothing Nothing]) sortedIds
             return (bibCitations, bibSortKeyMap)
@@ -374,7 +374,7 @@ disambiguateCitations style bibSortKeyMap citations = do
   let refIds = M.keys refs
   let citeIds = Set.fromList $
                    concatMap (map citationItemId . citationItems) citations
-  let ghostCitations = [Citation Nothing
+  let ghostCitations = [Citation Nothing Nothing
                           [CitationItem ident Nothing Nothing
                             NormalCite Nothing Nothing]
                        | ident <- refIds

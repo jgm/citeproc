@@ -240,8 +240,9 @@ instance FromJSON a => FromJSON (CitationItem a) where
     <*> v .:? "suffix"
 
 data Citation a =
-  Citation { citationId    :: Maybe Text
-           , citationItems :: [CitationItem a] }
+  Citation { citationId         :: Maybe Text
+           , citationNoteNumber :: Maybe Int
+           , citationItems      :: [CitationItem a] }
   deriving (Show, Eq, Ord)
 
 instance FromJSON a => FromJSON (Citation a) where
@@ -251,10 +252,13 @@ instance FromJSON a => FromJSON (Citation a) where
        case ary V.!? 0 of
          Just v' -> (withObject "Citation" $ \o
                       -> Citation <$> o .:? "citationID"
+                                  <*> ((o .: "properties"
+                                         >>= (.: "noteIndex"))
+                                        <|> pure Nothing)
                                   <*> o .: "citationItems") v'
          Nothing -> fail "Empty array") v
    <|>
-   (Citation Nothing <$> parseJSON v)
+   (Citation Nothing Nothing <$> parseJSON v)
 
 newtype Attributes = Attributes [(Text, Text)]
   deriving (Show, Semigroup, Monoid, Eq)
