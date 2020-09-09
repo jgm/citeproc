@@ -834,7 +834,8 @@ parseReference rawmap =
             return $ M.insert k (NamesVal v') m
           UnknownVariable -> do -- treat as string variable if possible
             case v of
-              String{}  -> (\x -> M.insert k (TextVal x) m) <$> readString v
+              String{}  -> (\x -> M.insert k x m) <$>
+                    (FancyVal <$> parseJSON v <|> TextVal <$> readString v)
               Number{}  -> (\x -> M.insert k (TextVal x) m) <$> readString v
               _         -> return m -- silently ignore
   readString v =
