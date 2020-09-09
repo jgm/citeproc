@@ -1049,7 +1049,7 @@ getPosition item groupNum mbNoteNum posInGroup = do
             else id) .
         (if (groupNum == prevGroupNum &&
              posInGroup == prevPosInGroup + 1) ||
-            (groupNum == prevGroupNum + 1 &&
+            (noteNum == prevNoteNum + 1 &&
              posInGroup == 1 &&
              prevAloneInGroup)
              then case (prevLoc, mbloc) of
