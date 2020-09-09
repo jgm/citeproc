@@ -63,8 +63,8 @@ data VarCount =
 data EvalState a =
   EvalState
   { stateVarCount       :: VarCount
-  , stateLastCitedMap   :: M.Map ItemId (Int, Int, Bool, Maybe Text)
-                        -- (citegroup, posInGroup, aloneInCitation, locator)
+  , stateLastCitedMap   :: M.Map ItemId (Int, Maybe Int, Int, Bool, Maybe Text)
+                        -- (citegroup, noteNum, posInGroup, aloneInCitation, locator)
   , stateRefMap         :: ReferenceMap a
   , stateReference      :: Reference a
   , stateUsedYearSuffix :: Bool
@@ -887,7 +887,7 @@ evalLayout :: CiteprocOutput a
             -> Layout a
             -> (Int, Citation a)
             -> Eval a (Output a)
-evalLayout isBibliography layout (citationGroupNumber', citation) = do
+evalLayout isBibliography layout (citationGroupNumber, citation) = do
   -- this is a hack to ensure that "ibid" detection will work
   -- correctly in a citation starting with an author-only:
   -- the combination AuthorOnly [SuppressAuthor] should not
@@ -916,10 +916,9 @@ evalLayout isBibliography layout (citationGroupNumber', citation) = do
       Nothing     -> formatted formatting items
       Just items' -> formatted formatting{ formatSuffix = Nothing } items'
  where
-  citationGroupNumber = fromMaybe citationGroupNumber' $
-                          citationNoteNumber citation
   formatting = layoutFormatting layout
 
+  mbNoteNumber = citationNoteNumber citation
   secondFieldAlign (x:xs) =
     formatted mempty{ formatDisplay = Just DisplayLeftMargin } [x]
     : [formatted mempty{ formatDisplay = Just DisplayRightInline } xs]
@@ -930,7 +929,9 @@ evalLayout isBibliography layout (citationGroupNumber', citation) = do
     position <- if isBibliography
                    then return []
                    else getPosition item
-                         citationGroupNumber positionInCitation
+                         citationGroupNumber
+                         mbNoteNumber
+                         positionInCitation
 
     xs <- case lookupReference (citationItemId item) refmap of
             Just ref -> withRWST
@@ -954,7 +955,7 @@ evalLayout isBibliography layout (citationGroupNumber', citation) = do
     -- we only update the map in the citations section
     unless isBibliography $ do
       lastCitedMap <- gets stateLastCitedMap
-      let notenum = NumVal citationGroupNumber
+      let notenum = NumVal $ fromMaybe citationGroupNumber $ mbNoteNumber
       case M.lookup (citationItemId item) lastCitedMap of
         Nothing | isNote -> -- first citation
           modify $ \st ->
@@ -970,7 +971,7 @@ evalLayout isBibliography layout (citationGroupNumber', citation) = do
         modify $ \st ->
           st{ stateLastCitedMap =
             M.insert (citationItemId item)
-              (citationGroupNumber, positionInCitation,
+              (citationGroupNumber, mbNoteNumber, positionInCitation,
                (case citationItems citation of
                   [_]   -> True
                   [x,y] -> citationItemId x == citationItemId y
@@ -1029,23 +1030,26 @@ capitalizeInitialTerm = go
     Formatted f (go xs) : zs
   go xs = xs
 
-getPosition :: CitationItem a -> Int -> Int -> Eval a [Position]
-getPosition item groupNum posInGroup = do
+getPosition :: CitationItem a -> Int -> Maybe Int -> Int -> Eval a [Position]
+getPosition item groupNum mbNoteNum posInGroup = do
   lastCitedMap <- gets stateLastCitedMap
   case M.lookup (citationItemId item) lastCitedMap of
     Nothing -> return [FirstPosition]
-    Just (prevGroupNum, prevPosInGroup, prevAloneInGroup, prevLoc) -> do
+    Just (prevGroupNum, mbPrevNoteNum,
+           prevPosInGroup, prevAloneInGroup, prevLoc) -> do
       isNote <- asks (styleIsNoteStyle . contextStyleOptions)
       nearNoteDistance <- fromMaybe 5 <$>
                            asks (styleNearNoteDistance . contextStyleOptions)
       let mbloc = citationItemLocator item
+      let noteNum = fromMaybe groupNum mbNoteNum
+      let prevNoteNum = fromMaybe prevGroupNum mbPrevNoteNum
       return $
         (if isNote && groupNum - prevGroupNum < nearNoteDistance
             then (NearNote :)
             else id) .
         (if (groupNum == prevGroupNum &&
              posInGroup == prevPosInGroup + 1) ||
-            (groupNum == prevGroupNum + 1 &&
+            (noteNum == prevNoteNum + 1 &&
              posInGroup == 1 &&
              prevAloneInGroup)
              then case (prevLoc, mbloc) of
