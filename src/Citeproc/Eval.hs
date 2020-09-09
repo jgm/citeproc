@@ -887,7 +887,7 @@ evalLayout :: CiteprocOutput a
             -> Layout a
             -> (Int, Citation a)
             -> Eval a (Output a)
-evalLayout isBibliography layout (citationGroupNumber, citation) = do
+evalLayout isBibliography layout (citationGroupNumber', citation) = do
   -- this is a hack to ensure that "ibid" detection will work
   -- correctly in a citation starting with an author-only:
   -- the combination AuthorOnly [SuppressAuthor] should not
@@ -916,6 +916,8 @@ evalLayout isBibliography layout (citationGroupNumber, citation) = do
       Nothing     -> formatted formatting items
       Just items' -> formatted formatting{ formatSuffix = Nothing } items'
  where
+  citationGroupNumber = fromMaybe citationGroupNumber' $
+                          citationNoteNumber citation
   formatting = layoutFormatting layout
 
   secondFieldAlign (x:xs) =
