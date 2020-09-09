@@ -818,8 +818,8 @@ parseReference rawmap =
     | otherwise   = Reference i t d <$>
         case variableType k of
           StringVariable -> do
-            v' <- parseJSON v
-            return $ M.insert k (FancyVal v') m
+            v' <- FancyVal <$> parseJSON v <|> TextVal <$> readString v
+            return $ M.insert k v' m
           NumberVariable -> do
             v' <- case v of
                     String{} -> parseJSON v
@@ -832,7 +832,11 @@ parseReference rawmap =
           NameVariable -> do
             v' <- parseJSON v
             return $ M.insert k (NamesVal v') m
-          UnknownVariable -> return m -- silently ignore unknown vars
+          UnknownVariable -> do -- treat as string variable if possible
+            case v of
+              String{}  -> (\x -> M.insert k (TextVal x) m) <$> readString v
+              Number{}  -> (\x -> M.insert k (TextVal x) m) <$> readString v
+              _         -> return m -- silently ignore
   readString v =
     case v of
        String{} -> parseJSON v
