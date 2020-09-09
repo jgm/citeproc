@@ -1044,12 +1044,12 @@ getPosition item groupNum mbNoteNum posInGroup = do
       let noteNum = fromMaybe groupNum mbNoteNum
       let prevNoteNum = fromMaybe prevGroupNum mbPrevNoteNum
       return $
-        (if isNote && groupNum - prevGroupNum < nearNoteDistance
+        (if isNote && noteNum - prevNoteNum < nearNoteDistance
             then (NearNote :)
             else id) .
         (if (groupNum == prevGroupNum &&
              posInGroup == prevPosInGroup + 1) ||
-            (noteNum == prevNoteNum + 1 &&
+            (groupNum == prevGroupNum + 1 &&
              posInGroup == 1 &&
              prevAloneInGroup)
              then case (prevLoc, mbloc) of
@@ -1061,7 +1061,6 @@ getPosition item groupNum mbNoteNum posInGroup = do
                       | otherwise -> (IbidWithLocator :) . (Ibid :)
              else id)
         $ [Subsequent]
-  -- TODO
  
 eElement :: CiteprocOutput a => Element a -> Eval a (Output a)
 eElement (Element etype formatting) =
