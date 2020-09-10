@@ -505,7 +505,7 @@ disambiguateCitations style bibSortKeyMap citations = do
                    case minimumMay [z' | z' <- [1..z], getDs z' == ds] of
                       Nothing -> z
                       Just z' -> z'
-             let items = map ddItem ds
+             let items = map ddItem as
              modify $ \st ->
                st{ stateRefMap = ReferenceMap
                      $ foldr (setEtAlNames $ Just etAlMin)
