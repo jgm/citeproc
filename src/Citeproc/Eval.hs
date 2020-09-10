@@ -456,8 +456,8 @@ disambiguateCitations style bibSortKeyMap citations = do
                        ambiguities
               else return ambiguities
     as2 <- case disambiguateAddGivenNames strategy of
-             Just rule -> mapM (tryAddGivenNames rule) [concat as1]
-             Nothing   -> return as1
+             Just ByCite -> mapM tryAddGivenNames as1
+             _           -> return as1
     as3 <- if disambiguateAddYearSuffix strategy
               then do
                 addYearSuffixes bibSortKeyMap' as2
@@ -493,7 +493,7 @@ disambiguateCitations style bibSortKeyMap citations = do
         _ -> map (\name -> name{ nameGiven = Nothing })
 
   tryAddNames mbrule bs = (case mbrule of
-                            Just ByCite -> bs <$ tryAddGivenNames ByCite bs
+                            Just ByCite -> bs <$ tryAddGivenNames bs
                             _ -> return bs) >>= go 1
                           -- if ByCite, we want to make sure that
                           -- tryAddGivenNames is still applied, as
@@ -513,10 +513,9 @@ disambiguateCitations style bibSortKeyMap citations = do
                           (unReferenceMap $ stateRefMap st) as }
                 go (n + 1) (as \\ ds)
 
-  tryAddGivenNames :: GivenNameDisambiguationRule
-                   -> [DisambData]
+  tryAddGivenNames :: [DisambData]
                    -> Eval a [DisambData]
-  tryAddGivenNames ByCite as = do
+  tryAddGivenNames as = do
     let correspondingNames =
            map (zip (map ddItem as)) $ transpose $ map ddNames as
         go [] _ = return []
@@ -525,14 +524,6 @@ disambiguateCitations style bibSortKeyMap citations = do
                           mapM (addNameHint (map snd ns)) ns
           return $ filter (\x -> (ddItem x) `Set.notMember` hintedIds) as'
     foldM go as correspondingNames
-
-  -- these can be no-ops, I think; we've already taken this info
-  -- into account since name disambiguation occurred at the beginning
-  -- for all names, not per citation.
-  tryAddGivenNames PrimaryName as = return as
-  tryAddGivenNames PrimaryNameWithInitials as = return as
-  tryAddGivenNames AllNames as = return as
-  tryAddGivenNames AllNamesWithInitials as = return as
 
   addYearSuffixes bibSortKeyMap' as = do
     let allitems = concat as
