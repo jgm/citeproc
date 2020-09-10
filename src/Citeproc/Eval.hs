@@ -456,7 +456,7 @@ disambiguateCitations style bibSortKeyMap citations = do
                        ambiguities
               else return ambiguities
     as2 <- case disambiguateAddGivenNames strategy of
-             Just rule -> mapM (tryAddGivenNames rule) as1
+             Just rule -> mapM (tryAddGivenNames rule) [concat as1]
              Nothing   -> return as1
     as3 <- if disambiguateAddYearSuffix strategy
               then do
