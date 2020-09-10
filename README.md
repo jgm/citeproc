@@ -39,7 +39,7 @@ integrated citation support and bibliography format conversion
 (so the pandoc-citeproc filter will no longer be necessary).
 
 At this point, the library still fails some of the tests from the
-CSL test suite (124/842).  However, most of the failures are on
+CSL test suite (118/842).  However, most of the failures are on
 minor corner cases.  And because the library already passes
 many more CSL tests than pandoc-citeproc did, it seemed worth
 publishing an early version even before all these bugs are
