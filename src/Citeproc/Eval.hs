@@ -492,33 +492,26 @@ disambiguateCitations style bibSortKeyMap citations = do
         Just ByCite -> map id -- hints will be added later
         _ -> map (\name -> name{ nameGiven = Nothing })
 
-  tryAddNames mbrule as = do
-    let getDs n = filter (isDisambiguated mbrule n as) as
-    case maximumMay (map (length . ddNames) as) of
-      Nothing -> return as
-      Just z  -> do
-        let ds = getDs z
-        if null ds -- increasing et all doesn't help
-           then return as
-           else do -- find the minimum value for etAlMin
-             let etAlMin =
-                   case minimumMay [z' | z' <- [1..z], getDs z' == ds] of
-                      Nothing -> z
-                      Just z' -> z'
-             let items = map ddItem as
-             modify $ \st ->
-               st{ stateRefMap = ReferenceMap
-                     $ foldr (setEtAlNames $ Just etAlMin)
-                       (unReferenceMap $ stateRefMap st) items }
-             case mbrule of
-               -- if ByCite, we want to make sure that
-               -- tryAddGivenNames is still applied, as
-               -- calculation of "add names" assumes we
-               -- have given name disambiguation.
-               Just ByCite -> do
-                 _ <- tryAddGivenNames ByCite as
-                 return $ as \\ ds
-               _ -> return $ as \\ ds
+  tryAddNames mbrule bs = (case mbrule of
+                            Just ByCite -> bs <$ tryAddGivenNames ByCite bs
+                            _ -> return bs) >>= go 1
+                          -- if ByCite, we want to make sure that
+                          -- tryAddGivenNames is still applied, as
+                          -- calculation of "add names" assumes this.
+   where
+     maxnames = fromMaybe 0 . maximumMay . map (length . ddNames)
+     go n as
+       | n > maxnames as = return as
+       | otherwise = do
+           let ds = filter (isDisambiguated mbrule n as) as
+           if null ds
+              then go (n + 1) as
+              else do
+                modify $ \st ->
+                  st{ stateRefMap = ReferenceMap
+                        $ foldr (setEtAlNames (Just n) . ddItem)
+                          (unReferenceMap $ stateRefMap st) as }
+                go (n + 1) (as \\ ds)
 
   tryAddGivenNames :: GivenNameDisambiguationRule
                    -> [DisambData]
