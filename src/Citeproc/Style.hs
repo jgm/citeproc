@@ -109,6 +109,7 @@ pStyle defaultLocale node = do
                  { styleIsNoteStyle =
                      case lookupAttribute "class" attr of
                        Just "note" -> True
+                       Nothing     -> True
                        _           -> False
                  , styleDefaultLocale = defaultLocale
                  , styleDemoteNonDroppingParticle =
