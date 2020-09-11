@@ -723,11 +723,16 @@ groupAndCollapseCitations citeGroupDelim yearSuffixDelim afterCollapseDelim
      (cur, items) = foldl' (goYearSuffix True) ([], []) zs
   collapseYearSuffix _ zs = zs
   getDates x = [d | Tagged (TagDate d) _ <- universe x]
+  getYears x = [map (\e -> case e of
+                             DateParts (y:_) -> Just y
+                             _               -> Nothing) (dateParts d)
+                | d <- getDates x
+                , dateLiteral d == Nothing]
   goYearSuffix useRanges (cur, items) item =
     case cur of
       []     -> ([item], items)
       (z:zs)
-        | getDates z == getDates item
+        | getYears z == getYears item
           -> (z:zs ++ [x | x@(Tagged (TagYearSuffix _) _) <- universe item],
               items)
         | otherwise -> ([item], yearSuffixGroup useRanges (z:zs) : items)
