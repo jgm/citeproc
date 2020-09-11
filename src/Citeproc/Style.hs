@@ -494,6 +494,9 @@ pLayout macroMap node = do
                      _                      -> Nothing
                , layoutYearSuffixDelimiter =
                    lookupAttribute "year-suffix-delimiter" attr <|>
+                     -- technically the spec doesn't say this, but
+                     -- this seems to be what the test suites want?:
+                     lookupAttribute "cite-group-delimiter" attr <|>
                      formatDelimiter formatting
                , layoutAfterCollapseDelimiter =
                    lookupAttribute "after-collapse-delimiter" attr <|>
