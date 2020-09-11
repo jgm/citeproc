@@ -1294,7 +1294,9 @@ splitNums = map go . T.groupBy sameClass
  where
   go t = case readAsInt t of
            Just i  -> NumVal i
-           Nothing -> TextVal t
+           Nothing -> TextVal $ if t == "-"
+                                   then T.singleton enDash
+                                   else t
   sameClass c d = (isSepPunct c || isSpace c) ==
                   (isSepPunct d || isSpace d)
 
