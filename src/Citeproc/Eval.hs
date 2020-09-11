@@ -887,6 +887,10 @@ evalLayout isBibliography layout (citationGroupNumber, citation) = do
                     (c:_) | citationItemType c == AuthorOnly -> [0..]
                     _ -> [1..]
   items <- mapM evalItem (zip positions (citationItems citation))
+
+  styleOpts <- asks contextStyleOptions
+  let isNote = styleIsNoteStyle styleOpts
+
   -- see display_SecondFieldAlignMigratePunctuation.txt
   let moveSuffixInsideDisplay zs =
         case (lastMay zs, formatSuffix formatting) of
@@ -902,10 +906,13 @@ evalLayout isBibliography layout (citationGroupNumber, citation) = do
             | otherwise -> (\ys' -> initSafe zs ++ [Formatted f ys']) <$>
                              moveSuffixInsideDisplay ys
           _ -> Nothing
+  let items' = if isNote
+                  then capitalizeInitialTerm items
+                  else items
   return $
-    case moveSuffixInsideDisplay items of
-      Nothing     -> formatted formatting items
-      Just items' -> formatted formatting{ formatSuffix = Nothing } items'
+    case moveSuffixInsideDisplay items' of
+      Nothing      -> formatted formatting items'
+      Just items'' -> formatted formatting{ formatSuffix = Nothing } items''
  where
   formatting = layoutFormatting layout
 
@@ -991,7 +998,6 @@ evalLayout isBibliography layout (citationGroupNumber, citation) = do
                     , ". " `T.isSuffixOf` (toText t)
                     , T.count " " (toText t) > 1 -- exclude single word
                                  -> capitalizeInitialTerm
-             Nothing | isNote    -> capitalizeInitialTerm
              _                   -> id)
         . (if isBibliography
               then
@@ -1013,14 +1019,15 @@ removeNames (Tagged TagNames{} _) = NullOutput
 removeNames x = x
 
 capitalizeInitialTerm :: [Output a] -> [Output a]
-capitalizeInitialTerm = go
+capitalizeInitialTerm [] = []
+capitalizeInitialTerm (z:zs) = go z : zs
  where
-  go (Tagged TagTerm x : zs) =
+  go (Tagged TagTerm x) =
     Tagged TagTerm
-      (formatted mempty{ formatTextCase = Just CapitalizeFirst } [x]) : zs
-  go (Formatted f xs : zs) =
-    Formatted f (go xs) : zs
-  go xs = xs
+      (formatted mempty{ formatTextCase = Just CapitalizeFirst } [x])
+  go (Formatted f xs) = Formatted f (capitalizeInitialTerm xs)
+  go (Tagged tg x) = Tagged tg (go x)
+  go x = x
 
 getPosition :: CitationItem a -> Int -> Maybe Int -> Int -> Eval a [Position]
 getPosition item groupNum mbNoteNum posInGroup = do
