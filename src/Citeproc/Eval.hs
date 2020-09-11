@@ -63,8 +63,10 @@ data VarCount =
 data EvalState a =
   EvalState
   { stateVarCount       :: VarCount
-  , stateLastCitedMap   :: M.Map ItemId (Int, Maybe Int, Int, Bool, Maybe Text)
-                        -- (citegroup, noteNum, posInGroup, aloneInCitation, locator)
+  , stateLastCitedMap   :: M.Map ItemId (Int, Maybe Int, Int,
+                                          Bool, Maybe Text, Maybe Text)
+                        -- (citegroup, noteNum, posInGroup,
+                        --      aloneInCitation, label, locator)
   , stateRefMap         :: ReferenceMap a
   , stateReference      :: Reference a
   , stateUsedYearSuffix :: Bool
@@ -962,6 +964,7 @@ evalLayout isBibliography layout (citationGroupNumber, citation) = do
                           && citationItemType x == AuthorOnly
                           && citationItemType y == SuppressAuthor
                   _     -> False),
+               citationItemLabel item,
                citationItemLocator item)
             lastCitedMap }
 
@@ -1020,11 +1023,10 @@ getPosition item groupNum mbNoteNum posInGroup = do
   case M.lookup (citationItemId item) lastCitedMap of
     Nothing -> return [FirstPosition]
     Just (prevGroupNum, mbPrevNoteNum,
-           prevPosInGroup, prevAloneInGroup, prevLoc) -> do
+           prevPosInGroup, prevAloneInGroup, prevLabel, prevLoc) -> do
       isNote <- asks (styleIsNoteStyle . contextStyleOptions)
       nearNoteDistance <- fromMaybe 5 <$>
                            asks (styleNearNoteDistance . contextStyleOptions)
-      let mbloc = citationItemLocator item
       let noteNum = fromMaybe groupNum mbNoteNum
       let prevNoteNum = fromMaybe prevGroupNum mbPrevNoteNum
       return $
@@ -1037,12 +1039,13 @@ getPosition item groupNum mbNoteNum posInGroup = do
               (((-) <$> mbNoteNum <*> mbPrevNoteNum) <= Just 1) &&
              posInGroup == 1 &&
              prevAloneInGroup)
-             then case (prevLoc, mbloc) of
+             then case (prevLoc, citationItemLocator item) of
                     (Nothing, Just _)  -> (IbidWithLocator :) . (Ibid :)
                     (Nothing, Nothing) -> (Ibid :)
                     (Just _, Nothing)   -> id
                     (Just l1, Just l2)
-                      | l1 == l2 -> (Ibid :)
+                      | l1 == l2
+                      , citationItemLabel item == prevLabel -> (Ibid :)
                       | otherwise -> (IbidWithLocator :) . (Ibid :)
              else id)
         $ [Subsequent]
