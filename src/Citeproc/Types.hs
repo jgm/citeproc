@@ -654,6 +654,7 @@ data Style a =
   , styleCitation      :: Layout a
   , styleBibliography  :: Maybe (Layout a)
   , styleLocales       :: [Locale]
+  , styleAbbreviations :: Maybe Abbreviations
   } deriving (Show, Eq)
 -- Note: no macros section, because we
 -- expand these after parsing the CSL.
@@ -1469,6 +1470,7 @@ readAsInt t =
 
 newtype Abbreviations =
   Abbreviations (M.Map Text (M.Map Text Text))
+  deriving (Show, Eq, Ord)
 
 instance FromJSON Abbreviations where
   parseJSON (Object v)   =

@@ -175,6 +175,7 @@ pStyle defaultLocale node = do
              , styleCitation       = citations
              , styleBibliography   = bibliography
              , styleLocales        = locales
+             , styleAbbreviations  = Nothing
              }
 
 
