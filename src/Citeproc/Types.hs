@@ -97,6 +97,8 @@ module Citeproc.Types
   , readAsInt
   , variableType
   , VariableType(..)
+  , Abbreviations
+  , lookupAbbreviation
   )
 where
 import qualified Data.Map as M
@@ -1209,7 +1211,6 @@ data Date =
   , dateLiteral   :: Maybe Text
   } deriving (Show, Eq, Ord)
 
--- TODO
 instance ToJSON Date where
   toJSON d =
     object $
@@ -1465,4 +1466,21 @@ readAsInt t =
   case TR.decimal t of
       Right (x,t') | T.null t' -> Just x
       _                        -> Nothing
+
+newtype Abbreviations =
+  Abbreviations (M.Map Text (M.Map Text Text))
+
+instance FromJSON Abbreviations where
+  parseJSON (Object v)   =
+    Abbreviations <$>
+      (parseJSON (Object v) >>= maybe
+         (fail "abbreviations lacks a default key")
+         return . M.lookup ("default" :: Text))
+  parseJSON _            = fail "Could not read abbreviations"
+
+lookupAbbreviation :: Abbreviations -> Text -> Text -> Maybe Text
+lookupAbbreviation (Abbreviations abbrevmap) var val =
+  M.lookup (if variableType var == NumberVariable
+               then "number"
+               else val) abbrevmap >>= M.lookup val
 
