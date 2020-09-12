@@ -16,7 +16,7 @@ import Citeproc.Locale
 import Data.Semigroup
 import Control.Monad.Trans.RWS.CPS
 import Data.Containers.ListUtils (nubOrdOn, nubOrd)
-import Safe (headMay, lastMay, initSafe, maximumMay, minimumMay)
+import Safe (headMay, lastMay, initSafe, maximumMay)
 import Data.Maybe
 import Control.Monad (foldM, zipWithM, when, unless)
 import qualified Data.Map as M
@@ -41,6 +41,7 @@ ppTrace x = trace (ppShow x) x
 data Context a =
   Context
   { contextLocale              :: Locale
+  , contextAbbreviations       :: Maybe Abbreviations
   , contextStyleOptions        :: StyleOptions
   , contextLocator             :: Maybe Text
   , contextLabel               :: Maybe Text
@@ -94,6 +95,7 @@ evalStyle style mblang refs citations =
   ((citationOs, bibliographyOs), warnings) = evalRWS go
      Context
       { contextLocale              = mergeLocales mblang style
+      , contextAbbreviations       = styleAbbreviations style
       , contextStyleOptions        = styleOptions style
       , contextLocator             = Nothing
       , contextLabel               = Nothing
@@ -2226,10 +2228,15 @@ askVariable "page-first" = do
     _                 -> return Nothing
 askVariable v = do
   ref <- gets stateReference
+  mbAbbrevs <- asks contextAbbreviations
   case lookupVariable v ref of
     Just x -> do
       updateVarCount 1 1
-      return $ Just x
+      let x' = case mbAbbrevs of
+                 Nothing -> x
+                 Just abbrevs ->
+                   fromMaybe x $ lookupAbbreviation v x abbrevs
+      return $ Just x'
     Nothing -> do
       updateVarCount 1 0
       return Nothing

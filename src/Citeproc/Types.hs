@@ -1480,9 +1480,17 @@ instance FromJSON Abbreviations where
          return . M.lookup ("default" :: Text))
   parseJSON _            = fail "Could not read abbreviations"
 
-lookupAbbreviation :: Abbreviations -> Text -> Text -> Maybe Text
-lookupAbbreviation (Abbreviations abbrevmap) var val =
-  M.lookup (if variableType var == NumberVariable
-               then "number"
-               else val) abbrevmap >>= M.lookup val
+lookupAbbreviation :: CiteprocOutput a
+                   => Text -> Val a -> Abbreviations -> Maybe (Val a)
+lookupAbbreviation var val (Abbreviations abbrevmap) = do
+  abbrvs <- M.lookup (if variableType var == NumberVariable
+                         then "number"
+                         else var) abbrevmap
+  case val of
+    TextVal t  -> maybe mzero (return . TextVal) $ M.lookup t abbrvs
+    FancyVal x -> return $ FancyVal
+                         $ mapText (\t -> fromMaybe t $ M.lookup t abbrvs) x
+    NumVal n   -> maybe mzero (return . TextVal)
+                         $ M.lookup (T.pack (show n)) abbrvs
+    _          -> mzero
 
