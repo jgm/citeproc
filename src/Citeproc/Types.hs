@@ -1488,8 +1488,7 @@ lookupAbbreviation var val (Abbreviations abbrevmap) = do
                          else var) abbrevmap
   case val of
     TextVal t  -> maybe mzero (return . TextVal) $ M.lookup t abbrvs
-    FancyVal x -> return $ FancyVal
-                         $ mapText (\t -> fromMaybe t $ M.lookup t abbrvs) x
+    FancyVal x -> maybe mzero (return . TextVal) $ M.lookup (toText x) abbrvs
     NumVal n   -> maybe mzero (return . TextVal)
                          $ M.lookup (T.pack (show n)) abbrvs
     _          -> mzero

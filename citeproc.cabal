@@ -19,6 +19,7 @@ extra-source-files:  locales/*.xml
                      locales/locales.json
                      test/NOTES.md
                      test/csl/*.txt
+                     test/extra/*.txt
                      test/overrides/*.txt
 
 tested-with:         GHC == 8.8.3

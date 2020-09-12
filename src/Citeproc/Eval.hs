@@ -1265,9 +1265,15 @@ eText (TextVariable varForm v) = do
             return NullOutput
     _ -> do
         mbv <- if varForm == ShortForm
-                  then (<|>)
-                    <$> askVariable (v <> "-short")
-                    <*> askVariable v
+                  then do
+                    mbval <- (<|>) <$> askVariable (v <> "-short")
+                                   <*> askVariable v
+                    case mbval of
+                      Nothing -> return Nothing
+                      Just val -> do
+                        mbAbbrevs <- asks contextAbbreviations
+                        return $ Just $ fromMaybe val
+                               $ mbAbbrevs >>= lookupAbbreviation v val
                   else askVariable v
         res <- case mbv of
                  Just (TextVal x)
@@ -2228,15 +2234,10 @@ askVariable "page-first" = do
     _                 -> return Nothing
 askVariable v = do
   ref <- gets stateReference
-  mbAbbrevs <- asks contextAbbreviations
   case lookupVariable v ref of
     Just x -> do
       updateVarCount 1 1
-      let x' = case mbAbbrevs of
-                 Nothing -> x
-                 Just abbrevs ->
-                   fromMaybe x $ lookupAbbreviation v x abbrevs
-      return $ Just x'
+      return $ Just x
     Nothing -> do
       updateVarCount 1 0
       return Nothing

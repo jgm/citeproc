@@ -12,14 +12,13 @@ import Control.Monad.IO.Class (liftIO)
 import System.Environment (getArgs)
 import System.Exit
 import System.Directory (getDirectoryContents, doesFileExist)
-import Data.Ord (comparing)
 import Data.Char (isDigit)
 import Data.Text (Text)
 import qualified Data.Set as Set
 import qualified Text.PrettyPrint as Pretty
 import qualified Data.Text as T
 import qualified Data.Text.IO as TIO
-import Data.List (foldl', isInfixOf, intersperse, sortBy, sort)
+import Data.List (foldl', isInfixOf, intersperse, sortOn, sort)
 import Data.Char (isLetter, toLower)
 import Data.ByteString (ByteString)
 import qualified Data.ByteString.Char8 as B
@@ -43,6 +42,7 @@ data CiteprocTest a =
   , bibsection    :: Maybe A.Value
   , citeItems     :: Maybe [Citation a]
   , citations     :: Maybe [Citation a]
+  , abbreviations :: Maybe Abbreviations
   , skipReason    :: Maybe Text
   } deriving (Show)
 
@@ -88,7 +88,8 @@ runTest test = do
         Nothing -> doError $ CiteprocParseError
                       "Could not fetch independent parent"
         Just (Left err) -> doError err
-        Just (Right style) -> do
+        Just (Right style') -> do
+            let style = style'{ styleAbbreviations = abbreviations test }
             let loc = mergeLocales Nothing style
             let actual = citeproc defaultCiteprocOptions
                            style Nothing (input test) cites
@@ -213,6 +214,8 @@ loadTestCase fp = do
                     lookup "citations" sections
        -- need appropriate fromjson instance:
        -- fromJSON "CITATION" <$> lookup "citation-items" sections
+    , abbreviations = fromJSON "ABBREVIATIONS" <$>
+                     lookup "abbreviations" sections
     , skipReason = reason
     }
 
@@ -234,6 +237,9 @@ testDir = "test" </> "csl"
 overrideDir :: FilePath
 overrideDir = "test" </> "overrides"
 
+extraDir :: FilePath
+extraDir = "test" </> "extra"
+
 main :: IO ()
 main = do
   args <- getArgs
@@ -253,10 +259,15 @@ main = do
 
   testFiles <- if any ('/' `elem`) args
                   then return args
-                  else map addDir . filter matchesPattern
-                       <$> getDirectoryContents testDir
+                  else do
+                    cslTests <- map addDir . filter matchesPattern
+                                 <$> getDirectoryContents testDir
+                    extraTests <- map (extraDir </>) . filter matchesPattern
+                                 <$> getDirectoryContents extraDir
+                    return $ cslTests ++ extraTests
 
-  testCases <- sortBy (comparing name) <$> mapM loadTestCase testFiles
+
+  testCases <- sortOn name <$> mapM loadTestCase testFiles
   (_,counts) <- timeIt $
                  runStateT (mapM_ runTest testCases)
                            Counts{ failed   = []
@@ -316,10 +327,9 @@ showDiff expected actual = do
   --            (\c -> if isAscii c
   --                      then T.singleton c
   --                      else T.pack (printf "[U+%04X]" (ord c))) . T.unpack
-  let diff = getContextDiff 1 (T.lines expected) (T.lines actual)
   putStrLn $ Pretty.render $ prettyContextDiff
     (Pretty.text "expected")
     (Pretty.text "actual")
     (Pretty.text . T.unpack)
-    diff
+    $ getContextDiff 1 (T.lines expected) (T.lines actual)
 
