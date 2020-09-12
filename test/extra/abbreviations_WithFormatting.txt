@@ -1,0 +1,54 @@
+>>===== MODE =====>>
+citation
+<<===== MODE =====<<
+
+Here it's expected that the formatting will be lost.
+
+>>===== RESULT =====>>
+JoClSt
+<<===== RESULT =====<<
+
+
+>>===== CSL =====>>
+<style 
+      xmlns="http://purl.org/net/xbiblio/csl"
+      class="note"
+      version="1.0">
+  <info>
+    <id />
+    <title />
+    <updated>2009-08-10T04:49:00+09:00</updated>
+  </info>
+  <citation>
+    <layout>
+      <text variable="title" form="short"/>
+    </layout>
+  </citation>
+</style>
+<<===== CSL =====<<
+
+
+>>===== INPUT =====>>
+[
+    {
+        "id": "ITEM-1",
+        "title": "<i>Journal of Classical Studies</i>",
+        "type": "book"
+    }
+]
+<<===== INPUT =====<<
+
+>>===== ABBREVIATIONS =====>>
+{ "default": {
+    "title": {
+            "Journal of Classical Studies": "JoClSt"
+    }
+  }
+}
+<<===== ABBREVIATIONS =====<<
+
+>>===== VERSION =====>>
+1.0
+<<===== VERSION =====<<
+
+
