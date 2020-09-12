@@ -87,6 +87,9 @@ module Citeproc.Types
   , makeReferenceMap
   , lookupReference
   , Val(..)
+  , Variable
+  , toVariable
+  , fromVariable
   , lookupVariable
   , Output(..)
   , Tag(..)
@@ -104,6 +107,7 @@ where
 import qualified Data.Map as M
 import qualified Data.Text.Read as TR
 import qualified Data.Scientific as S
+import qualified Data.CaseInsensitive as CI
 import Data.Semigroup
 import Control.Monad (foldM, guard, mzero)
 import Control.Applicative ((<|>))
@@ -113,14 +117,16 @@ import qualified Data.Text as T
 import Data.List (elemIndex)
 import Data.Maybe
 import qualified Data.Vector as V
-import Data.Aeson (FromJSON (..), ToJSON (..),
+import Data.Aeson (FromJSON (..), ToJSON (..), ToJSONKey (..),
+                   FromJSONKey (..), FromJSONKeyFunction (..),
                    withArray, withObject, object, Value(..),
                    (.:), (.:?), (.!=))
-import Data.Aeson.Types (typeMismatch, Parser)
+import Data.Aeson.Types (typeMismatch, Parser, toJSONKeyText)
 import Data.Coerce
 import Data.Generics.Uniplate.Direct
 import qualified Data.Attoparsec.Text as P
 import Safe (readMay)
+import Data.String (IsString)
 
 import Debug.Trace
 import Text.Show.Pretty (ppShow)
@@ -275,11 +281,11 @@ data Match =
   deriving (Show, Eq)
 
 data Condition =
-    HasVariable Text
+    HasVariable Variable
   | HasType Text
-  | IsUncertainDate Text
-  | IsNumeric Text
-  | HasLocatorType Text
+  | IsUncertainDate Variable
+  | IsNumeric Variable
+  | HasLocatorType Variable
   | HasPosition Position
   | WouldDisambiguate
   deriving (Show, Eq)
@@ -333,7 +339,7 @@ data VariableForm =
   deriving (Show, Eq)
 
 data TextType =
-    TextVariable VariableForm Text
+    TextVariable VariableForm Variable
   | TextMacro Text
   | TextTerm Term
   | TextValue Text
@@ -421,10 +427,10 @@ data NameAsSortOrder =
 
 data ElementType a =
     EText TextType
-  | EDate Text DateType (Maybe ShowDateParts) [DP]
-  | ENumber Text NumberForm
-  | ENames [Text] NamesFormat [Element a] -- last part is substitutes if any
-  | ELabel Text TermForm Pluralize
+  | EDate Variable DateType (Maybe ShowDateParts) [DP]
+  | ENumber Variable NumberForm
+  | ENames [Variable] NamesFormat [Element a] -- last part is substitutes if any
+  | ELabel Variable TermForm Pluralize
   | EGroup [Element a]
   | EChoose [(Match, [Condition], [Element a])]
     -- 'else' can be represented by a final trivial match condition
@@ -520,7 +526,7 @@ data SortDirection =
   deriving (Show, Eq)
 
 data SortKey a =
-     SortKeyVariable SortDirection Text
+     SortKeyVariable SortDirection Variable
    | SortKeyMacro SortDirection [Element a]
   deriving (Show, Eq)
 
@@ -743,11 +749,39 @@ instance Monoid Locale where
  mempty = Locale Nothing Nothing Nothing mempty mempty
  mappend = (<>)
 
+newtype Variable = Variable (CI.CI Text)
+  deriving (Show, Ord, Eq, IsString)
+
+toVariable :: Text -> Variable
+toVariable = Variable . CI.mk
+
+fromVariable :: Variable -> Text
+fromVariable (Variable x) = CI.original x
+
+instance Semigroup Variable where
+  Variable x <> Variable y = Variable (x <> y)
+
+instance Monoid Variable where
+  mappend = (<>)
+  mempty = Variable mempty
+
+instance FromJSON Variable where
+  parseJSON = fmap (Variable . CI.mk) . parseJSON
+
+instance FromJSONKey Variable where
+  fromJSONKey = FromJSONKeyText toVariable
+
+instance ToJSON Variable where
+  toJSON (Variable v) = toJSON $ CI.original v
+
+instance ToJSONKey Variable where
+  toJSONKey = toJSONKeyText fromVariable
+
 data Reference a =
   Reference{ referenceId             :: ItemId
            , referenceType           :: Text
            , referenceDisambiguation :: Maybe DisambiguationData
-           , referenceVariables      :: M.Map Text (Val a)
+           , referenceVariables      :: M.Map Variable (Val a)
            } deriving (Show, Functor, Foldable, Traversable)
 
 instance ToJSON a => ToJSON (Reference a) where
@@ -774,7 +808,7 @@ data NameHints =
 instance (Eq a, FromJSON a)  => FromJSON (Reference a) where
   parseJSON v = parseJSON v >>= parseReference
 
-lookupVariable :: CiteprocOutput a => Text -> Reference a -> Maybe (Val a)
+lookupVariable :: CiteprocOutput a => Variable -> Reference a -> Maybe (Val a)
 lookupVariable "id" r =
   case referenceId r of
     ItemId "" -> Nothing
@@ -797,7 +831,7 @@ lookupVariable "page-first" r =  -- compute "page-first" if not set
 lookupVariable v r = M.lookup v $ referenceVariables r
 
 parseReference :: FromJSON a
-               => M.Map Text Value -> Parser (Reference a)
+               => M.Map Variable Value -> Parser (Reference a)
 parseReference rawmap =
   foldM go (Reference mempty mempty Nothing mempty) (M.toList rawmap)
  where
@@ -848,7 +882,7 @@ parseReference rawmap =
        _        -> typeMismatch "String or Number" v
 
 -- name variables are cumulative and should be packed into an array
-consolidateNameVariables :: [(Text, Text)] -> [(Text, Value)]
+consolidateNameVariables :: [(Variable, Text)] -> [(Variable, Value)]
 consolidateNameVariables [] = []
 consolidateNameVariables ((k,v):kvs)
   = case variableType k of
@@ -859,7 +893,7 @@ consolidateNameVariables ((k,v):kvs)
       _ -> (k, String v) : consolidateNameVariables kvs
 
 parseNote :: Text
-          -> ([(Text, Text)], Text)
+          -> ([(Variable, Text)], Text)
 parseNote t =
   either (const ([],t)) id $
     P.parseOnly ((,) <$> P.many' pNoteField <*> P.takeText) t
@@ -870,14 +904,14 @@ parseNote t =
     _ <- P.char ':'
     val <- P.takeWhile (/='\n')
     () <$ P.char '\n' <|> P.endOfInput
-    return (name, T.strip val)
+    return (Variable $ CI.mk name, T.strip val)
   pBracedField = do
     _ <- P.string "{:"
     name <- pVarname
     _ <- P.char ':'
     val <- P.takeWhile (/='}')
     _ <- P.char '}'
-    return (name, T.strip val)
+    return (Variable $ CI.mk name, T.strip val)
   pVarname = P.takeWhile1 (\c -> isLetter c || c == '-')
 
 data VariableType =
@@ -888,7 +922,7 @@ data VariableType =
   | UnknownVariable
   deriving (Show, Eq)
 
-variableType :: Text -> VariableType
+variableType :: Variable -> VariableType
 variableType "accessed" = DateVariable
 variableType "available-date" = DateVariable
 variableType "container" = DateVariable
@@ -1384,7 +1418,7 @@ data Tag =
     | TagCitationNumber Int
     | TagItem CitationItemType ItemId
     | TagName Name
-    | TagNames Text NamesFormat [Name]
+    | TagNames Variable NamesFormat [Name]
     | TagDate Date
     | TagYearSuffix Int
   deriving (Show, Eq)
@@ -1469,7 +1503,7 @@ readAsInt t =
       _                        -> Nothing
 
 newtype Abbreviations =
-  Abbreviations (M.Map Text (M.Map Text Text))
+  Abbreviations (M.Map Variable (M.Map Text Text))
   deriving (Show, Eq, Ord)
 
 instance FromJSON Abbreviations where
@@ -1481,7 +1515,7 @@ instance FromJSON Abbreviations where
   parseJSON _            = fail "Could not read abbreviations"
 
 lookupAbbreviation :: CiteprocOutput a
-                   => Text -> Val a -> Abbreviations -> Maybe (Val a)
+                   => Variable -> Val a -> Abbreviations -> Maybe (Val a)
 lookupAbbreviation var val (Abbreviations abbrevmap) = do
   abbrvs <- M.lookup (if variableType var == NumberVariable
                          then "number"

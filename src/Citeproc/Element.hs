@@ -194,7 +194,7 @@ pDate node = do
   let attr = getAttributes node
   let formatting = getFormatting attr
   let form = lookupAttribute "form" attr
-  let var = fromMaybe mempty $ lookupAttribute "variable" attr
+  let var = toVariable $ fromMaybe mempty $ lookupAttribute "variable" attr
   let showDateParts = case lookupAttribute "date-parts" attr of
                         Just "year-month-day" -> Just YearMonthDay
                         Just "year-month"     -> Just YearMonth

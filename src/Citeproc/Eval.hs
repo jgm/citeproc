@@ -1332,7 +1332,11 @@ isSepPunct '\x2013' = True
 isSepPunct _   = False
 
 eLabel :: CiteprocOutput a
-       => Text -> TermForm -> Pluralize -> Formatting -> Eval a (Output a)
+       => Variable
+       -> TermForm
+       -> Pluralize
+       -> Formatting
+       -> Eval a (Output a)
 eLabel var termform pluralize formatting = do
   ref <- gets stateReference
   let getTerm :: CiteprocOutput a
@@ -1374,7 +1378,7 @@ eLabel var termform pluralize formatting = do
                getTerm "page" (TextVal loc)
              _ -> case lookupVariable var' ref of
                          Nothing -> return NullOutput
-                         Just x  -> getTerm var x
+                         Just x  -> getTerm (fromVariable var) x
 
   return $
     case formatSuffix formatting of
@@ -1394,14 +1398,14 @@ eLabel var termform pluralize formatting = do
       _ -> formatted formatting [term']
 
 eDate :: CiteprocOutput a
-       => Text
+       => Variable
        -> DateType
        -> Maybe ShowDateParts
        -> [DP]
        -> Formatting
        -> Eval a (Output a)
 eDate var dateType mbShowDateParts dps formatting
-  | T.null var = do
+  | var == mempty = do
     warn "skipping date element with no variable attribute set"
     return NullOutput
   | otherwise = do
@@ -1454,7 +1458,8 @@ eDate var dateType mbShowDateParts dps formatting
             return $ Tagged (TagDate date) $ formatted formatting'
                       (xs ++ maybeToList yearSuffix)
       Just _ -> do
-        warn $ "date element for variable with non-date value " <> var
+        warn $ "date element for variable with non-date value " <>
+                fromVariable var
         return NullOutput
 
 
@@ -1579,7 +1584,7 @@ bindDateParts date =
         _                   -> (Nothing,Nothing,Nothing)
 
 eNames :: CiteprocOutput a
-        => [Text]
+        => [Variable]
         -> NamesFormat
         -> [Element a]
         -> Formatting
@@ -1684,7 +1689,7 @@ formatNames :: CiteprocOutput a
             => NamesFormat
             -> NameFormat
             -> Formatting
-            -> (Text, Maybe (Val a))
+            -> (Variable, Maybe (Val a))
             -> Eval a (Output a)
 formatNames namesFormat nameFormat formatting (var, Just (NamesVal names)) =
   do
@@ -1812,7 +1817,7 @@ formatNames namesFormat nameFormat formatting (var, Just (NamesVal names)) =
               else names'' ++ label
 
 formatNames _ _ _ (var, Just _) = do
-  warn $ "ignoring non-name value for variable " <> var
+  warn $ "ignoring non-name value for variable " <> fromVariable var
   return NullOutput
 formatNames _ _ _ (_, Nothing) = return NullOutput
 
@@ -2128,7 +2133,7 @@ eChoose ((match, conditions, els):rest) = do
                             _                 -> False
            HasLocatorType t -> case label of
                                  Just "sub verbo" -> t == "sub-verbo"
-                                 Just x -> x == t
+                                 Just x -> toVariable x == t
                                  Nothing -> t == "page"
            HasPosition pos -> pos `elem` positions
            WouldDisambiguate -> disambiguate
@@ -2141,7 +2146,7 @@ eChoose ((match, conditions, els):rest) = do
      else eChoose rest
 
 
-eNumber :: CiteprocOutput a => Text -> NumberForm -> Eval a (Output a)
+eNumber :: CiteprocOutput a => Variable -> NumberForm -> Eval a (Output a)
 eNumber var nform = do
   mbv <- askVariable var
   let nparts = case mbv of
@@ -2222,7 +2227,7 @@ toRomanNumeral x
   | otherwise = T.pack (show x)
 
 -- Gets variable while updating var count.
-askVariable :: CiteprocOutput a => Text -> Eval a (Maybe (Val a))
+askVariable :: CiteprocOutput a => Variable -> Eval a (Maybe (Val a))
 askVariable "page-first" = do
   res <- askVariable "page"
   case res of

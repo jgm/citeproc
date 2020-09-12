@@ -233,7 +233,7 @@ parseIf node = do
              xs (splitVars t)
            _       -> id) .
         (case lookupAttribute "type" attr of
-           Just t  -> \xs -> foldr ((:) . HasType) xs (splitVars t)
+           Just t  -> \xs -> foldr ((:) . HasType) xs (T.words $ T.strip t)
            _       -> id) .
         (case lookupAttribute "variable" attr of
            Just t  -> \xs -> foldr ((:) . HasVariable) xs (splitVars t)
@@ -253,13 +253,14 @@ pNumber node = do
                   _                   -> NumberNumeric
   case variable of
     Nothing  -> parseFailure "number element without required variable attribute"
-    Just var -> return $ Element (ENumber var numform) formatting
+    Just var -> return $ Element (ENumber (toVariable var) numform)
+                         formatting
 
 pLabel :: X.Element -> ElementParser (Element a)
 pLabel node = do
   let attr = getAttributes node
   let formatting = getFormatting attr
-  let variable = fromMaybe "" $ lookupAttribute "variable" attr
+  let variable = toVariable $ fromMaybe "" $ lookupAttribute "variable" attr
   let labelform = case lookupAttribute "form" attr of
                     Just "short"      -> Short
                     Just "verb"       -> Verb
@@ -410,7 +411,7 @@ pText node = do
                      Just "false"  -> Just Singular
                      _             -> Nothing
   elt <- case lookupAttribute "variable" attr of
-           Just var -> return $ EText (TextVariable varform var)
+           Just var -> return $ EText (TextVariable varform (toVariable var))
            Nothing ->
              case lookupAttribute "macro" attr of
                Just _ -> do
@@ -524,7 +525,8 @@ pSortKey node = do
         Just _ -> -- should already be expanded
           SortKeyMacro direction <$> mapM pElement (allChildren node)
         Nothing   -> return $ SortKeyVariable direction
-                       (fromMaybe mempty $ lookupAttribute "variable" attr)
+                       (toVariable $ fromMaybe mempty $
+                         lookupAttribute "variable" attr)
 
 attname :: Text -> X.Name
 attname t = X.Name t Nothing Nothing
@@ -555,5 +557,5 @@ expandMacros macroMap el =
   expandNode (X.NodeElement el') = X.NodeElement <$> expandMacros macroMap el'
   expandNode x                   = return x
 
-splitVars :: Text -> [Text]
-splitVars = T.words . T.strip
+splitVars :: Text -> [Variable]
+splitVars = map toVariable . T.words . T.strip
