@@ -48,6 +48,7 @@ data CslJson a =
    | CslConcat (CslJson a) (CslJson a)
    | CslQuoted (CslJson a)
    | CslItalic (CslJson a)
+   | CslNormal (CslJson a)
    | CslBold   (CslJson a)
    | CslUnderline (CslJson a)
    | CslNoDecoration (CslJson a)
@@ -81,6 +82,7 @@ instance Uniplate (CslJson a) where
   uniplate (CslConcat x y)     = plate CslConcat |* x |* y
   uniplate (CslQuoted x)       = plate CslQuoted |* x
   uniplate (CslItalic x)       = plate CslItalic |* x
+  uniplate (CslNormal x)       = plate CslNormal |* x
   uniplate (CslBold x)         = plate CslBold |* x
   uniplate (CslUnderline x)    = plate CslUnderline |* x
   uniplate (CslNoDecoration x) = plate CslNoDecoration |* x
@@ -106,7 +108,7 @@ instance CiteprocOutput (CslJson Text) where
       SmallCapsVariant -> CslSmallCaps
   addFontStyle x        =
     case x of
-      NormalFont       -> id
+      NormalFont       -> CslNormal
       ItalicFont       -> CslItalic
       ObliqueFont      -> CslItalic
   addFontWeight x       =
@@ -163,6 +165,7 @@ dropTextWhileEnd' f el =
      CslConcat x y -> CslConcat x (dropTextWhileEnd' f y)
      CslQuoted x -> CslQuoted (dropTextWhileEnd' f x)
      CslItalic x -> CslItalic (dropTextWhileEnd' f x)
+     CslNormal x -> CslNormal (dropTextWhileEnd' f x)
      CslBold x -> CslBold (dropTextWhileEnd' f x)
      CslUnderline x -> CslUnderline (dropTextWhileEnd' f x)
      CslNoDecoration x -> CslNoDecoration (dropTextWhileEnd' f x)
@@ -315,6 +318,10 @@ renderCslJson locale csljson =
           -> fst innerQuotes <>
              go ctx{ useOuterQuotes = True } x <>
              snd innerQuotes
+      CslNormal x
+        | useItalics ctx -> go ctx x
+        | otherwise      -> "<span style=\"font-style:normal;\">" <>
+                              go ctx x <> "</span>"
       CslItalic x
         | useItalics ctx -> "<i>" <> go ctx{ useItalics = False } x <> "</i>"
         | otherwise -> "<span style=\"font-style:normal;\">" <>
@@ -363,6 +370,7 @@ caseTransform' f lev el =
        return $ CslConcat x' y'
      CslQuoted x       -> CslQuoted <$> caseTransform' f (lev + 1) x
      CslItalic x       -> CslItalic <$> caseTransform' f (lev + 1) x
+     CslNormal x       -> CslNormal <$> caseTransform' f (lev + 1) x
      CslBold   x       -> CslBold   <$> caseTransform' f (lev + 1) x
      CslUnderline x    -> CslUnderline <$> caseTransform' f (lev + 1) x
      CslNoDecoration x -> CslNoDecoration <$> caseTransform' f (lev + 1) x
@@ -437,6 +445,7 @@ punctuationInsideQuotes = go
       CslConcat x y               -> go x <> go y
       CslQuoted x                 -> CslQuoted (go x)
       CslItalic x                 -> CslItalic (go x)
+      CslNormal x                 -> CslNormal (go x)
       CslBold x                   -> CslBold (go x)
       CslUnderline x              -> CslUnderline (go x)
       CslNoDecoration x           -> CslNoDecoration (go x)
