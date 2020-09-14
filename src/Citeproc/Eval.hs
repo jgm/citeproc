@@ -1180,7 +1180,7 @@ formatPageRange mbPageRangeFormat delim t =
           | Just fmt <- mbPageRangeFormat -> do
             let wPrefix = T.dropWhileEnd isDigit w
             let vPrefix = T.dropWhileEnd isDigit v
-            if wPrefix == vPrefix || T.null vPrefix
+            if wPrefix == vPrefix
                then do
                  let pref = wPrefix
                  let x = T.drop (T.length wPrefix) w
