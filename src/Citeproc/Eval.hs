@@ -284,7 +284,7 @@ subsequentAuthorSubstitutes (SubsequentAuthorSubstitute t rule) =
   groupCitesByNames [] = []
   groupCitesByNames (x:xs) =
     let xnames = fromMaybe ([],NullOutput) $ getNames x
-        samenames = map (replaceMatch rule (fromText t) xnames) xs
+        samenames = replaceMatch rule (fromText t) xnames xs
         rest = drop (length samenames) xs
     in  (x : samenames) ++ groupCitesByNames rest
   getNames (Formatted _ (x:_)) =
@@ -297,35 +297,37 @@ replaceMatch :: CiteprocOutput a
              => SubsequentAuthorSubstituteRule
              -> a
              -> ([Name], Output a)
-             -> Output a
-             -> Output a
-replaceMatch rule replacement (names, raw) = go
+             -> [Output a]
+             -> [Output a]
+replaceMatch _ _ _ [] = []
+replaceMatch rule replacement (names, raw) (z:zs) =
+  case go z of
+    Nothing -> z:zs
+    Just z' -> z' : replaceMatch rule replacement (names, raw) zs
  where
   go (Tagged t@TagItem{} y) =
-    Tagged t (go y)
+    Tagged t <$> go y
   go (Formatted f (y:ys)) =
-    Formatted f ((go y) : ys)
+    Formatted f . (: ys) <$> go y
   go y@(Tagged (TagNames _ _ ns) r) =
     case (if null names then CompleteAll else rule) of
         CompleteAll ->
           if ns == names && (not (null names) || r == raw)
-             then replaceAll y
-             else y
+             then Just $ replaceAll y
+             else Nothing
         CompleteEach ->
           if ns == names
-             then transform replaceEach y
-             else y
+             then Just $ transform replaceEach y
+             else Nothing
         PartialEach ->
           case numberOfMatches ns names of
-            num | num >= 1 ->
-              transform (replaceFirst num) y
-            _ -> y
+            num | num >= 1 -> Just $ transform (replaceFirst num) y
+            _ -> Nothing
         PartialFirst ->
           case numberOfMatches ns names of
-            num | num >= (1 :: Int) ->
-              transform (replaceFirst 1) y
-            _ -> y
-  go y = y
+            num | num >= (1 :: Int) -> Just $ transform (replaceFirst 1) y
+            _ -> Nothing
+  go _ = Nothing
   replaceAll (Tagged (TagNames t' nf ns') x)
      = Tagged (TagNames t' nf ns') $
        -- removeName will leave label "ed."
