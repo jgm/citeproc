@@ -284,7 +284,7 @@ subsequentAuthorSubstitutes (SubsequentAuthorSubstitute t rule) =
   groupCitesByNames [] = []
   groupCitesByNames (x:xs) =
     let xnames = fromMaybe ([],NullOutput) $ getNames x
-        samenames = replaceMatch rule (fromText t) xnames xs
+        samenames = map (replaceMatch rule (fromText t) xnames) xs
         rest = drop (length samenames) xs
     in  (x : samenames) ++ groupCitesByNames rest
   getNames (Formatted _ (x:_)) =
@@ -297,33 +297,32 @@ replaceMatch :: CiteprocOutput a
              => SubsequentAuthorSubstituteRule
              -> a
              -> ([Name], Output a)
-             -> [Output a]
-             -> [Output a]
-replaceMatch rule replacement (names, raw) (Tagged t@TagItem{} y : rest) =
-  Tagged t (grouped $ replaceMatch rule replacement (names, raw) [y]) : rest
-replaceMatch rule replacement (names, raw) (Formatted f ys : rest) =
-  Formatted f (replaceMatch rule replacement (names, raw) ys) : rest
-replaceMatch rule replacement (names, raw)
-                                 (y@(Tagged (TagNames _ _ ns) r) : rest) =
+             -> Output a
+             -> Output a
+replaceMatch rule replacement (names, raw) (Tagged t@TagItem{} y) =
+  Tagged t (replaceMatch rule replacement (names, raw) y)
+replaceMatch rule replacement (names, raw) (Formatted f (y:ys)) =
+  Formatted f ((replaceMatch rule replacement (names, raw) y) : ys)
+replaceMatch rule replacement (names, raw) y@(Tagged (TagNames _ _ ns) r) =
   case (if null names then CompleteAll else rule) of
       CompleteAll ->
         if ns == names && (not (null names) || r == raw)
-           then replaceAll y : rest
-           else y:rest
+           then replaceAll y
+           else y
       CompleteEach ->
         if ns == names
-           then transform replaceEach y : rest
-           else y:rest
+           then transform replaceEach y
+           else y
       PartialEach ->
         case numberOfMatches ns names of
           num | num >= 1 ->
-            transform (replaceFirst num) y : rest
-          _ -> y:rest
+            transform (replaceFirst num) y
+          _ -> y
       PartialFirst ->
         case numberOfMatches ns names of
           num | num >= (1 :: Int) ->
-            transform (replaceFirst 1) y : rest
-          _ -> y:rest
+            transform (replaceFirst 1) y
+          _ -> y
  where
   replaceAll (Tagged (TagNames t nf ns') x)
      = Tagged (TagNames t nf ns') $
@@ -356,7 +355,7 @@ replaceMatch rule replacement (names, raw)
     | a == b    = 1 + numberOfMatches as bs
     | otherwise = 0
   numberOfMatches _ _ = 0
-replaceMatch _ _ _ ys = ys
+replaceMatch _ _ _ y = y
 
 data DisambData =
   DisambData
