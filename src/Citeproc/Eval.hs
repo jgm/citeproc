@@ -299,67 +299,64 @@ replaceMatch :: CiteprocOutput a
              -> ([Name], Output a)
              -> [Output a]
              -> [Output a]
-replaceMatch rule replacement (names, raw) (Formatted f (y:ys) : rest) =
-  case [(ns,r) | (Tagged (TagNames _ _ ns) r) <- universe y] of
-    ((ns,r) : _)
-      -> case (if null names then CompleteAll else rule) of
-           CompleteAll ->
-             if ns == names && (not (null names) || r == raw)
-                then Formatted f (transform replaceAll y : ys) :
-                       replaceMatch rule replacement (names, raw) rest
-                else []
-           CompleteEach ->
-             if ns == names
-                then Formatted f (transform replaceEach y : ys) :
-                        replaceMatch rule replacement (names, raw) rest
-                else []
-           PartialEach ->
-             case numberOfMatches ns names of
-               num | num >= 1 ->
-                 Formatted f (transform (replaceFirst num) y : ys) :
-                  replaceMatch rule replacement (names, raw) rest
-               _ -> []
-           PartialFirst ->
-             case numberOfMatches ns names of
-               num | num >= (1 :: Int) ->
-                 Formatted f (transform (replaceFirst 1) y : ys) :
-                  replaceMatch rule replacement (names, raw) rest
-               _ -> []
-     where
-      replaceAll (Tagged (TagNames t nf ns') x)
-        | ns' == names
-         = Tagged (TagNames t nf ns') $
-           -- removeName will leave label "ed."
-           -- which we want, but it will also leave the substituted
-           -- title when there is no name, which we do not want.
-           -- So, if ns' is null, then we just remove everything.
-           if null ns'
-              then Literal replacement
-              else
-                case transform removeName x of
-                  Formatted f' xs -> Formatted f' (Literal replacement : xs)
-                  _               -> Literal replacement
-      replaceAll x = x
-      removeName (Tagged (TagName _) _) = NullOutput
-      removeName x = x
-      replaceEach (Tagged (TagName n) _)
-        | n `elem` names
-         = Tagged (TagName n) (Literal replacement)
-      replaceEach x = x
-      replaceFirst num x@(Tagged (TagNames _ _ ns') _)
-        -- a kludge to get this to type-check!
-        | True = foldr (transform . replaceName) x $ take num ns'
-        | False = Literal replacement
-      replaceFirst _num x = x
-      replaceName name (Tagged (TagName n) _)
-        | n == name = Tagged (TagName n) (Literal replacement)
-      replaceName _ x = x
-      numberOfMatches (a:as) (b:bs)
-        | a == b    = 1 + numberOfMatches as bs
-        | otherwise = 0
-      numberOfMatches _ _ = 0
-    _       -> []
-replaceMatch _ _ _ _ = []
+replaceMatch rule replacement (names, raw) (Tagged t@TagItem{} y : rest) =
+  Tagged t (grouped $ replaceMatch rule replacement (names, raw) [y]) : rest
+replaceMatch rule replacement (names, raw) (Formatted f ys : rest) =
+  Formatted f (replaceMatch rule replacement (names, raw) ys) : rest
+replaceMatch rule replacement (names, raw)
+                                 (y@(Tagged (TagNames _ _ ns) r) : rest) =
+  case (if null names then CompleteAll else rule) of
+      CompleteAll ->
+        if ns == names && (not (null names) || r == raw)
+           then replaceAll y : rest
+           else y:rest
+      CompleteEach ->
+        if ns == names
+           then transform replaceEach y : rest
+           else y:rest
+      PartialEach ->
+        case numberOfMatches ns names of
+          num | num >= 1 ->
+            transform (replaceFirst num) y : rest
+          _ -> y:rest
+      PartialFirst ->
+        case numberOfMatches ns names of
+          num | num >= (1 :: Int) ->
+            transform (replaceFirst 1) y : rest
+          _ -> y:rest
+ where
+  replaceAll (Tagged (TagNames t nf ns') x)
+     = Tagged (TagNames t nf ns') $
+       -- removeName will leave label "ed."
+       -- which we want, but it will also leave the substituted
+       -- title when there is no name, which we do not want.
+       -- So, if ns' is null, then we just remove everything.
+       if null ns'
+          then Literal replacement
+          else
+            case transform removeName x of
+              Formatted f' xs -> Formatted f' (Literal replacement : xs)
+              _               -> Literal replacement
+  replaceAll x = x
+  removeName (Tagged (TagName _) _) = NullOutput
+  removeName x = x
+  replaceEach (Tagged (TagName n) _)
+    | n `elem` names
+     = Tagged (TagName n) (Literal replacement)
+  replaceEach x = x
+  replaceFirst num x@(Tagged (TagNames _ _ ns') _)
+    -- a kludge to get this to type-check!
+    | True = foldr (transform . replaceName) x $ take num ns'
+    | False = Literal replacement
+  replaceFirst _num x = x
+  replaceName name (Tagged (TagName n) _)
+    | n == name = Tagged (TagName n) (Literal replacement)
+  replaceName _ x = x
+  numberOfMatches (a:as) (b:bs)
+    | a == b    = 1 + numberOfMatches as bs
+    | otherwise = 0
+  numberOfMatches _ _ = 0
+replaceMatch _ _ _ ys = ys
 
 data DisambData =
   DisambData
