@@ -1650,11 +1650,12 @@ eNames vars namesFormat' subst formatting = do
                                st)) $ eSubstitute els
            return $
              case res of
-               Tagged TagNames{} _ -> res
+               Tagged TagNames{} _ -> formatted formatting [res]
                -- important to have title (or whatever) tagged as
                -- substituting for Names, for purposes of
                -- disambiguation:
-               _ -> Tagged (TagNames "" namesFormat []) res
+               _ -> formatted formatting
+                    [Tagged (TagNames "" namesFormat []) res]
          _ -> return NullOutput
      else do
         xs <- mapM (formatNames namesFormat nameFormat nameFormatting)
