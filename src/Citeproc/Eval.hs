@@ -302,7 +302,7 @@ replaceMatch :: CiteprocOutput a
 replaceMatch _ _ _ [] = []
 replaceMatch rule replacement (names, raw) (z:zs) =
   case go z of
-    Nothing -> z:zs
+    Nothing -> []
     Just z' -> z' : replaceMatch rule replacement (names, raw) zs
  where
   go (Tagged t@TagItem{} y) =
