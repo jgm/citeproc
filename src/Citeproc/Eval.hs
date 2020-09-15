@@ -1858,21 +1858,25 @@ getNamePartSortOrder name = do
   demoteNonDroppingParticle <-
     asks (styleDemoteNonDroppingParticle . contextStyleOptions)
   map (fromMaybe mempty) <$>
-    if isByzantineName name
-       then return $
-              case demoteNonDroppingParticle of
-                DemoteNever ->
-                      [nameNonDroppingParticle name <> nameFamily name,
-                       nameDroppingParticle name,
-                       nameGiven name,
-                       nameSuffix name]
-                _ ->  [nameFamily name,
-                       nameDroppingParticle name <>
-                         nameNonDroppingParticle name,
-                       nameGiven name,
-                       nameSuffix name]
-       else return [nameFamily name,
-                    nameGiven name]
+    case nameLiteral name of
+      Nothing
+        | isByzantineName name
+           -> return $
+                   case demoteNonDroppingParticle of
+                     DemoteNever ->
+                           [nameNonDroppingParticle name <> nameFamily name,
+                            nameDroppingParticle name,
+                            nameGiven name,
+                            nameSuffix name]
+                     _ ->  [nameFamily name,
+                            nameDroppingParticle name <>
+                              nameNonDroppingParticle name,
+                            nameGiven name,
+                            nameSuffix name]
+        | otherwise
+           -> return $ [nameFamily name,
+                        nameGiven name]
+      Just n -> return [Just n]
 
 literal :: CiteprocOutput a => Text -> Output a
 literal = Literal . fromText
