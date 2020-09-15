@@ -299,33 +299,35 @@ replaceMatch :: CiteprocOutput a
              -> ([Name], Output a)
              -> Output a
              -> Output a
-replaceMatch rule replacement (names, raw) (Tagged t@TagItem{} y) =
-  Tagged t (replaceMatch rule replacement (names, raw) y)
-replaceMatch rule replacement (names, raw) (Formatted f (y:ys)) =
-  Formatted f ((replaceMatch rule replacement (names, raw) y) : ys)
-replaceMatch rule replacement (names, raw) y@(Tagged (TagNames _ _ ns) r) =
-  case (if null names then CompleteAll else rule) of
-      CompleteAll ->
-        if ns == names && (not (null names) || r == raw)
-           then replaceAll y
-           else y
-      CompleteEach ->
-        if ns == names
-           then transform replaceEach y
-           else y
-      PartialEach ->
-        case numberOfMatches ns names of
-          num | num >= 1 ->
-            transform (replaceFirst num) y
-          _ -> y
-      PartialFirst ->
-        case numberOfMatches ns names of
-          num | num >= (1 :: Int) ->
-            transform (replaceFirst 1) y
-          _ -> y
+replaceMatch rule replacement (names, raw) = go
  where
-  replaceAll (Tagged (TagNames t nf ns') x)
-     = Tagged (TagNames t nf ns') $
+  go (Tagged t@TagItem{} y) =
+    Tagged t (go y)
+  go (Formatted f (y:ys)) =
+    Formatted f ((go y) : ys)
+  go y@(Tagged (TagNames _ _ ns) r) =
+    case (if null names then CompleteAll else rule) of
+        CompleteAll ->
+          if ns == names && (not (null names) || r == raw)
+             then replaceAll y
+             else y
+        CompleteEach ->
+          if ns == names
+             then transform replaceEach y
+             else y
+        PartialEach ->
+          case numberOfMatches ns names of
+            num | num >= 1 ->
+              transform (replaceFirst num) y
+            _ -> y
+        PartialFirst ->
+          case numberOfMatches ns names of
+            num | num >= (1 :: Int) ->
+              transform (replaceFirst 1) y
+            _ -> y
+  go y = y
+  replaceAll (Tagged (TagNames t' nf ns') x)
+     = Tagged (TagNames t' nf ns') $
        -- removeName will leave label "ed."
        -- which we want, but it will also leave the substituted
        -- title when there is no name, which we do not want.
@@ -355,7 +357,6 @@ replaceMatch rule replacement (names, raw) y@(Tagged (TagNames _ _ ns) r) =
     | a == b    = 1 + numberOfMatches as bs
     | otherwise = 0
   numberOfMatches _ _ = 0
-replaceMatch _ _ _ y = y
 
 data DisambData =
   DisambData
