@@ -18,6 +18,7 @@ import Data.Semigroup
 import Data.Char (isUpper, isLower, isAscii)
 import Data.Text (Text)
 import qualified Data.Text as T
+import Citeproc.Types (Lang)
 
 data CaseTransformState =
       Start
@@ -30,53 +31,54 @@ data CaseTransformState =
     deriving (Show, Eq)
 
 
-withUppercaseAll :: CaseTransformState -> Text -> Text
-withUppercaseAll _ chunk = T.toUpper chunk
+withUppercaseAll :: Maybe Lang -> CaseTransformState -> Text -> Text
+withUppercaseAll _mblang _ chunk = T.toUpper chunk
 
-withLowercaseAll :: CaseTransformState -> Text -> Text
-withLowercaseAll _ chunk = T.toLower chunk
+withLowercaseAll :: Maybe Lang -> CaseTransformState -> Text -> Text
+withLowercaseAll _mblang _ chunk = T.toLower chunk
 
-withCapitalizeWords :: CaseTransformState -> Text -> Text
-withCapitalizeWords st chunk
+withCapitalizeWords :: Maybe Lang -> CaseTransformState -> Text -> Text
+withCapitalizeWords mblang st chunk
   | isMixedCase chunk = chunk
   | st == Start || st == StartSentence || st == AfterWordEnd ||
     st == BeforeLastWord
     = if T.all isLower chunk
-         then capitalizeText chunk
+         then capitalizeText mblang chunk
          else chunk
   | otherwise = chunk
 
-withCapitalizeFirst :: CaseTransformState -> Text -> Text
-withCapitalizeFirst st chunk
+withCapitalizeFirst :: Maybe Lang -> CaseTransformState -> Text -> Text
+withCapitalizeFirst mblang st chunk
   | isMixedCase chunk = chunk
   | st == Start
     = if T.all isLower chunk
-         then capitalizeText chunk
+         then capitalizeText mblang chunk
          else chunk
   | otherwise = chunk
 
-withSentenceCase :: CaseTransformState -> Text -> Text
-withSentenceCase st chunk
+withSentenceCase :: Maybe Lang -> CaseTransformState -> Text -> Text
+withSentenceCase mblang st chunk
   | isCapitalized chunk
   , not (st == Start || st == StartSentence)
     = T.toLower chunk
   | isCapitalized chunk || T.all isLower chunk
   , st == Start || st == StartSentence
-    = capitalizeText $ T.toLower chunk
+    = capitalizeText mblang $ T.toLower chunk
   | otherwise = chunk
 
-withTitleCase :: CaseTransformState -> Text -> Text
-withTitleCase st chunk
+withTitleCase :: Maybe Lang -> CaseTransformState -> Text -> Text
+withTitleCase mblang st chunk
   | isMixedCase chunk = chunk
   | T.all isUpper chunk = chunk  -- spec doesn't say this but tests do
                                  -- textcase_TitleCapitalization.txt
   | T.any (not . isAscii) chunk = chunk
-  | st == StartSentence || st == Start = capitalizeText $ T.toLower chunk
+  | st == StartSentence || st == Start =
+    capitalizeText mblang $ T.toLower chunk
   | st == AfterWordEnd
   , not (isStopWord chunk)
-  , T.compareLength chunk 1 == GT = capitalizeText $ T.toLower chunk
+  , T.compareLength chunk 1 == GT = capitalizeText mblang $ T.toLower chunk
   | st == BeforeLastWord
-  , T.compareLength chunk 1 == GT = capitalizeText $ T.toLower chunk
+  , T.compareLength chunk 1 == GT = capitalizeText mblang $ T.toLower chunk
   | otherwise = chunk
 
 isCapitalized :: Text -> Bool
@@ -88,8 +90,8 @@ isCapitalized t =
 isMixedCase :: Text -> Bool
 isMixedCase t = T.any isUpper t && T.any isLower t
 
-capitalizeText :: Text -> Text
-capitalizeText x =
+capitalizeText :: Maybe Lang -> Text -> Text
+capitalizeText _mblang x =
   case T.uncons x of
     Just (c,x') -> T.toUpper (T.singleton c) <> x'
     Nothing     -> x

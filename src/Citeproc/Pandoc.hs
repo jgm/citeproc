@@ -50,14 +50,14 @@ instance CiteprocOutput Inlines where
       BaselineAlign    -> id
       SubAlign         -> B.subscript
       SupAlign         -> B.superscript
-  addTextCase x         =
+  addTextCase mblang x =
     case x of
-      Lowercase        -> caseTransform withLowercaseAll
-      Uppercase        -> caseTransform withUppercaseAll
-      CapitalizeFirst  -> caseTransform withCapitalizeFirst
-      CapitalizeAll    -> caseTransform withCapitalizeWords
-      SentenceCase     -> caseTransform withSentenceCase
-      TitleCase        -> caseTransform withTitleCase
+      Lowercase        -> caseTransform (withLowercaseAll mblang)
+      Uppercase        -> caseTransform (withUppercaseAll mblang)
+      CapitalizeFirst  -> caseTransform (withCapitalizeFirst mblang)
+      CapitalizeAll    -> caseTransform (withCapitalizeWords mblang)
+      SentenceCase     -> caseTransform (withSentenceCase mblang)
+      TitleCase        -> caseTransform (withTitleCase mblang)
   addDisplay x          =
     case x of
       DisplayBlock       -> B.spanWith ("",["csl-display-block"],[])
@@ -65,7 +65,8 @@ instance CiteprocOutput Inlines where
       DisplayRightInline -> B.spanWith ("",["csl-display-right-inline"],[])
       DisplayIndent      -> B.spanWith ("",["csl-display-indent"],[])
   addQuotes             = B.doubleQuoted . flipFlopQuotes DoubleQuote
-  inNote                = B.note . B.para . addTextCase CapitalizeFirst
+  inNote mblang         = B.note . B.para .
+                            addTextCase mblang CapitalizeFirst
   movePunctuationInsideQuotes
                         = punctuationInsideQuotes
   mapText f             = walk go

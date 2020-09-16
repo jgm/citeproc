@@ -125,14 +125,14 @@ instance CiteprocOutput (CslJson Text) where
       BaselineAlign    -> CslBaseline
       SubAlign         -> CslSub
       SupAlign         -> CslSup
-  addTextCase x         =
+  addTextCase mblang x =
     case x of
-      Lowercase        -> caseTransform withLowercaseAll
-      Uppercase        -> caseTransform withUppercaseAll
-      CapitalizeFirst  -> caseTransform withCapitalizeFirst
-      CapitalizeAll    -> caseTransform withCapitalizeWords
-      SentenceCase     -> caseTransform withSentenceCase
-      TitleCase        -> caseTransform withTitleCase
+      Lowercase        -> caseTransform (withLowercaseAll mblang)
+      Uppercase        -> caseTransform (withUppercaseAll mblang)
+      CapitalizeFirst  -> caseTransform (withCapitalizeFirst mblang)
+      CapitalizeAll    -> caseTransform (withCapitalizeWords mblang)
+      SentenceCase     -> caseTransform (withSentenceCase mblang)
+      TitleCase        -> caseTransform (withTitleCase mblang)
   addDisplay x          =
     case x of
       DisplayBlock       -> CslDiv "block"
@@ -140,7 +140,7 @@ instance CiteprocOutput (CslJson Text) where
       DisplayRightInline -> CslDiv "right-inline"
       DisplayIndent      -> CslDiv "indent"
   addQuotes             = CslQuoted
-  inNote                = id -- no-op
+  inNote _mblang        = id -- no-op
   movePunctuationInsideQuotes
                         = punctuationInsideQuotes
   mapText f             = runIdentity . traverse (return . f)

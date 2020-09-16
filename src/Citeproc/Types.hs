@@ -173,11 +173,11 @@ class (Semigroup a, Monoid a, Show a, Eq a, Ord a) => CiteprocOutput a where
   addFontWeight               :: FontWeight -> a -> a
   addTextDecoration           :: TextDecoration -> a -> a
   addVerticalAlign            :: VerticalAlign -> a -> a
-  addTextCase                 :: TextCase -> a -> a
+  addTextCase                 :: Maybe Lang -> TextCase -> a -> a
   addDisplay                  :: DisplayStyle -> a -> a
   addQuotes                   :: a -> a
   movePunctuationInsideQuotes :: a -> a
-  inNote                      :: a -> a
+  inNote                      :: Maybe Lang -> a -> a
   mapText                     :: (Text -> Text) -> a -> a
   addHyperlink                :: Text -> a -> a
 
@@ -193,7 +193,7 @@ addFormatting mblang f x =
        maybe id addTextDecoration (formatTextDecoration f) .
        maybe id addFontWeight (formatFontWeight f) .
        maybe id addFontVariant (formatFontVariant f) .
-       maybe id addTextCase (formatTextCase f) .
+       maybe id (addTextCase mblang) (formatTextCase f) .
        maybe id addFontStyle (formatFontStyle f) .
        (if affixesInside then addPrefix . addSuffix else id) .
        (if formatStripPeriods f then mapText (T.filter (/='.')) else id)
@@ -1444,7 +1444,7 @@ renderOutput opts mblang (Formatted formatting xs) =
        Just d  -> addDelimiters (fromText d)
        Nothing -> id) . filter (/= mempty) $
     map (renderOutput opts mblang) xs
-renderOutput opts mblang (InNote x) = inNote $
+renderOutput opts mblang (InNote x) = inNote mblang $
   dropTextWhile isSpace $
   dropTextWhile (\c -> c == ',' || c == ';' || c == '.' || c == ':') $
   renderOutput opts mblang x
