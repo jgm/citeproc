@@ -652,10 +652,6 @@ groupAndCollapseCitations :: CiteprocOutput a
                           -> Output a
 groupAndCollapseCitations citeGroupDelim yearSuffixDelim afterCollapseDelim
   collapsing (Formatted f xs) =
-  -- TODO make this a more straightforward chain:
-  --   collapseYearSuffix . collapse . group
-  --   Note that group should not assume we've sorted by name
-
    case collapsing of
       Just CollapseCitationNumber ->
         Formatted f{ formatDelimiter = Nothing } $
@@ -663,12 +659,18 @@ groupAndCollapseCitations citeGroupDelim yearSuffixDelim afterCollapseDelim
                   (groupSuccessive isAdjacentCitationNumber xs)
       Just collapseType ->
           Formatted f{ formatDelimiter = Nothing } $
-            foldr (collapseGroup collapseType) [] (groupBy sameNames xs)
+            foldr (collapseGroup collapseType) [] (groupWith sameNames xs)
       Nothing ->
           Formatted f $
              map (Formatted mempty{ formatDelimiter = Just citeGroupDelim })
-                 (groupBy sameNames xs)
+                 (groupWith sameNames xs)
  where
+  --   Note that we cannot assume we've sorted by name,
+  --   so we can't just use Data.ListgroupBy
+  groupWith _ [] = []
+  groupWith isMatched (z:zs) =
+    (z : (filter (isMatched z) zs)) :
+         groupWith isMatched (filter (not . isMatched z) zs)
   collapseRange ys zs
     | length ys >= 3
     , Just yhead <- headMay ys
