@@ -1129,7 +1129,10 @@ lookupTerm' term = lookupTerm term >>= f
        _         -> return NullOutput
    f xs  = case xs of
              []        -> return NullOutput
-             ((_,t):_) -> return $ Literal $ fromText t
+             ((_,t):_) -> return $
+                            if T.null t
+                               then NullOutput
+                               else Literal $ fromText t
 
 pageRange :: CiteprocOutput a => Text -> Eval a (Output a)
 pageRange x = do
