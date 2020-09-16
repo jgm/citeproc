@@ -18,7 +18,7 @@ import Data.Semigroup
 import Data.Char (isUpper, isLower, isAscii)
 import Data.Text (Text)
 import qualified Data.Text as T
-import Citeproc.Types (Lang)
+import Citeproc.Types (Lang(..))
 
 data CaseTransformState =
       Start
@@ -30,12 +30,29 @@ data CaseTransformState =
     | BeforeLastWord
     deriving (Show, Eq)
 
+toUpper' :: Maybe Lang -> Text -> Text
+toUpper' mblang = T.toUpper .
+  case mblang of
+    Just (Lang "tr" _) -> T.map (\c -> case c of
+                                        'i' -> 'İ'
+                                        'ı' -> 'I'
+                                        _   -> c)
+    _                  -> id
+
+toLower' :: Maybe Lang -> Text -> Text
+toLower' mblang = T.toLower .
+  case mblang of
+    Just (Lang "tr" _) -> T.map (\c -> case c of
+                                        'İ' -> 'i'
+                                        'I' -> 'ı'
+                                        _   -> c)
+    _                  -> id
 
 withUppercaseAll :: Maybe Lang -> CaseTransformState -> Text -> Text
-withUppercaseAll _mblang _ chunk = T.toUpper chunk
+withUppercaseAll mblang _ = toUpper' mblang
 
 withLowercaseAll :: Maybe Lang -> CaseTransformState -> Text -> Text
-withLowercaseAll _mblang _ chunk = T.toLower chunk
+withLowercaseAll mblang _ = toLower' mblang
 
 withCapitalizeWords :: Maybe Lang -> CaseTransformState -> Text -> Text
 withCapitalizeWords mblang st chunk
@@ -91,9 +108,9 @@ isMixedCase :: Text -> Bool
 isMixedCase t = T.any isUpper t && T.any isLower t
 
 capitalizeText :: Maybe Lang -> Text -> Text
-capitalizeText _mblang x =
+capitalizeText mblang x =
   case T.uncons x of
-    Just (c,x') -> T.toUpper (T.singleton c) <> x'
+    Just (c,x') -> toUpper' mblang (T.singleton c) <> x'
     Nothing     -> x
 
 isStopWord :: Text -> Bool
