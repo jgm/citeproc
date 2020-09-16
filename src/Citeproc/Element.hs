@@ -58,7 +58,8 @@ getNameAttributes node = do
 getFormatting :: Attributes -> Formatting
 getFormatting attr =
    Formatting
-      { formatFontStyle =
+     { formatLang = Nothing
+     , formatFontStyle =
           case lookupAttribute "font-style" attr of
             Just "italic"  -> Just ItalicFont
             Just "oblique" -> Just ObliqueFont

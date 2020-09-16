@@ -87,6 +87,7 @@ module Citeproc.Types
   , makeReferenceMap
   , lookupReference
   , Val(..)
+  , valToText
   , Variable
   , toVariable
   , fromVariable
@@ -177,7 +178,7 @@ class (Semigroup a, Monoid a, Show a, Eq a, Ord a) => CiteprocOutput a where
   addDisplay                  :: DisplayStyle -> a -> a
   addQuotes                   :: a -> a
   movePunctuationInsideQuotes :: a -> a
-  inNote                      :: Maybe Lang -> a -> a
+  inNote                      :: a -> a
   mapText                     :: (Text -> Text) -> a -> a
   addHyperlink                :: Text -> a -> a
 
@@ -193,7 +194,7 @@ addFormatting f x =
        maybe id addTextDecoration (formatTextDecoration f) .
        maybe id addFontWeight (formatFontWeight f) .
        maybe id addFontVariant (formatFontVariant f) .
-       maybe id (addTextCase mblang) (formatTextCase f) .
+       maybe id (addTextCase (formatLang f)) (formatTextCase f) .
        maybe id addFontStyle (formatFontStyle f) .
        (if affixesInside then addPrefix . addSuffix else id) .
        (if formatStripPeriods f then mapText (T.filter (/='.')) else id)
@@ -438,7 +439,8 @@ data ElementType a =
 
 data Formatting =
   Formatting
-  { formatFontStyle      :: Maybe FontStyle
+  { formatLang           :: Maybe Lang
+  , formatFontStyle      :: Maybe FontStyle
   , formatFontVariant    :: Maybe FontVariant
   , formatFontWeight     :: Maybe FontWeight
   , formatTextDecoration :: Maybe TextDecoration
@@ -454,14 +456,14 @@ data Formatting =
   } deriving (Show, Eq)
 
 defaultFormatting :: Formatting
-defaultFormatting = Formatting Nothing Nothing Nothing Nothing
+defaultFormatting = Formatting Nothing Nothing Nothing Nothing Nothing
   Nothing Nothing Nothing Nothing Nothing Nothing False False False
 
 combineFormatting :: Formatting -> Formatting -> Formatting
 combineFormatting
-  (Formatting a1 b1 c1 d1 e1 f1 g1 h1 i1 j1 k1 l1 m1)
-  (Formatting a2 b2 c2 d2 e2 f2 g2 h2 i2 j2 k2 l2 m2) =
-     Formatting (a1 <|> a2) (b1 <|> b2) (c1 <|> c2)
+  (Formatting la1 a1 b1 c1 d1 e1 f1 g1 h1 i1 j1 k1 l1 m1)
+  (Formatting la2 a2 b2 c2 d2 e2 f2 g2 h2 i2 j2 k2 l2 m2) =
+     Formatting (la1 <|> la2) (a1 <|> a2) (b1 <|> b2) (c1 <|> c2)
                 (d1 <|> d2) (e1 <|> e2) (f1 <|> f2)
                 (g1 <|> g2) (h1 <|> h2) (i1 <|> i2)
                 (j1 <|> j2) (k1 || k2) (l1 || l2) (m1 || m2)
@@ -1049,6 +1051,12 @@ instance ToJSON a => ToJSON (Val a) where
   toJSON (NumVal n) = toJSON n
   toJSON (NamesVal ns) = toJSON ns
   toJSON (DateVal d) = toJSON d
+
+valToText :: CiteprocOutput a => Val a -> Maybe Text
+valToText (TextVal x)  = Just x
+valToText (FancyVal x) = Just $ toText x
+valToText (NumVal n)   = Just $ T.pack $ show n
+valToText _            = Nothing
 
 data Name =
   Name

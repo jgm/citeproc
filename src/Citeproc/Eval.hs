@@ -938,6 +938,10 @@ evalLayout isBibliography layout (citationGroupNumber, citation) = do
                          mbNoteNumber
                          positionInCitation
 
+    let addLangToFormatting lang (Formatted f xs) =
+          Formatted f{ formatLang = Just lang } xs
+        addLangToFormatting _ x = x
+
     xs <- case lookupReference (citationItemId item) refmap of
             Just ref -> withRWST
               (\ctx st ->
@@ -947,7 +951,15 @@ evalLayout isBibliography layout (citationGroupNumber, citation) = do
                    },
                 st{ stateReference = ref
                   , stateUsedYearSuffix = False }))
-                $ mapM eElement (layoutElements layout)
+                $ do xs <- mapM eElement (layoutElements layout)
+                     let mblang = parseLang <$>
+                                  (lookupVariable "language" ref
+                                    >>= valToText)
+                     return $
+                       case mblang of
+                         Nothing   -> xs
+                         Just lang -> map
+                             (transform (addLangToFormatting lang)) xs
             Nothing -> do
               warn $ "citation " <> unItemId (citationItemId item) <>
                      " not found"
@@ -1086,7 +1098,7 @@ eElement (Element etype formatting) =
 
 withFormatting :: CiteprocOutput a
                => Formatting -> Eval a (Output a) -> Eval a (Output a)
-withFormatting (Formatting Nothing Nothing Nothing Nothing Nothing
+withFormatting (Formatting Nothing Nothing Nothing Nothing Nothing Nothing
                            Nothing Nothing Nothing Nothing Nothing
                            False False False) p
                           = p
