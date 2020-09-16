@@ -831,12 +831,13 @@ evalSortKey :: CiteprocOutput a
             -> Eval a SortKeyValue
 evalSortKey citeId (SortKeyMacro sortdir elts) = do
   refmap <- gets stateRefMap
+  locale <- asks contextLocale
   case lookupReference citeId refmap of
     Nothing  -> return $ SortKeyValue (sortdir, Nothing)
     Just ref -> do
         k <- normalizeSortKey . toText .
-              renderOutput defaultCiteprocOptions . grouped
-              <$> withRWS newContext (mapM eElement elts)
+              renderOutput defaultCiteprocOptions (localeLanguage locale)
+              . grouped <$> withRWS newContext (mapM eElement elts)
         return $ SortKeyValue (sortdir, Just k)
      where
       newContext oldContext s =
