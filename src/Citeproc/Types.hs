@@ -1478,7 +1478,10 @@ fixPunct (x:y:zs) =
     (";", "?") -> dropTextWhileEnd (==';') x : fixPunct (y : zs)
     ("?", "?") -> dropTextWhileEnd (=='?') x : fixPunct (y : zs)
     (",", ",") -> x : fixPunct (dropTextWhile (==',') y : zs)
-    (" ", " ") -> dropTextWhileEnd (==' ') x : fixPunct (y : zs)
+    (" ", t) | T.all isSpace t
+               -> dropTextWhileEnd (==' ') x : fixPunct (y : zs)
+    (t, " ") | T.all isSpace t
+               -> x : fixPunct (dropTextWhile (==' ') y : zs)
     (" ", ",") -> dropTextWhileEnd (==' ') x : fixPunct (y : zs)
     (" ", ".") -> dropTextWhileEnd (==' ') x : fixPunct (y : zs)
     _ -> x : fixPunct (y : zs)
