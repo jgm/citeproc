@@ -181,8 +181,8 @@ class (Semigroup a, Monoid a, Show a, Eq a, Ord a) => CiteprocOutput a where
   mapText                     :: (Text -> Text) -> a -> a
   addHyperlink                :: Text -> a -> a
 
-addFormatting :: CiteprocOutput a => Maybe Lang -> Formatting -> a -> a
-addFormatting mblang f x =
+addFormatting :: CiteprocOutput a => Formatting -> a -> a
+addFormatting f x =
   if T.null (toText x)  -- TODO inefficient
      then mempty
      else
@@ -1430,24 +1430,22 @@ outputToText (Tagged _ x) = outputToText x
 outputToText (Formatted _ xs) = T.unwords $ map outputToText xs
 outputToText (InNote x)   = outputToText x
 
-renderOutput :: CiteprocOutput a
-             => CiteprocOptions -> Maybe Lang -> Output a -> a
-renderOutput _ _ NullOutput = mempty
-renderOutput _ _ (Literal x) = x
-renderOutput opts mblang (Tagged (TagItem _ ident) x)
+renderOutput :: CiteprocOutput a => CiteprocOptions -> Output a -> a
+renderOutput _ NullOutput = mempty
+renderOutput _ (Literal x) = x
+renderOutput opts (Tagged (TagItem _ ident) x)
   | linkCitations opts
-  = addHyperlink ("#ref-" <> unItemId ident) $ renderOutput opts mblang x
-renderOutput opts mblang (Tagged _ x) = renderOutput opts mblang x
-renderOutput opts mblang (Formatted formatting xs) =
-  addFormatting mblang formatting . mconcat . fixPunct .
+  = addHyperlink ("#ref-" <> unItemId ident) $ renderOutput opts x
+renderOutput opts (Tagged _ x) = renderOutput opts x
+renderOutput opts (Formatted formatting xs) =
+  addFormatting formatting . mconcat . fixPunct .
     (case formatDelimiter formatting of
        Just d  -> addDelimiters (fromText d)
-       Nothing -> id) . filter (/= mempty) $
-    map (renderOutput opts mblang) xs
-renderOutput opts mblang (InNote x) = inNote mblang $
+       Nothing -> id) . filter (/= mempty) $ map (renderOutput opts) xs
+renderOutput opts (InNote x) = inNote $
   dropTextWhile isSpace $
   dropTextWhile (\c -> c == ',' || c == ';' || c == '.' || c == ':') $
-  renderOutput opts mblang x
+  renderOutput opts x
 
 addDelimiters :: CiteprocOutput a => a -> [a] -> [a]
 addDelimiters delim =

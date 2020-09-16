@@ -21,11 +21,11 @@ citeproc :: CiteprocOutput a
          -> Result a
 citeproc opts style mblang refs citations =
   Result{ resultCitations =
-            map (trimR . movePunct . renderOutput opts mblang) citationOs
+            map (trimR . movePunct . renderOutput opts) citationOs
         , resultBibliography =
             map (\(ident, out) ->
                   (ident, trimR . movePunct .
-                    renderOutput opts{ linkCitations = False } mblang $ out))
+                    renderOutput opts{ linkCitations = False } $ out))
                   bibliographyOs
         , resultWarnings = warnings }
  where
