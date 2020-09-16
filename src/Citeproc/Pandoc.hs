@@ -60,10 +60,10 @@ instance CiteprocOutput Inlines where
       TitleCase        -> caseTransform (withTitleCase mblang)
   addDisplay x          =
     case x of
-      DisplayBlock       -> B.spanWith ("",["csl-display-block"],[])
-      DisplayLeftMargin  -> B.spanWith ("",["csl-display-left-margin"],[])
-      DisplayRightInline -> B.spanWith ("",["csl-display-right-inline"],[])
-      DisplayIndent      -> B.spanWith ("",["csl-display-indent"],[])
+      DisplayBlock       -> B.spanWith ("",["csl-block"],[])
+      DisplayLeftMargin  -> B.spanWith ("",["csl-left-margin"],[])
+      DisplayRightInline -> B.spanWith ("",["csl-right-inline"],[])
+      DisplayIndent      -> B.spanWith ("",["csl-indent"],[])
   addQuotes             = B.doubleQuoted . flipFlopQuotes DoubleQuote
   inNote                = B.note . B.para .
                             addTextCase Nothing CapitalizeFirst
