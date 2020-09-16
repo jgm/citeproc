@@ -652,6 +652,10 @@ groupAndCollapseCitations :: CiteprocOutput a
                           -> Output a
 groupAndCollapseCitations citeGroupDelim yearSuffixDelim afterCollapseDelim
   collapsing (Formatted f xs) =
+  -- TODO make this a more straightforward chain:
+  --   collapseYearSuffix . collapse . group
+  --   Note that group should not assume we've sorted by name
+
    case collapsing of
       Just CollapseCitationNumber ->
         Formatted f{ formatDelimiter = Nothing } $
