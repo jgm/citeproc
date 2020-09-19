@@ -62,7 +62,7 @@ library
                      , aeson
                      , filepath
                      , file-embed
-                     , pandoc-types >= 1.21 && < 1.22
+                     , pandoc-types >= 1.22 && < 1.23
                      -- Can remove later:
                      , pretty-show
   if flag(icu)
