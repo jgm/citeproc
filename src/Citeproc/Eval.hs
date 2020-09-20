@@ -1157,9 +1157,11 @@ pageRange x = do
   pageDelim <- lookupTerm'
                   emptyTerm{ termName = "page-range-delimiter" }
   mbPageRangeFormat <- asks (stylePageRangeFormat . contextStyleOptions)
-  let ranges = map T.strip $ T.split (==',') x
-  return $ grouped $ intersperse (literal ", ") $
-    map (formatPageRange mbPageRangeFormat
+  let ranges = map T.strip $ T.groupBy
+               (\c d -> not (c == ',' || c == '&' || d == ',' || d == '&'))
+               x
+  return $ formatted mempty{ formatDelimiter = Just " " }
+         $ map (formatPageRange mbPageRangeFormat
             (case pageDelim of
                NullOutput -> literal $ T.singleton enDash
                delim      -> delim)) ranges
@@ -1172,6 +1174,8 @@ formatPageRange :: CiteprocOutput a
                 -> Output a
                 -> Text
                 -> Output a
+formatPageRange _ _ "&" = literal "&"
+formatPageRange _ _ "," = literal ","
 formatPageRange mbPageRangeFormat delim t =
   let isDash '-' = True
       isDash '\x2013' = True
