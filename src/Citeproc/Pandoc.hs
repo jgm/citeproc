@@ -24,7 +24,13 @@ import Data.Char (isSpace, isAscii, isPunctuation, isAlphaNum)
 
 instance CiteprocOutput Inlines where
   toText                = stringify
-  fromText              = B.text
+  fromText t            = (if " " `T.isPrefixOf` t
+                              then B.space
+                              else mempty) <>
+                          B.text t <> -- B.text eats leading/trailing spaces
+                          (if " " `T.isSuffixOf` t
+                              then B.space
+                              else mempty)
   dropTextWhile f       = dropTextWhile' f
   dropTextWhileEnd f    = dropTextWhileEnd' f
   addFontVariant x      =
