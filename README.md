@@ -19,7 +19,7 @@ of Andrea Rossato's citeproc-hs.  I always found it difficult to
 fix bugs in pandoc-citeproc and decided that implementing
 citeproc from scratch would give me a better basis for
 understanding.  This library has a number of other advantages
-over pandoc-citproc:
+over pandoc-citeproc:
 
 - it is much faster (as a rough benchmark, running the CSL
   test suite takes less than 4 seconds with this library,
