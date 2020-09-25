@@ -1515,7 +1515,6 @@ formatDateParts dpSpecs (date, mbNextDate) = do
     Nothing -> mapM (eDP (yr,mo,da)) dpSpecs
     Just nextDate -> do
       let (nextyr,nextmo,nextda) = bindDateParts nextDate
-      -- TODO
       -- figure out where the range goes:
       -- first to differ out of the items selected by dpSpecs, in order y->m->d
       let dpToNs DPYear  = (yr, nextyr)
@@ -1581,7 +1580,7 @@ eDP (yr,mo,da) dp = do
               locale <- asks contextLocale
               if localeLimitDayOrdinalsToDay1 locale == Just True && n' /= 1
                  then litStr (show n')
-                 else evalNumber NumberOrdinal (NumVal n')
+                 else evalNumber NumberOrdinal Nothing (NumVal n')
                 -- TODO gender stuff on month?
                 -- month-01 etc. sometimes has gender
                 -- ordinal-01 etc sometimes has gender-form
@@ -2183,11 +2182,13 @@ eNumber var nform = do
                  Just (FancyVal x) -> splitNums (toText x)
                  Just (TextVal t)  -> splitNums t
                  _                 -> []
-  grouped <$> mapM (evalNumber nform) nparts
+  grouped <$> mapM (evalNumber nform Nothing) nparts
 
-evalNumber :: CiteprocOutput a => NumberForm -> Val a -> Eval a (Output a)
-evalNumber form (NumVal i) = do
-  let numterm s x = emptyTerm { termName = T.pack $ printf s x }
+evalNumber :: CiteprocOutput a
+           => NumberForm -> Maybe TermGender -> Val a -> Eval a (Output a)
+evalNumber form mbGender (NumVal i) = do
+  let numterm s x = emptyTerm { termName = T.pack $ printf s x
+                              , termGender = mbGender }
   let dectext = T.pack (show i)
   let twomatch = numterm "ordinal-%02d" (i `mod` 100)
   let onematch = numterm "ordinal-%02d" (i `mod` 10)
@@ -2224,12 +2225,12 @@ evalNumber form (NumVal i) = do
         res <- lookupTerm (numterm "long-ordinal-%02d" i)
         case res of
           ((_,t):_) -> return $ Literal $ fromText t
-          []        -> evalNumber NumberOrdinal (NumVal i)
-      | otherwise -> evalNumber NumberOrdinal (NumVal i)
+          []        -> evalNumber NumberOrdinal mbGender (NumVal i)
+      | otherwise -> evalNumber NumberOrdinal mbGender (NumVal i)
     NumberRoman -> return $ Literal $ fromText $ toRomanNumeral i
-evalNumber _ (TextVal t) = return $ Literal $ fromText t
-evalNumber _ (FancyVal t) = return $ Literal t
-evalNumber _ _ = return NullOutput
+evalNumber _ _ (TextVal t) = return $ Literal $ fromText t
+evalNumber _ _ (FancyVal t) = return $ Literal t
+evalNumber _ _ _ = return NullOutput
 
 
 warn :: Text -> Eval a ()
