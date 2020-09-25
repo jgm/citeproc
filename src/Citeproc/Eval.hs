@@ -7,12 +7,11 @@
 module Citeproc.Eval
   ( evalStyle
   , mergeLocales
-  , Eval
   , formatPageRange
   )
 where
 import Citeproc.Types
-import Citeproc.Locale
+import Citeproc.Style (mergeLocales)
 import Data.Semigroup
 import Control.Monad.Trans.RWS.CPS
 import Data.Containers.ListUtils (nubOrdOn, nubOrd)
@@ -31,7 +30,6 @@ import Data.Char (isSpace, isPunctuation, isDigit, isUpper, isLower, isLetter,
 import Text.Printf (printf)
 import Control.Applicative
 import Data.Generics.Uniplate.Operations (universe, transform)
-
 import Debug.Trace (trace)
 import Text.Show.Pretty (ppShow)
 
@@ -785,36 +783,6 @@ groupSuccessive isAdjacent zs =
   case takeSeq isAdjacent zs of
     ([],_)  -> []
     (xs,ys) -> xs : groupSuccessive isAdjacent ys
-
-
-mergeLocales :: Maybe Lang -> Style a -> Locale
-mergeLocales mblang style =
-  mconcat stylelocales <> deflocale -- left-biased union
- where
-  getUSLocale = case getLocale (Lang "en" (Just"US")) of
-                  Right l -> l
-                  Left _  -> mempty
-  lang = fromMaybe (Lang "en" (Just "US")) $
-              mblang <|> styleDefaultLocale (styleOptions style)
-  deflocale = case getLocale lang of
-                 Right l -> l
-                 Left _  -> getUSLocale
-  primlang = getPrimaryDialect lang
-  stylelocales =  -- exact match to lang gets precedence
-                 [l | l <- styleLocales style
-                    , localeLanguage l == Just lang] ++
-                 -- then match to primary dialect, if different
-                 [l | primlang /= Just lang
-                    , l <- styleLocales style
-                    , localeLanguage l == primlang] ++
-                 -- then match to the two letter language
-                 [l | l <- styleLocales style
-                    , (langVariant <$> localeLanguage l) == Just Nothing
-                    , (langLanguage <$> localeLanguage l) ==
-                      Just (langLanguage lang)] ++
-                 -- then locale with no lang
-                 [l | l <- styleLocales style
-                    , isNothing (localeLanguage l)]
 
 
 evalSortKeys :: CiteprocOutput a

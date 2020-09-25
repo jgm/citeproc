@@ -2,9 +2,12 @@
 {-# LANGUAGE LambdaCase #-}
 {-# LANGUAGE TupleSections #-}
 module Citeproc.Style
-  ( parseStyle )
+  ( parseStyle
+  , mergeLocales
+  )
 where
 import Citeproc.Types
+import Citeproc.Locale
 import Citeproc.Element
 import Data.Text (Text)
 import Control.Monad (foldM)
@@ -19,6 +22,38 @@ import qualified Data.Text.Lazy as TL
 import Control.Monad.Trans.Reader (local)
 
 import Debug.Trace
+
+mergeLocales :: Maybe Lang -> Style a -> Locale
+mergeLocales mblang style =
+  mconcat stylelocales <> deflocale -- left-biased union
+ where
+  getUSLocale = case getLocale (Lang "en" (Just"US")) of
+                  Right l -> l
+                  Left _  -> mempty
+  lang = fromMaybe (Lang "en" (Just "US")) $
+              mblang <|> styleDefaultLocale (styleOptions style)
+  deflocale = case getLocale lang of
+                 Right l -> l
+                 Left _  -> getUSLocale
+  primlang = getPrimaryDialect lang
+  stylelocales =  -- exact match to lang gets precedence
+                 [l | l <- styleLocales style
+                    , localeLanguage l == Just lang] ++
+                 -- then match to primary dialect, if different
+                 [l | primlang /= Just lang
+                    , l <- styleLocales style
+                    , localeLanguage l == primlang] ++
+                 -- then match to the two letter language
+                 [l | l <- styleLocales style
+                    , (langVariant <$> localeLanguage l) == Just Nothing
+                    , (langLanguage <$> localeLanguage l) ==
+                      Just (langLanguage lang)] ++
+                 -- then locale with no lang
+                 [l | l <- styleLocales style
+                    , isNothing (localeLanguage l)]
+
+
+
 
 parseStyle :: Monad m
            => (Text -> m Text) -- ^ Function that takes a URL and retrieves

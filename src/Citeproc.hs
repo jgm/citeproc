@@ -2,9 +2,7 @@ module Citeproc
        ( module Citeproc.Types
        , module Citeproc.Style
        , module Citeproc.Locale
-       , module Citeproc.CslJson
        , citeproc
-       , mergeLocales
        ) where
 import Citeproc.Types
 import Citeproc.Style
@@ -12,6 +10,9 @@ import Citeproc.Locale
 import Citeproc.Eval
 import Citeproc.CslJson
 
+-- | Process a list of 'Citation's, producing formatted citations
+-- and a bibliography according to the rules of a CSL 'Style'.
+-- If a 'Lang' is specified, override the style's default locale.
 citeproc :: CiteprocOutput a
          => CiteprocOptions
          -> Style a

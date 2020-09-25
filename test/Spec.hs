@@ -3,6 +3,7 @@
 {-# LANGUAGE OverloadedStrings #-}
 module Main (main) where
 import Citeproc
+import Citeproc.CslJson
 import Data.Semigroup
 import Data.Algorithm.DiffContext
 import System.TimeIt (timeIt)
