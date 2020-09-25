@@ -2177,12 +2177,16 @@ eChoose ((match, conditions, els):rest) = do
 eNumber :: CiteprocOutput a => Variable -> NumberForm -> Eval a (Output a)
 eNumber var nform = do
   mbv <- askVariable var
+  varTerms <- lookupTerm emptyTerm { termName = fromVariable var }
+  let mbGender = case varTerms of
+                   [] -> Nothing
+                   ((t,_):_) -> termGenderForm t
   let nparts = case mbv of
                  Just x@NumVal{}   -> [x]
                  Just (FancyVal x) -> splitNums (toText x)
                  Just (TextVal t)  -> splitNums t
                  _                 -> []
-  grouped <$> mapM (evalNumber nform Nothing) nparts
+  grouped <$> mapM (evalNumber nform mbGender) nparts
 
 evalNumber :: CiteprocOutput a
            => NumberForm -> Maybe TermGender -> Val a -> Eval a (Output a)
