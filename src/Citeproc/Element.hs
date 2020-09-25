@@ -162,7 +162,7 @@ parseTerm m node = do
                  Just "masculine"  -> Just Masculine
                  Just "feminine"   -> Just Feminine
                  _                 -> Nothing
-  let genderForm = case lookupAttribute "gender" attr of
+  let genderForm = case lookupAttribute "gender-form" attr of
                      Just "masculine"  -> Just Masculine
                      Just "feminine"   -> Just Feminine
                      _                 -> Nothing

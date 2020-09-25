@@ -2180,7 +2180,7 @@ eNumber var nform = do
   varTerms <- lookupTerm emptyTerm { termName = fromVariable var }
   let mbGender = case varTerms of
                    [] -> Nothing
-                   ((t,_):_) -> termGenderForm t
+                   ((t,_):_) -> termGender t
   let nparts = case mbv of
                  Just x@NumVal{}   -> [x]
                  Just (FancyVal x) -> splitNums (toText x)
@@ -2192,7 +2192,7 @@ evalNumber :: CiteprocOutput a
            => NumberForm -> Maybe TermGender -> Val a -> Eval a (Output a)
 evalNumber form mbGender (NumVal i) = do
   let numterm s x = emptyTerm { termName = T.pack $ printf s x
-                              , termGender = mbGender }
+                              , termGenderForm = mbGender }
   let dectext = T.pack (show i)
   let twomatch = numterm "ordinal-%02d" (i `mod` 100)
   let onematch = numterm "ordinal-%02d" (i `mod` 10)
