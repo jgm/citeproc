@@ -296,12 +296,8 @@ lookupQuotes locale = (outerQuotes, innerQuotes)
                  fromMaybe "’" $ lookupTerm locale "close-inner-quote")
 
 renderCslJson :: Locale -> CslJson Text -> Text
-renderCslJson locale csljson =
-   if T.null result
-      then "[CSL STYLE ERROR: reference with no printed form.]"
-      else result
+renderCslJson locale csljson = go (RenderContext True True True True) csljson
  where
-  result = go (RenderContext True True True True) csljson
   (outerQuotes, innerQuotes) = lookupQuotes locale
   go :: RenderContext -> CslJson Text -> Text
   go ctx el =

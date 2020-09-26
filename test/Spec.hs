@@ -101,13 +101,21 @@ runTest test = do
                      $ resultWarnings actual
             case mode test of
               "citation" -> compareTest test
-                  (T.intercalate "\n" $ map (renderCslJson loc)
+                  (T.intercalate "\n" $ map (renderCslJson' loc)
                                           (resultCitations actual))
               "bibliography" -> compareTest test
                   (T.intercalate "\n"
-                    (addDivs $ map (renderCslJson loc . snd)
+                    (addDivs $ map (renderCslJson' loc . snd)
                                           (resultBibliography actual)))
               _ -> doSkip $ "unknown mode " <> mode test
+
+renderCslJson' :: Locale -> CslJson Text -> Text
+renderCslJson' loc x =
+  if T.null result
+     then "[CSL STYLE ERROR: reference with no printed form.]"
+     else result
+ where
+  result = renderCslJson loc x
 
 addDivs :: [Text] -> [Text]
 addDivs ts = "<div class=\"csl-bib-body\">" : map addItemDiv ts ++ ["</div>"]

@@ -14,7 +14,6 @@ module Citeproc.Types
   , addFormatting
   , CiteprocError(..)
   , prettyCiteprocError
-  , Result(..)
   , ItemId(..)
   , CitationItem(..)
   , CitationItemType(..)
@@ -140,9 +139,13 @@ import qualified Data.RFC5051 as RFC5051
 ppTrace :: Show a => a -> a
 ppTrace x = trace (ppShow x) x
 
+-- | Options affecting the output in ways that go beyond
+-- what can be specified in styles.
 newtype CiteprocOptions =
   CiteprocOptions
-  { linkCitations :: Bool }
+  { linkCitations :: Bool
+    -- ^ Create hyperlinks from citations to bibliography entries
+  }
   deriving (Show, Eq)
 
 defaultCiteprocOptions :: CiteprocOptions
@@ -164,6 +167,12 @@ prettyCiteprocError (CiteprocParseError t) =
 prettyCiteprocError (CiteprocLocaleNotFound t) =
   "CiteprocLocaleNotFound: " <> t
 
+-- | CSL styles require certain formatting transformations to
+-- be defined.  These are defined in the 'CiteprocOutput' class.
+-- The library may be used with any structured format that defines
+-- these operations.  See the 'Citeproc.CslJson' module for an instance
+-- that corresponds to the markup allowed in CSL JSON. See
+-- the 'Citeproc.Pandoc' module for an instance for Pandoc 'Inlines'.
 class (Semigroup a, Monoid a, Show a, Eq a, Ord a) => CiteprocOutput a where
   toText                      :: a -> Text
   fromText                    :: Text -> a
@@ -207,13 +216,6 @@ addFormatting f x =
                   Just s   -> mconcat $ fixPunct [z, fromText s]
                   Nothing  -> z
   affixesInside = formatAffixesInside f
-
-data Result a =
-  Result
-  { resultCitations     :: [a]
-  , resultBibliography  :: [(Text, a)]  -- pairs of item id and entry
-  , resultWarnings      :: [Text]
-  } deriving (Show)
 
 newtype ItemId = ItemId { unItemId :: Text }
   deriving (Show, Eq, Ord, Semigroup, Monoid)
