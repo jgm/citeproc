@@ -1,3 +1,4 @@
+{-# LANGUAGE OverloadedStrings #-}
 -- | Process citations using the formatting instructions encoded
 -- in a CSL stylesheet.  The library targets version 1.0.1 of the
 -- CSL spec: https://docs.citationstyles.org/en/stable/specification.html
@@ -9,6 +10,8 @@ module Citeproc
        , Result(..)
        ) where
 import Data.Text (Text)
+import qualified Data.Text as T
+import qualified Data.Set as Set
 import Citeproc.Types
 import Citeproc.Style
 import Citeproc.Locale
@@ -41,15 +44,15 @@ citeproc :: CiteprocOutput a
          -> [Citation a]
          -> Result a
 citeproc opts style mblang refs citations =
-  Result{ resultCitations =
-            map (trimR . movePunct . renderOutput opts) citationOs
-        , resultBibliography =
-            map (\(ident, out) ->
-                  (ident, trimR . movePunct .
-                    renderOutput opts{ linkCitations = False } $ out))
-                  bibliographyOs
-        , resultWarnings = warnings }
+  Result{ resultCitations = rCitations
+        , resultBibliography = rBibliography
+        , resultWarnings = warnings ++ noPrintedFormWarnings }
  where
+  rCitations = map (trimR . movePunct . renderOutput opts) citationOs
+  rBibliography = map (\(ident, out) ->
+                          (ident, trimR . movePunct .
+                            renderOutput opts{ linkCitations = False } $ out))
+                          bibliographyOs
   locale = mergeLocales mblang style
   trimR = dropTextWhileEnd (== ' ')
   movePunct = case localePunctuationInQuote locale of
@@ -57,4 +60,18 @@ citeproc opts style mblang refs citations =
                 _         -> id
   (citationOs, bibliographyOs, warnings) =
     evalStyle style mblang refs citations
-
+  noPrintedFormWarnings = Set.toList $ mconcat $
+                           zipWith npfCitation citations rCitations ++
+                           map npfBibentry rBibliography
+  npfBibentry (ident, out) =
+    if out == mempty
+       then Set.singleton $ "Bibliography entry with no printed form: " <>
+                               ident
+       else mempty
+  npfCitation citation res =
+    if res == mempty
+       then Set.singleton $ "Citation with no printed form: "  <>
+                                T.intercalate ","
+                                (map (unItemId . citationItemId)
+                                  (citationItems citation))
+       else mempty
