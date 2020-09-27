@@ -4,10 +4,9 @@
 {-# LANGUAGE FlexibleInstances #-}
 {-# LANGUAGE FlexibleContexts #-}
 {-# OPTIONS_GHC -fno-warn-orphans #-}
--- | This module defines a CiteprocOutput instance for pandoc Inlines.
+-- | This module defines a 'CiteprocOutput' instance for pandoc 'Inlines'.
 module Citeproc.Pandoc
-  ( caseTransform
-  )
+  ()
 where
 import Text.Pandoc.Definition
 import Text.Pandoc.Builder as B
