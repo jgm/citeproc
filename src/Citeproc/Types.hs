@@ -716,14 +716,18 @@ instance Ord Term where
      (isNothing gf1    || isNothing gf2    || gf1  == gf2 ) &&
      (isNothing match1 || isNothing match2 || match1 == match2)
 
+-- | A parsed IETF language tag, with language and optional variant.
+-- For example, @Lang "en" (Just "US")@ corresponds to @en-US@.
 data Lang = Lang{ langLanguage :: Text
                 , langVariant  :: Maybe Text }
   deriving (Show, Eq, Ord)
 
+-- | Render a 'Lang' an an IETF language tag.
 renderLang :: Lang -> Text
 renderLang (Lang l Nothing)  = l
 renderLang (Lang l (Just v)) = l <> "-" <> v
 
+-- | Parse an IETF language tag.
 parseLang :: Text -> Lang
 parseLang t = Lang l (snd <$> T.uncons v)
   where
@@ -1523,6 +1527,11 @@ readAsInt t =
       Right (x,t') | T.null t' -> Just x
       _                        -> Nothing
 
+-- | An abbreviations map.  These are typically stored in a JSON
+-- serialization: for examples of the format, see
+-- <https://github.com/citation-style-language/abbreviations>.
+-- Abbreviations are substituted in the output when the variable
+-- and its content are matched by something in the abbreviations map.
 newtype Abbreviations =
   Abbreviations (M.Map Variable (M.Map Text Text))
   deriving (Show, Eq, Ord)
@@ -1535,6 +1544,8 @@ instance FromJSON Abbreviations where
          return . M.lookup ("default" :: Text))
   parseJSON _            = fail "Could not read abbreviations"
 
+-- | Returns an abbreviation if the variable and its value match
+-- something in the abbreviations map.
 lookupAbbreviation :: CiteprocOutput a
                    => Variable -> Val a -> Abbreviations -> Maybe (Val a)
 lookupAbbreviation var val (Abbreviations abbrevmap) = do

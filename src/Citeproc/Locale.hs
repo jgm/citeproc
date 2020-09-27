@@ -19,6 +19,9 @@ import qualified Data.Text.Lazy as TL
 import Data.Text.Encoding (decodeUtf8)
 import Control.Applicative ((<|>))
 
+-- | Parse a CSL locale definition (XML).  For information about
+-- the format, see
+-- <https://docs.citationstyles.org/en/stable/translating-locale-files.html>.
 parseLocale :: Text -> Either CiteprocError Locale
 parseLocale t =
   case X.parseText def $ TL.fromStrict t of
@@ -74,6 +77,8 @@ primaryDialectMap = M.fromList
     ("zh", "zh-CN")
     ]
 
+-- | Retrieves the "primary dialect" corresponding to a langage,
+-- e.g. "lt-LT" for "lt".
 getPrimaryDialect :: Lang -> Maybe Lang
 getPrimaryDialect l =
   parseLang <$> M.lookup (langLanguage l) primaryDialectMap
@@ -87,7 +92,8 @@ locales = foldr go mempty localeFiles
        in M.insert lang (parseLocale $ decodeUtf8 bs) m
      | otherwise = m
 
--- see locale fallback algorithm in CSL 1.0.1 spec
+-- | Retrieves the locale defined for the specified language.
+-- Implements the locale fallback algorithm described in the CSL 1.0.1 spec.
 getLocale :: Lang -> Either CiteprocError Locale
 getLocale lang =
   case M.lookup lang locales
