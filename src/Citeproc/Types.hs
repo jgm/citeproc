@@ -217,13 +217,19 @@ addFormatting f x =
                   Nothing  -> z
   affixesInside = formatAffixesInside f
 
+-- | The identifier used to identify a work in a bibliographic
+-- database.
 newtype ItemId = ItemId { unItemId :: Text }
   deriving (Show, Eq, Ord, Semigroup, Monoid)
 
 data CitationItemType =
-  AuthorOnly | SuppressAuthor | NormalCite
+    AuthorOnly      -- ^ e.g., Smith
+  | SuppressAuthor  -- ^ e.g., (2000, p. 30)
+  | NormalCite      -- ^ e.g., (Smith 2000, p. 30)
   deriving (Show, Eq, Ord)
 
+-- | The part of a citation corresponding to a single work,
+-- possibly including a label, locator, prefix and suffix.
 data CitationItem a =
   CitationItem
   { citationItemId             :: ItemId
@@ -250,6 +256,8 @@ instance FromJSON a => FromJSON (CitationItem a) where
     <*> v .:? "prefix"
     <*> v .:? "suffix"
 
+-- | A citation (which may include several items, e.g.
+-- in @(Smith 2000; Jones 2010, p. 30)@).
 data Citation a =
   Citation { citationId         :: Maybe Text
            , citationNoteNumber :: Maybe Int
@@ -729,6 +737,8 @@ parseLang t = Lang l (snd <$> T.uncons v)
   where
    (l,v) = T.break (\c -> c == '-' || c == '_') t
 
+-- | Defines locale-specific terms, punctuation styles, and date
+-- formats.
 data Locale =
   Locale
   { localeLanguage               :: Maybe Lang
@@ -781,12 +791,16 @@ instance ToJSON Variable where
 instance ToJSONKey Variable where
   toJSONKey = toJSONKeyText fromVariable
 
+-- | Encodes bibliographic data for a single work.
 data Reference a =
-  Reference{ referenceId             :: ItemId
-           , referenceType           :: Text
-           , referenceDisambiguation :: Maybe DisambiguationData
-           , referenceVariables      :: M.Map Variable (Val a)
-           } deriving (Show, Functor, Foldable, Traversable)
+  Reference
+  { referenceId             :: ItemId
+  , referenceType           :: Text
+  , referenceDisambiguation :: Maybe DisambiguationData
+           -- ^ This is added in processing; if you are constructing
+           -- a Reference, set to Nothing
+  , referenceVariables      :: M.Map Variable (Val a)
+  } deriving (Show, Functor, Foldable, Traversable)
 
 instance ToJSON a => ToJSON (Reference a) where
   toJSON r = toJSON $
@@ -1039,12 +1053,14 @@ makeReferenceMap refs =
 lookupReference :: ItemId -> ReferenceMap a -> Maybe (Reference a)
 lookupReference ident (ReferenceMap m) = M.lookup ident m
 
+-- | Value associated with a certain variable in a bibliographic
+-- entry.
 data Val a =
-    TextVal Text
-  | FancyVal a
-  | NumVal  Int
-  | NamesVal [Name]
-  | DateVal Date
+    TextVal Text      -- ^ Plain text value
+  | FancyVal a        -- ^ Formatted value with parameterized type
+  | NumVal  Int       -- ^ Numerical value
+  | NamesVal [Name]   -- ^ Structured names
+  | DateVal Date      -- ^ Structured date
   deriving (Show, Eq, Functor, Foldable, Traversable)
 
 instance ToJSON a => ToJSON (Val a) where
