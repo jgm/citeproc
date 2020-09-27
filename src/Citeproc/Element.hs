@@ -1,7 +1,10 @@
 {-# LANGUAGE OverloadedStrings #-}
+{-# LANGUAGE GeneralizedNewtypeDeriving #-}
 module Citeproc.Element
   ( pLocale
   , pDate
+  , Attributes(..)
+  , lookupAttribute
   , ElementParser
   , runElementParser
   , parseFailure
@@ -27,6 +30,12 @@ import Control.Monad.Trans.Class (lift)
 
 import Debug.Trace
 
+newtype Attributes = Attributes (M.Map Text Text)
+  deriving (Show, Semigroup, Monoid, Eq)
+
+lookupAttribute :: Text -> Attributes -> Maybe Text
+lookupAttribute key (Attributes kvs) = M.lookup key kvs
+
 type ElementParser = ReaderT (M.Map X.Name Text) (Except CiteprocError)
 
 runElementParser :: ElementParser a -> Either CiteprocError a
@@ -43,17 +52,15 @@ allChildren :: X.Element -> [X.Element]
 allChildren el = [e | X.NodeElement e <- X.elementNodes el]
 
 getAttributes :: X.Element -> Attributes
-getAttributes = Attributes . map toAttribute . M.toList . X.elementAttributes
-  where
-   toAttribute (k,v) = (X.nameLocalName k, v)
+getAttributes =
+  Attributes . M.mapKeys X.nameLocalName . X.elementAttributes
 
 -- Like getAttributes but incorporates inheritable attributes.
 getNameAttributes :: X.Element -> ElementParser Attributes
 getNameAttributes node = do
   nameattr <- ask
   let xattr = X.elementAttributes node <> nameattr
-  let toAttribute (k,v) = (X.nameLocalName k, v)
-  return $ Attributes $ map toAttribute $ M.toList xattr
+  return $ Attributes $ M.mapKeys X.nameLocalName xattr
 
 getFormatting :: Attributes -> Formatting
 getFormatting attr =

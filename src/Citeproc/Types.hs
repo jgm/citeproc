@@ -52,8 +52,6 @@ module Citeproc.Types
   , VerticalAlign(..)
   , DisplayStyle(..)
   , TextCase(..)
-  , Attributes(..)
-  , lookupAttribute
   , DemoteNonDroppingParticle(..)
   , StyleOptions(..)
   , SubsequentAuthorSubstitute(..)
@@ -278,12 +276,6 @@ instance FromJSON a => FromJSON (Citation a) where
          Nothing -> fail "Empty array") v
    <|>
    (Citation Nothing Nothing <$> parseJSON v)
-
-newtype Attributes = Attributes [(Text, Text)]
-  deriving (Show, Semigroup, Monoid, Eq)
-
-lookupAttribute :: Text -> Attributes -> Maybe Text
-lookupAttribute key (Attributes kvs) = lookup key kvs
 
 data Match =
     MatchAll
