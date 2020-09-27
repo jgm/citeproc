@@ -5,9 +5,7 @@
 {-# LANGUAGE OverloadedStrings #-}
 {-# LANGUAGE TupleSections #-}
 module Citeproc.Eval
-  ( evalStyle
-  , formatPageRange
-  )
+  ( evalStyle )
 where
 import Citeproc.Types
 import Citeproc.Style (mergeLocales)
