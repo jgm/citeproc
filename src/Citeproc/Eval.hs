@@ -79,11 +79,12 @@ updateVarCount total' nonempty' =
               VarCount (total + total') (nonempty + nonempty') }
 
 evalStyle  :: CiteprocOutput a
-           => Style a
-           -> Maybe Lang
-           -> [Reference a]
-           -> [Citation a]
+           => Style a          -- ^ Parsed CSL style.
+           -> Maybe Lang       -- ^ Override style default locale.
+           -> [Reference a]    -- ^ List of references (bibliographic data).
+           -> [Citation a]     -- ^ List of citations.
            -> ([Output a], [(Text, Output a)], [Text])
+                       -- ^ (citations, (id, bibentry) pairs, warnings)
 evalStyle style mblang refs citations =
   (citationOs, bibliographyOs, Set.toList warnings)
  where
