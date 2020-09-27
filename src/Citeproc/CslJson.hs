@@ -5,6 +5,13 @@
 {-# LANGUAGE DeriveFunctor #-}
 {-# LANGUAGE DeriveFoldable #-}
 {-# LANGUAGE DeriveTraversable #-}
+-- | CSL JSON is the structured text format defined in
+-- <https://citeproc-js.readthedocs.io/en/latest/csl-json/markup.html>.
+-- It is used to represent formatted text inside CSL JSON bibliographies.
+-- For the most part it is a subset of HTML, with some special
+-- features like smart quote parsing.  This module defines a parser
+-- and a renderer for this format, as well as 'CiteprocOutput' and
+-- other typeclass instances.
 module Citeproc.CslJson
   ( CslJson(..)
   , renderCslJson
