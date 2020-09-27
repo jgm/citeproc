@@ -111,11 +111,11 @@ runTest test = do
 
 renderCslJson' :: Locale -> CslJson Text -> Text
 renderCslJson' loc x =
-  if T.null result
+  if T.null res
      then "[CSL STYLE ERROR: reference with no printed form.]"
-     else result
+     else res
  where
-  result = renderCslJson loc x
+  res = renderCslJson loc x
 
 addDivs :: [Text] -> [Text]
 addDivs ts = "<div class=\"csl-bib-body\">" : map addItemDiv ts ++ ["</div>"]
