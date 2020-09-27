@@ -2267,12 +2267,13 @@ citationLabel ref = TextVal trigraph
   datevars = [v | v <- vars, variableType v == DateVariable]
   getNames var = case M.lookup var varmap of
                    Just (NamesVal ns) ->
-                     let x = if length ns > 1 then 2 else 3 in
+                     let x = if length ns > 1 then 2 else 4 in
                      mconcat $
                        map (T.take x . fromMaybe "" .  nameFamily) ns
                    _ -> ""
   getYear d = case dateParts d of
-                (DateParts (x:_):_) -> T.pack $ show (x `mod` 100)
+                (DateParts (x:_):_) -> T.pack $ printf "%02d"
+                                              $ x `mod` 100
                 _ -> ""
 
 removeDoubleSpaces :: Text -> Text
