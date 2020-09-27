@@ -43,8 +43,8 @@ library
                        Citeproc.Pandoc
                        Citeproc.Eval
                        Citeproc.CaseTransform
-                       Citeproc.Data
   other-modules:       Citeproc.Element
+                       Citeproc.Data
 
   build-depends:       base >= 4.8 && < 5
                      , safe
