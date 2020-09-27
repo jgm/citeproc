@@ -6,7 +6,6 @@
 {-# LANGUAGE TupleSections #-}
 module Citeproc.Eval
   ( evalStyle
-  , mergeLocales
   , formatPageRange
   )
 where
