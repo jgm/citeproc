@@ -17,7 +17,6 @@ import Citeproc.Types
 import Citeproc.Style
 import Citeproc.Locale
 import Citeproc.Eval
-import Citeproc.CslJson
 
 -- | Result of citation processing.
 data Result a =
