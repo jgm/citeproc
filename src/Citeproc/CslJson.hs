@@ -134,12 +134,12 @@ instance CiteprocOutput (CslJson Text) where
       SupAlign         -> CslSup
   addTextCase mblang x =
     case x of
-      Lowercase        -> caseTransform (withLowercaseAll mblang)
-      Uppercase        -> caseTransform (withUppercaseAll mblang)
-      CapitalizeFirst  -> caseTransform (withCapitalizeFirst mblang)
-      CapitalizeAll    -> caseTransform (withCapitalizeWords mblang)
-      SentenceCase     -> caseTransform (withSentenceCase mblang)
-      TitleCase        -> caseTransform (withTitleCase mblang)
+      Lowercase        -> caseTransform mblang withLowercaseAll
+      Uppercase        -> caseTransform mblang withUppercaseAll
+      CapitalizeFirst  -> caseTransform mblang withCapitalizeFirst
+      CapitalizeAll    -> caseTransform mblang withCapitalizeWords
+      SentenceCase     -> caseTransform mblang withSentenceCase
+      TitleCase        -> caseTransform mblang withTitleCase
   addDisplay x          =
     case x of
       DisplayBlock       -> CslDiv "block"
@@ -355,28 +355,30 @@ renderCslJson locale csljson = go (RenderContext True True True True) csljson
 
 -- custom traversal which does not descend into
 -- CslSmallCaps, Baseline, SUp, Sub, or NoCase (implicit nocase)
-caseTransform' :: (CaseTransformState -> Text -> Text)
+caseTransform' :: Maybe Lang
+               -> CaseTransformer
                -> Int -- level in hierarchy
                -> (CslJson Text)
                -> State CaseTransformState (CslJson Text)
-caseTransform' f lev el =
+caseTransform' mblang f lev el =
   case el of
      CslText x         -> CslText . mconcat <$> mapM g (splitUp x)
      CslConcat x y     -> do
-       x' <- caseTransform' f lev x
+       x' <- caseTransform' mblang f lev x
        let lastWord = lev == 0 && not (hasWordBreak y)
        st <- get
        when (lastWord &&
              (st == AfterWordEnd || st == StartSentence || st == Start)) $
         put BeforeLastWord
-       y' <- caseTransform' f lev y
+       y' <- caseTransform' mblang f lev y
        return $ CslConcat x' y'
-     CslQuoted x       -> CslQuoted <$> caseTransform' f (lev + 1) x
-     CslItalic x       -> CslItalic <$> caseTransform' f (lev + 1) x
-     CslNormal x       -> CslNormal <$> caseTransform' f (lev + 1) x
-     CslBold   x       -> CslBold   <$> caseTransform' f (lev + 1) x
-     CslUnderline x    -> CslUnderline <$> caseTransform' f (lev + 1) x
-     CslNoDecoration x -> CslNoDecoration <$> caseTransform' f (lev + 1) x
+     CslQuoted x       -> CslQuoted <$> caseTransform' mblang f (lev + 1) x
+     CslItalic x       -> CslItalic <$> caseTransform' mblang f (lev + 1) x
+     CslNormal x       -> CslNormal <$> caseTransform' mblang f (lev + 1) x
+     CslBold   x       -> CslBold   <$> caseTransform' mblang f (lev + 1) x
+     CslUnderline x    -> CslUnderline <$> caseTransform' mblang f (lev + 1) x
+     CslNoDecoration x -> CslNoDecoration
+                            <$> caseTransform' mblang f (lev + 1) x
      CslSmallCaps _    -> return' el
      CslBaseline _     -> return' el
      CslSub _          -> return' el
@@ -403,7 +405,7 @@ caseTransform' f lev el =
               | otherwise -> AfterOtherPunctuation
     return $
       if T.all isAlphaNum t
-         then f st t
+         then f mblang st t
          else t
   isWordBreak '-' = True
   isWordBreak '/' = True
@@ -419,11 +421,12 @@ caseTransform' f lev el =
     (not (isAscii c) && isAlphaNum c && not (isAscii d) && isAlphaNum d) ||
     (isSpace c && isSpace d)
 
-caseTransform :: (CaseTransformState -> Text -> Text)
+caseTransform :: Maybe Lang
+              -> CaseTransformer
               -> CslJson Text
               -> CslJson Text
-caseTransform f x =
-  evalState (caseTransform' f 0 x) Start
+caseTransform mblang f x =
+  evalState (caseTransform' mblang f 0 x) Start
 
 punctuationInsideQuotes :: CslJson Text -> CslJson Text
 punctuationInsideQuotes = go

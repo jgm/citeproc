@@ -58,12 +58,12 @@ instance CiteprocOutput Inlines where
       SupAlign         -> B.superscript
   addTextCase mblang x =
     case x of
-      Lowercase        -> caseTransform (withLowercaseAll mblang)
-      Uppercase        -> caseTransform (withUppercaseAll mblang)
-      CapitalizeFirst  -> caseTransform (withCapitalizeFirst mblang)
-      CapitalizeAll    -> caseTransform (withCapitalizeWords mblang)
-      SentenceCase     -> caseTransform (withSentenceCase mblang)
-      TitleCase        -> caseTransform (withTitleCase mblang)
+      Lowercase        -> caseTransform mblang withLowercaseAll
+      Uppercase        -> caseTransform mblang withUppercaseAll
+      CapitalizeFirst  -> caseTransform mblang withCapitalizeFirst
+      CapitalizeAll    -> caseTransform mblang withCapitalizeWords
+      SentenceCase     -> caseTransform mblang withSentenceCase
+      TitleCase        -> caseTransform mblang withTitleCase
   addDisplay x          =
     case x of
       DisplayBlock       -> B.spanWith ("",["csl-block"],[])
@@ -201,19 +201,21 @@ stringify = query go . walk (unNote . unQuote)
   unQuote x = x
 
 
-caseTransform :: (CaseTransformState -> Text -> Text)
+caseTransform :: Maybe Lang
+              -> CaseTransformer
               -> Inlines
               -> Inlines
-caseTransform f x =
-  evalState (caseTransform' f x) Start
+caseTransform mblang f x =
+  evalState (caseTransform' mblang f x) Start
 
 
 -- custom traversal which does not descend into
 -- SmallCaps, Superscript, Subscript, Span "nocase" (implicit nocase)
-caseTransform' :: (CaseTransformState -> Text -> Text)
+caseTransform' :: Maybe Lang
+               -> CaseTransformer
                -> Inlines
                -> State CaseTransformState Inlines
-caseTransform' f ils =
+caseTransform' mblang f ils =
   case Seq.viewr (unMany ils) of
     xs Seq.:> Str t | not (Seq.null xs)
                     , not (hasWordBreak t) -> do
@@ -270,7 +272,7 @@ caseTransform' f ils =
               | otherwise -> AfterOtherPunctuation
     return $
       if T.all isAlphaNum t
-         then f st t
+         then f mblang st t
          else t
   isWordBreak '-' = True
   isWordBreak '/' = True
