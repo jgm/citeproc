@@ -4,6 +4,7 @@
 {-# LANGUAGE OverloadedStrings #-}
 module Citeproc.CaseTransform
   ( CaseTransformState(..)
+  , CaseTransformer
   , withUppercaseAll
   , withLowercaseAll
   , withCapitalizeWords
@@ -19,6 +20,8 @@ import Data.Char (isUpper, isLower, isAscii)
 import Data.Text (Text)
 import qualified Data.Text as T
 import Citeproc.Types (Lang(..))
+
+type CaseTransformer = Maybe Lang -> CaseTransformState -> Text -> Text
 
 data CaseTransformState =
       Start
@@ -48,13 +51,13 @@ toLower' mblang = T.toLower .
                                         _   -> c)
     _                  -> id
 
-withUppercaseAll :: Maybe Lang -> CaseTransformState -> Text -> Text
+withUppercaseAll :: CaseTransformer
 withUppercaseAll mblang _ = toUpper' mblang
 
-withLowercaseAll :: Maybe Lang -> CaseTransformState -> Text -> Text
+withLowercaseAll :: CaseTransformer
 withLowercaseAll mblang _ = toLower' mblang
 
-withCapitalizeWords :: Maybe Lang -> CaseTransformState -> Text -> Text
+withCapitalizeWords :: CaseTransformer
 withCapitalizeWords mblang st chunk
   | isMixedCase chunk = chunk
   | st == Start || st == StartSentence || st == AfterWordEnd ||
@@ -64,7 +67,7 @@ withCapitalizeWords mblang st chunk
          else chunk
   | otherwise = chunk
 
-withCapitalizeFirst :: Maybe Lang -> CaseTransformState -> Text -> Text
+withCapitalizeFirst :: CaseTransformer
 withCapitalizeFirst mblang st chunk
   | isMixedCase chunk = chunk
   | st == Start
@@ -73,7 +76,7 @@ withCapitalizeFirst mblang st chunk
          else chunk
   | otherwise = chunk
 
-withSentenceCase :: Maybe Lang -> CaseTransformState -> Text -> Text
+withSentenceCase :: CaseTransformer
 withSentenceCase mblang st chunk
   | isCapitalized chunk
   , not (st == Start || st == StartSentence)
@@ -83,7 +86,7 @@ withSentenceCase mblang st chunk
     = capitalizeText mblang $ T.toLower chunk
   | otherwise = chunk
 
-withTitleCase :: Maybe Lang -> CaseTransformState -> Text -> Text
+withTitleCase :: CaseTransformer
 withTitleCase mblang st chunk
   | isMixedCase chunk = chunk
   | T.all isUpper chunk = chunk  -- spec doesn't say this but tests do
