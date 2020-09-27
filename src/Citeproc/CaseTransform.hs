@@ -4,7 +4,7 @@
 {-# LANGUAGE OverloadedStrings #-}
 module Citeproc.CaseTransform
   ( CaseTransformState(..)
-  , CaseTransformer
+  , CaseTransformer(..)
   , withUppercaseAll
   , withLowercaseAll
   , withCapitalizeWords
@@ -21,7 +21,9 @@ import Data.Text (Text)
 import qualified Data.Text as T
 import Citeproc.Types (Lang(..))
 
-type CaseTransformer = Maybe Lang -> CaseTransformState -> Text -> Text
+newtype CaseTransformer =
+  CaseTransformer
+  { unCaseTransformer :: Maybe Lang -> CaseTransformState -> Text -> Text }
 
 data CaseTransformState =
       Start
@@ -52,54 +54,62 @@ toLower' mblang = T.toLower .
     _                  -> id
 
 withUppercaseAll :: CaseTransformer
-withUppercaseAll mblang _ = toUpper' mblang
+withUppercaseAll = CaseTransformer (\mblang _ -> toUpper' mblang)
 
 withLowercaseAll :: CaseTransformer
-withLowercaseAll mblang _ = toLower' mblang
+withLowercaseAll = CaseTransformer (\mblang _ -> toLower' mblang)
 
 withCapitalizeWords :: CaseTransformer
-withCapitalizeWords mblang st chunk
-  | isMixedCase chunk = chunk
-  | st == Start || st == StartSentence || st == AfterWordEnd ||
-    st == BeforeLastWord
-    = if T.all isLower chunk
-         then capitalizeText mblang chunk
-         else chunk
-  | otherwise = chunk
+withCapitalizeWords = CaseTransformer go
+ where
+  go mblang st chunk
+     | isMixedCase chunk = chunk
+     | st == Start || st == StartSentence || st == AfterWordEnd ||
+       st == BeforeLastWord
+       = if T.all isLower chunk
+            then capitalizeText mblang chunk
+            else chunk
+     | otherwise = chunk
 
 withCapitalizeFirst :: CaseTransformer
-withCapitalizeFirst mblang st chunk
-  | isMixedCase chunk = chunk
-  | st == Start
-    = if T.all isLower chunk
-         then capitalizeText mblang chunk
-         else chunk
-  | otherwise = chunk
+withCapitalizeFirst = CaseTransformer go
+ where
+  go mblang st chunk
+     | isMixedCase chunk = chunk
+     | st == Start
+       = if T.all isLower chunk
+            then capitalizeText mblang chunk
+            else chunk
+     | otherwise = chunk
 
 withSentenceCase :: CaseTransformer
-withSentenceCase mblang st chunk
-  | isCapitalized chunk
-  , not (st == Start || st == StartSentence)
-    = T.toLower chunk
-  | isCapitalized chunk || T.all isLower chunk
-  , st == Start || st == StartSentence
-    = capitalizeText mblang $ T.toLower chunk
-  | otherwise = chunk
+withSentenceCase = CaseTransformer go
+ where
+  go mblang st chunk
+     | isCapitalized chunk
+     , not (st == Start || st == StartSentence)
+       = T.toLower chunk
+     | isCapitalized chunk || T.all isLower chunk
+     , st == Start || st == StartSentence
+       = capitalizeText mblang $ T.toLower chunk
+     | otherwise = chunk
 
 withTitleCase :: CaseTransformer
-withTitleCase mblang st chunk
-  | isMixedCase chunk = chunk
-  | T.all isUpper chunk = chunk  -- spec doesn't say this but tests do
-                                 -- textcase_TitleCapitalization.txt
-  | T.any (not . isAscii) chunk = chunk
-  | st == StartSentence || st == Start =
-    capitalizeText mblang $ T.toLower chunk
-  | st == AfterWordEnd
-  , not (isStopWord chunk)
-  , T.compareLength chunk 1 == GT = capitalizeText mblang $ T.toLower chunk
-  | st == BeforeLastWord
-  , T.compareLength chunk 1 == GT = capitalizeText mblang $ T.toLower chunk
-  | otherwise = chunk
+withTitleCase = CaseTransformer go
+ where
+  go mblang st chunk
+     | isMixedCase chunk = chunk
+     | T.all isUpper chunk = chunk  -- spec doesn't say this but tests do
+                                    -- textcase_TitleCapitalization.txt
+     | T.any (not . isAscii) chunk = chunk
+     | st == StartSentence || st == Start =
+       capitalizeText mblang $ T.toLower chunk
+     | st == AfterWordEnd
+     , not (isStopWord chunk)
+     , T.compareLength chunk 1 == GT = capitalizeText mblang $ T.toLower chunk
+     | st == BeforeLastWord
+     , T.compareLength chunk 1 == GT = capitalizeText mblang $ T.toLower chunk
+     | otherwise = chunk
 
 isCapitalized :: Text -> Bool
 isCapitalized t =

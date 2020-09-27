@@ -206,16 +206,15 @@ caseTransform :: Maybe Lang
               -> Inlines
               -> Inlines
 caseTransform mblang f x =
-  evalState (caseTransform' mblang f x) Start
+  evalState (caseTransform' (unCaseTransformer f mblang) x) Start
 
 
 -- custom traversal which does not descend into
 -- SmallCaps, Superscript, Subscript, Span "nocase" (implicit nocase)
-caseTransform' :: Maybe Lang
-               -> CaseTransformer
+caseTransform' :: (CaseTransformState -> Text -> Text)
                -> Inlines
                -> State CaseTransformState Inlines
-caseTransform' mblang f ils =
+caseTransform' f ils =
   case Seq.viewr (unMany ils) of
     xs Seq.:> Str t | not (Seq.null xs)
                     , not (hasWordBreak t) -> do
@@ -272,7 +271,7 @@ caseTransform' mblang f ils =
               | otherwise -> AfterOtherPunctuation
     return $
       if T.all isAlphaNum t
-         then f mblang st t
+         then f st t
          else t
   isWordBreak '-' = True
   isWordBreak '/' = True

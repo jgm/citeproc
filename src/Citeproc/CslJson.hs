@@ -355,30 +355,29 @@ renderCslJson locale csljson = go (RenderContext True True True True) csljson
 
 -- custom traversal which does not descend into
 -- CslSmallCaps, Baseline, SUp, Sub, or NoCase (implicit nocase)
-caseTransform' :: Maybe Lang
-               -> CaseTransformer
+caseTransform' :: (CaseTransformState -> Text -> Text)
                -> Int -- level in hierarchy
                -> (CslJson Text)
                -> State CaseTransformState (CslJson Text)
-caseTransform' mblang f lev el =
+caseTransform' f lev el =
   case el of
      CslText x         -> CslText . mconcat <$> mapM g (splitUp x)
      CslConcat x y     -> do
-       x' <- caseTransform' mblang f lev x
+       x' <- caseTransform' f lev x
        let lastWord = lev == 0 && not (hasWordBreak y)
        st <- get
        when (lastWord &&
              (st == AfterWordEnd || st == StartSentence || st == Start)) $
         put BeforeLastWord
-       y' <- caseTransform' mblang f lev y
+       y' <- caseTransform' f lev y
        return $ CslConcat x' y'
-     CslQuoted x       -> CslQuoted <$> caseTransform' mblang f (lev + 1) x
-     CslItalic x       -> CslItalic <$> caseTransform' mblang f (lev + 1) x
-     CslNormal x       -> CslNormal <$> caseTransform' mblang f (lev + 1) x
-     CslBold   x       -> CslBold   <$> caseTransform' mblang f (lev + 1) x
-     CslUnderline x    -> CslUnderline <$> caseTransform' mblang f (lev + 1) x
+     CslQuoted x       -> CslQuoted <$> caseTransform' f (lev + 1) x
+     CslItalic x       -> CslItalic <$> caseTransform' f (lev + 1) x
+     CslNormal x       -> CslNormal <$> caseTransform' f (lev + 1) x
+     CslBold   x       -> CslBold   <$> caseTransform' f (lev + 1) x
+     CslUnderline x    -> CslUnderline <$> caseTransform' f (lev + 1) x
      CslNoDecoration x -> CslNoDecoration
-                            <$> caseTransform' mblang f (lev + 1) x
+                            <$> caseTransform' f (lev + 1) x
      CslSmallCaps _    -> return' el
      CslBaseline _     -> return' el
      CslSub _          -> return' el
@@ -405,7 +404,7 @@ caseTransform' mblang f lev el =
               | otherwise -> AfterOtherPunctuation
     return $
       if T.all isAlphaNum t
-         then f mblang st t
+         then f st t
          else t
   isWordBreak '-' = True
   isWordBreak '/' = True
@@ -426,7 +425,7 @@ caseTransform :: Maybe Lang
               -> CslJson Text
               -> CslJson Text
 caseTransform mblang f x =
-  evalState (caseTransform' mblang f 0 x) Start
+  evalState (caseTransform' (unCaseTransformer f mblang) 0 x) Start
 
 punctuationInsideQuotes :: CslJson Text -> CslJson Text
 punctuationInsideQuotes = go
