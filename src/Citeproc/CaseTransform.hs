@@ -2,6 +2,9 @@
 {-# LANGUAGE MultiParamTypeClasses #-}
 {-# LANGUAGE FlexibleInstances #-}
 {-# LANGUAGE OverloadedStrings #-}
+-- | Provides functions that facilitate defining textcase transformations.
+-- To see how these can be used used, see the definitions of @addTextCase@
+-- in "Citeproc.Pandoc" and "Citproc.CslJson".
 module Citeproc.CaseTransform
   ( CaseTransformState(..)
   , CaseTransformer(..)
@@ -21,10 +24,12 @@ import Data.Text (Text)
 import qualified Data.Text as T
 import Citeproc.Types (Lang(..))
 
+-- | Wraps a function used to define textcase transformations.
 newtype CaseTransformer =
   CaseTransformer
   { unCaseTransformer :: Maybe Lang -> CaseTransformState -> Text -> Text }
 
+-- | Tracks context in textcase transformations.
 data CaseTransformState =
       Start
     | StartSentence
@@ -53,12 +58,15 @@ toLower' mblang = T.toLower .
                                         _   -> c)
     _                  -> id
 
+-- | Uppercase everything.
 withUppercaseAll :: CaseTransformer
 withUppercaseAll = CaseTransformer (\mblang _ -> toUpper' mblang)
 
+-- | Lowercase everything.
 withLowercaseAll :: CaseTransformer
 withLowercaseAll = CaseTransformer (\mblang _ -> toLower' mblang)
 
+-- | Capitalize all words.
 withCapitalizeWords :: CaseTransformer
 withCapitalizeWords = CaseTransformer go
  where
@@ -71,6 +79,7 @@ withCapitalizeWords = CaseTransformer go
             else chunk
      | otherwise = chunk
 
+-- | Capitalize first letter.
 withCapitalizeFirst :: CaseTransformer
 withCapitalizeFirst = CaseTransformer go
  where
@@ -82,6 +91,7 @@ withCapitalizeFirst = CaseTransformer go
             else chunk
      | otherwise = chunk
 
+-- | Capitalize first letter of each sentence.
 withSentenceCase :: CaseTransformer
 withSentenceCase = CaseTransformer go
  where
@@ -94,6 +104,7 @@ withSentenceCase = CaseTransformer go
        = capitalizeText mblang $ T.toLower chunk
      | otherwise = chunk
 
+-- | Use title case.
 withTitleCase :: CaseTransformer
 withTitleCase = CaseTransformer go
  where
