@@ -23,6 +23,10 @@ import Control.Monad.Trans.Reader (local)
 
 import Debug.Trace
 
+-- | Merge the locale specified by the first parameter, if any,
+-- with the default locale of the style and locale definitions
+-- in the style.  The locale specified by the first parameter
+-- overrides the style's defaults when there is a conflict.
 mergeLocales :: Maybe Lang -> Style a -> Locale
 mergeLocales mblang style =
   mconcat stylelocales <> deflocale -- left-biased union
@@ -54,11 +58,15 @@ mergeLocales mblang style =
 
 
 
-
+-- | Parse an XML stylesheet into a 'Style'.  The first parameter
+-- is a function that retrieves the text of the independent parent
+-- of a dependent style, given a URL.  (This might make an HTTP
+-- request or retrieve the style locally.)  If you aren't using
+-- dependent styles, you may use `(\_ -> return mempty)`.
 parseStyle :: Monad m
            => (Text -> m Text) -- ^ Function that takes a URL and retrieves
                                -- text of independent parent
-           -> Text
+           -> Text             -- ^ Contents of XML stylesheet
            -> m (Either CiteprocError (Style a))
 parseStyle getIndependentParent t =
   -- first, see if it's a dependent or independent style

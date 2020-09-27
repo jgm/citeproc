@@ -35,13 +35,13 @@ data Result a =
 -- and a bibliography according to the rules of a CSL 'Style'.
 -- If a 'Lang' is specified, override the style's default locale.
 -- To obtain a 'Style' from an XML stylesheet, use
--- 'parseStyle' from 'Citeproc.Style'.
+-- 'parseStyle' from "Citeproc.Style".
 citeproc :: CiteprocOutput a
-         => CiteprocOptions
-         -> Style a
-         -> Maybe Lang
-         -> [Reference a]
-         -> [Citation a]
+         => CiteprocOptions    -- ^ Rendering options
+         -> Style a            -- ^ Parsed CSL style
+         -> Maybe Lang         -- ^ Overrides default locale for style
+         -> [Reference a]      -- ^ List of references (bibliographic data)
+         -> [Citation a]       -- ^ List of citations to process
          -> Result a
 citeproc opts style mblang refs citations =
   Result{ resultCitations = rCitations
