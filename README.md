@@ -76,7 +76,7 @@ retrieves the text from that URL.  This is used to fetch
 the "indendent parent" of a dependent style.  You can supply
 whatever function you like: it can search your local file
 system or fetch the content via HTTP.  If you're not using
-dependent styles, you can get by with `const Nothing`.
+dependent styles, you can get by with `\_ -> return mempty`.
 
 ## Known bugs and limitations
 
