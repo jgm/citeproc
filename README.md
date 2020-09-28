@@ -38,13 +38,6 @@ executable.  It will be used in pandoc itself to provide
 integrated citation support and bibliography format conversion
 (so the pandoc-citeproc filter will no longer be necessary).
 
-At this point, the library still fails some of the tests from the
-CSL test suite (94/845).  However, most of the failures are on
-minor corner cases.  And because the library already passes
-many more CSL tests than pandoc-citeproc did, it seemed worth
-publishing an early version even before all these bugs are
-ironed out.
-
 [CSL]: https://docs.citationstyles.org/en/stable/specification.html
 
 ## How to use it
@@ -85,3 +78,19 @@ whatever function you like: it can search your local file
 system or fetch the content via HTTP.  If you're not using
 dependent styles, you can get by with `const Nothing`.
 
+## Known bugs and limitations
+
+At this point, the library still fails some of the tests from the
+CSL test suite (94/845).  However, most of the failures are on
+minor corner cases.  And because the library already passes
+many more CSL tests than pandoc-citeproc did, it seemed worth
+publishing an early version even before all these bugs are
+ironed out.
+
+Users should be aware of the following, specifically:
+
+- Year suffix disambiguation doesn't currently work with
+  citation labels, only with author-date citations.
+
+- 'Ibid.' is sometimes wrongly capitalized when it occurs inside a
+  citation group.
