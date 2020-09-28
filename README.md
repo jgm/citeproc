@@ -92,5 +92,3 @@ Users should be aware of the following, specifically:
 - Year suffix disambiguation doesn't currently work with
   citation labels, only with author-date citations.
 
-- 'Ibid.' is sometimes wrongly capitalized when it occurs inside a
-  citation group.
