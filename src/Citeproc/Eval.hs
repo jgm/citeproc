@@ -762,7 +762,9 @@ groupAndCollapseCitations citeGroupDelim yearSuffixDelim afterCollapseDelim
     case (unFormat xs1, unFormat xs2) of
       ((Tagged (TagNames t1 _nf1 ns1) ws1 : _),
        (Tagged (TagNames t2 _nf2 ns2) ws2 : _))
-       -> t1 == t2 && (ns1 == ns2 || ws1 == ws2)
+       -> t1 == t2 && (if ns1 == ns2
+                          then not (null ns1) || ws1 == ws2
+                          else ws1 == ws2)
           -- case where title is substituted
       _ -> False
   sameNames _ _ = False
