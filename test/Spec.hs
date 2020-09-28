@@ -316,7 +316,7 @@ main = do
                (length (skipped counts))
   case length (failed counts) + length (errored counts) of
     0 -> exitWith ExitSuccess
-    n | n <= 94  -> do
+    n | n <= 90  -> do
          putStrLn "We have passed all the CSL tests we expect to..."
          exitWith ExitSuccess
       | otherwise -> exitWith $ ExitFailure n

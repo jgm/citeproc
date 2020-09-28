@@ -618,10 +618,13 @@ disambiguateCitations style bibSortKeyMap citations = do
 
   toDisambData (id', (ns', ds')) = DisambData id' ns' ds'
 
+  -- take names, date, or citation-label (which also gets year suffix).
   takeNamesOrDate :: CiteprocOutput a => [Output a] -> [(Tag, Text)]
   takeNamesOrDate (Tagged t@TagNames{} x : xs) =
     (t, outputToText x) : takeNamesOrDate xs
   takeNamesOrDate (Tagged t@TagDate{} x : xs) =
+    (t, outputToText x) : takeNamesOrDate xs
+  takeNamesOrDate (Tagged t@TagCitationLabel x : xs) =
     (t, outputToText x) : takeNamesOrDate xs
   takeNamesOrDate (_ : xs) =
     takeNamesOrDate xs
@@ -1253,6 +1256,26 @@ eText (TextVariable varForm v) = do
             warn $ "citation-number not defined for " <>
                       coerce (referenceId ref)
             return NullOutput
+
+    "citation-label" -> do  -- these need year suffix too
+        mbv <- askVariable v
+        mbsuff <- getYearSuffix
+        case mbv of
+          Just (TextVal t)  -> return $
+                                Tagged TagCitationLabel $
+                                  grouped $
+                                  Literal (fromText t)
+                                  : maybe [] (:[]) mbsuff
+          Just (FancyVal x) -> return $
+                                 Tagged TagCitationLabel $
+                                  grouped $
+                                  Literal x
+                                  : maybe [] (:[]) mbsuff
+          _ -> do
+            warn $ "citation-label of unknown type for " <>
+                      coerce (referenceId ref)
+            return NullOutput
+
     _ -> do
         mbv <- if varForm == ShortForm
                   then do

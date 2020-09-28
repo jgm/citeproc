@@ -1438,6 +1438,7 @@ instance Biplate (Output a) (Output a) where
 data Tag =
       TagTerm
     | TagCitationNumber Int
+    | TagCitationLabel
     | TagItem CitationItemType ItemId
     | TagName Name
     | TagNames Variable NamesFormat [Name]

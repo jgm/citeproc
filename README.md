@@ -81,14 +81,7 @@ dependent styles, you can get by with `\_ -> return mempty`.
 ## Known bugs and limitations
 
 At this point, the library still fails some of the tests from the
-CSL test suite (94/845).  However, most of the failures are on
-minor corner cases.  And because the library already passes
-many more CSL tests than pandoc-citeproc did, it seemed worth
-publishing an early version even before all these bugs are
-ironed out.
-
-Users should be aware of the following, specifically:
-
-- Year suffix disambiguation doesn't currently work with
-  citation labels, only with author-date citations.
+CSL test suite (90/845).  However, most of the failures are on
+minor corner cases.  This library is already much more accurate
+in implementing the CSL spec than pandoc-citeproc was.
 
