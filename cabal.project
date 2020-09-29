@@ -1,1 +1,4 @@
-packages: .
+packages: citeproc.cabal
+
+package citeproc
+  flags: -icu +executable

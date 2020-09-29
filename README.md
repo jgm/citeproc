@@ -78,6 +78,18 @@ whatever function you like: it can search your local file
 system or fetch the content via HTTP.  If you're not using
 dependent styles, you can get by with `\_ -> return mempty`.
 
+## The citeproc executable
+
+If the package is compiled with the `executable` flag, an
+executable `citeproc` will be built.  `citeproc` acts as a pipe,
+reading a JSON-encoded `Inputs` object from `stdin` and writing
+a JSON-encoded `Result` object from `stdout`.
+
+TODO more on the JSON encoding.
+
+The `citeproc` executable can be used to add citation processing
+to non-Haskell projects.
+
 ## Known bugs and limitations
 
 At this point, the library still fails some of the tests from the

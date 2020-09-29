@@ -1,5 +1,10 @@
+flags:
+  citeproc:
+    executable: true
+    icu: false
 resolver: lts-15.14
 extra-deps:
 - rfc5051-0.2
+- pandoc-types-1.22
 ghc-options:
   "$locals": -fhide-source-paths
