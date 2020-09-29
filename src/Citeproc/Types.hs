@@ -102,6 +102,7 @@ module Citeproc.Types
   , Abbreviations
   , lookupAbbreviation
   , Result(..)
+  , Inputs(..)
   )
 where
 import qualified Data.Map as M
