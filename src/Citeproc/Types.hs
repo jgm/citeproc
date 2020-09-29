@@ -1,4 +1,5 @@
 {-# LANGUAGE CPP #-}
+{-# LANGUAGE LambdaCase #-}
 {-# LANGUAGE DeriveFoldable #-}
 {-# LANGUAGE DeriveTraversable #-}
 {-# LANGUAGE StrictData #-}
@@ -219,13 +220,26 @@ addFormatting f x =
 -- | The identifier used to identify a work in a bibliographic
 -- database.
 newtype ItemId = ItemId { unItemId :: Text }
-  deriving (Show, Eq, Ord, Semigroup, Monoid)
+  deriving (Show, Eq, Ord, Semigroup, Monoid, ToJSON, FromJSON)
 
 data CitationItemType =
     AuthorOnly      -- ^ e.g., Smith
   | SuppressAuthor  -- ^ e.g., (2000, p. 30)
   | NormalCite      -- ^ e.g., (Smith 2000, p. 30)
   deriving (Show, Eq, Ord)
+
+instance FromJSON CitationItemType where
+  parseJSON x = parseJSON x >>=
+    \case
+      "author-only"     -> pure AuthorOnly
+      "suppress-author" -> pure SuppressAuthor
+      "normal-cite"     -> pure NormalCite
+      t                 -> fail $ "Unknown type " ++ t
+
+instance ToJSON CitationItemType where
+  toJSON AuthorOnly     = "author-only"
+  toJSON SuppressAuthor = "suppress-author"
+  toJSON NormalCite     = "normal-cite"
 
 -- | The part of a citation corresponding to a single work,
 -- possibly including a label, locator, prefix and suffix.
@@ -244,16 +258,31 @@ instance FromJSON a => FromJSON (CitationItem a) where
     <$> (v .: "id" >>= fmap ItemId . asText)
     <*> v .:? "label"
     <*> (Just <$> (v .: "locator" >>= asText) <|> pure Nothing)
-    <*> (do suppressAuth <- v .:? "suppress-author"
-            authorOnly <- v .:? "author-only"
-            return $
-              case suppressAuth of
-                Just True -> SuppressAuthor
-                _ -> case authorOnly of
-                       Just True -> AuthorOnly
-                       _ -> NormalCite)
+    <*> ( (v .: "type")
+        <|> (do suppressAuth <- v .:? "suppress-author"
+                authorOnly <- v .:? "author-only"
+                return $
+                  case suppressAuth of
+                    Just True -> SuppressAuthor
+                    _ -> case authorOnly of
+                           Just True -> AuthorOnly
+                           _ -> NormalCite) )
     <*> v .:? "prefix"
     <*> v .:? "suffix"
+
+instance ToJSON a => ToJSON (CitationItem a) where
+  toJSON i = object $
+    [ ( "id", toJSON (citationItemId i) )
+    , ("type", toJSON $ citationItemType i) ] ++
+    [ ( "label", toJSON (citationItemLabel i) )
+                  | isJust (citationItemLabel i) ] ++
+    [ ("locator", toJSON (citationItemLocator i) )
+                  | isJust (citationItemLocator i) ] ++
+    [ ("prefix", toJSON (citationItemPrefix i))
+                 | isJust (citationItemPrefix i) ] ++
+    [ ("suffix", toJSON (citationItemSuffix i))
+                 | isJust (citationItemSuffix i) ]
+
 
 -- | A citation (which may include several items, e.g.
 -- in @(Smith 2000; Jones 2010, p. 30)@).
@@ -277,6 +306,15 @@ instance FromJSON a => FromJSON (Citation a) where
          Nothing -> fail "Empty array") v
    <|>
    (Citation Nothing Nothing <$> parseJSON v)
+
+instance ToJSON a => ToJSON (Citation a) where
+ toJSON c =
+   object $
+     [ ("citationID", toJSON $ citationId c) | isJust (citationId c) ] ++
+     [ ("citationItems" , toJSON $ citationItems c) ] ++
+     case citationNoteNumber c of
+           Nothing -> []
+           Just n  -> [ ("properties", object [("noteIndex", toJSON n)]) ]
 
 data Match =
     MatchAll
@@ -722,6 +760,12 @@ instance Ord Term where
 data Lang = Lang{ langLanguage :: Text
                 , langVariant  :: Maybe Text }
   deriving (Show, Eq, Ord)
+
+instance ToJSON Lang where
+  toJSON = toJSON . renderLang
+
+instance FromJSON Lang where
+  parseJSON = fmap parseLang . parseJSON
 
 -- | Render a 'Lang' an an IETF language tag.
 renderLang :: Lang -> Text
@@ -1546,6 +1590,10 @@ instance FromJSON Abbreviations where
          return . M.lookup ("default" :: Text))
   parseJSON _            = fail "Could not read abbreviations"
 
+instance ToJSON Abbreviations where
+  toJSON (Abbreviations m) =
+    object [("default", toJSON m)]
+
 -- | Returns an abbreviation if the variable and its value match
 -- something in the abbreviations map.
 lookupAbbreviation :: CiteprocOutput a
@@ -1575,14 +1623,41 @@ data Result a =
 
 instance ToJSON a => ToJSON (Result a) where
   toJSON res = object
-    [ ("resultCitations", toJSON $ resultCitations res)
-    , ("resultBibliography", toJSON $ resultBibliography res)
-    ,("resultWarnings", toJSON $ resultWarnings res)
+    [ ("citations", toJSON $ resultCitations res)
+    , ("bibliography", toJSON $ resultBibliography res)
+    , ("warnings", toJSON $ resultWarnings res)
     ]
 
 instance FromJSON a => FromJSON (Result a) where
   parseJSON = withObject "Result" $ \v ->
-    Result <$> v .: "resultCitations"
-           <*> v .: "resultBibliography"
-           <*> v .: "resultWarnings"
+    Result <$> v .: "citations"
+           <*> v .: "bibliography"
+           <*> v .: "warnings"
+
+-- | Inputs for citation processing.
+data Inputs a =
+  Inputs
+  { inputsCitations     :: [Citation a]
+  , inputsReferences    :: [Reference a]
+  , inputsStylesheet    :: Text
+  , inputsAbbreviations :: Maybe Abbreviations
+  , inputsLang          :: Maybe Lang
+  } deriving (Show)
+
+instance ToJSON a => ToJSON (Inputs a) where
+  toJSON inp = object
+    [ ("citations",     toJSON $ inputsCitations inp)
+    , ("references",    toJSON $ inputsReferences inp)
+    , ("stylesheet",    toJSON $ inputsStylesheet inp)
+    , ("abbreviations", toJSON $ inputsAbbreviations inp)
+    , ("lang",          toJSON $ inputsLang inp)
+    ]
+
+instance (FromJSON a, Eq a) => FromJSON (Inputs a) where
+  parseJSON = withObject "Inputs" $ \v ->
+    Inputs <$> v .:  "citations"
+           <*> v .:  "references"
+           <*> v .:  "stylesheet"
+           <*> v .:? "abbreviations"
+           <*> v .:? "lang"
 
