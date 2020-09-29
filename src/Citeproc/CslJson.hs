@@ -336,8 +336,17 @@ renderCslJson locale csljson = go (RenderContext True True True True) csljson
         | otherwise -> "<span style=\"font-weight:normal;\">" <>
                           go ctx{ useBold = True } x <> "</span>"
       CslUnderline x -> "<u>" <> go ctx x <> "</u>"
-      CslNoDecoration x -> "<span style=\"font-style:normal;\">" <>
-                             go ctx x <> "</span>"
+      CslNoDecoration x -> "<span style=\"" <>
+                           (if useSmallCaps ctx
+                               then ""
+                               else "font-variant:normal;") <>
+                           (if useBold ctx
+                               then ""
+                               else "font-weight:normal;") <>
+                           (if useItalics ctx
+                               then ""
+                               else "font-style:normal;") <>
+                           "\">" <> go ctx x <> "</span>"
       CslSmallCaps x
         | useSmallCaps ctx -> "<span style=\"font-variant:small-caps;\">"
                                 <> go ctx{ useSmallCaps = False } x <>
