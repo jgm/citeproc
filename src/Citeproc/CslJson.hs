@@ -47,8 +47,6 @@ import Control.Monad (guard, when)
 import Control.Applicative ((<|>))
 import Data.Generics.Uniplate.Direct
 
-import Debug.Trace
-
 data CslJson a =
      CslText a
    | CslEmpty
@@ -447,6 +445,7 @@ punctuationInsideQuotes = go
                CslQuoted (go (x <> CslText (T.take 1 t))) <>
                  CslText (T.drop 1 t) <> z
            z                      -> CslQuoted x <> z
+      CslConcat (CslConcat x y) z -> go (CslConcat x (CslConcat y z))
       CslConcat x y               -> go x <> go y
       CslQuoted x                 -> CslQuoted (go x)
       CslItalic x                 -> CslItalic (go x)
@@ -459,6 +458,7 @@ punctuationInsideQuotes = go
       CslSub x                    -> CslSub (go x)
       CslBaseline x               -> CslBaseline (go x)
       CslNoCase x                 -> CslNoCase (go x)
+      CslDiv t x                  -> CslDiv t (go x)
       _                           -> el
 
 superscriptChars :: [Char]
