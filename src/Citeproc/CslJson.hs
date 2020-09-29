@@ -235,6 +235,10 @@ pCslJson locale = P.choice
       (P.takeWhile1 (\c -> not (isAlphaNum c || isSpecialChar c))) )
   pCslQuoted = CslQuoted <$>
     do cl <- pOpenQuote
+       mbc <- peekChar
+       case mbc of
+         Just c  | T.singleton c == cl -> fail "unexpected close quote"
+         _ -> return ()
        mconcat <$> P.manyTill' pCsl (P.string cl)
   pCslSymbol = do
     c <- P.satisfy isSpecialChar
