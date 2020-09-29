@@ -378,8 +378,7 @@ caseTransform' f lev el =
      CslNormal x       -> CslNormal <$> caseTransform' f (lev + 1) x
      CslBold   x       -> CslBold   <$> caseTransform' f (lev + 1) x
      CslUnderline x    -> CslUnderline <$> caseTransform' f (lev + 1) x
-     CslNoDecoration x -> CslNoDecoration
-                            <$> caseTransform' f (lev + 1) x
+     CslNoDecoration _ -> return' el
      CslSmallCaps _    -> return' el
      CslBaseline _     -> return' el
      CslSub _          -> return' el
