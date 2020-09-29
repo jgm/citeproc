@@ -459,7 +459,8 @@ punctuationInsideQuotes = go
       CslBaseline x               -> CslBaseline (go x)
       CslNoCase x                 -> CslNoCase (go x)
       CslDiv t x                  -> CslDiv t (go x)
-      _                           -> el
+      CslText t                   -> CslText t
+      CslEmpty                    -> CslEmpty
 
 superscriptChars :: [Char]
 superscriptChars =
