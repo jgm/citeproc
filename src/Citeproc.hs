@@ -18,19 +18,6 @@ import Citeproc.Style
 import Citeproc.Locale
 import Citeproc.Eval
 
--- | Result of citation processing.
-data Result a =
-  Result
-  { resultCitations     :: [a]          -- ^ List of formatted citations
-                    -- corresponding to the citations given to 'citeproc'
-  , resultBibliography  :: [(Text, a)]  -- ^ List of formatted bibliography
-                    -- entries (if the style calls for a bibliography),
-                    -- each a pair consisting of the item identifier and
-                    -- the formatted entry
-  , resultWarnings      :: [Text]       -- ^ Warnings from citation processing
-  } deriving (Show)
-
-
 -- | Process a list of 'Citation's, producing formatted citations
 -- and a bibliography according to the rules of a CSL 'Style'.
 -- If a 'Lang' is specified, override the style's default locale.

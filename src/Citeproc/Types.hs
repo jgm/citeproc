@@ -100,6 +100,7 @@ module Citeproc.Types
   , VariableType(..)
   , Abbreviations
   , lookupAbbreviation
+  , Result(..)
   )
 where
 import qualified Data.Map as M
@@ -1559,4 +1560,29 @@ lookupAbbreviation var val (Abbreviations abbrevmap) = do
     NumVal n   -> maybe mzero (return . TextVal)
                          $ M.lookup (T.pack (show n)) abbrvs
     _          -> mzero
+
+-- | Result of citation processing.
+data Result a =
+  Result
+  { resultCitations     :: [a]          -- ^ List of formatted citations
+                    -- corresponding to the citations given to 'citeproc'
+  , resultBibliography  :: [(Text, a)]  -- ^ List of formatted bibliography
+                    -- entries (if the style calls for a bibliography),
+                    -- each a pair consisting of the item identifier and
+                    -- the formatted entry
+  , resultWarnings      :: [Text]       -- ^ Warnings from citation processing
+  } deriving (Show)
+
+instance ToJSON a => ToJSON (Result a) where
+  toJSON res = object
+    [ ("resultCitations", toJSON $ resultCitations res)
+    , ("resultBibliography", toJSON $ resultBibliography res)
+    ,("resultWarnings", toJSON $ resultWarnings res)
+    ]
+
+instance FromJSON a => FromJSON (Result a) where
+  parseJSON = withObject "Result" $ \v ->
+    Result <$> v .: "resultCitations"
+           <*> v .: "resultBibliography"
+           <*> v .: "resultWarnings"
 
