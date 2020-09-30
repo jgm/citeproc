@@ -688,18 +688,23 @@ groupAndCollapseCitations citeGroupDelim yearSuffixDelim afterCollapseDelim
   collapseGroup collapseType (y:ys) zs =
     let ys' = y : map (transform removeNames) ys
      in case collapseYearSuffix collapseType ys' of
-          ws | (ws == ys') -- no collapse
+          ws | ws == ys  -- no collapse
               -> Formatted mempty{ formatDelimiter = Just citeGroupDelim
                                  , formatSuffix =
                                      if null zs
                                         then Nothing
                                         else formatDelimiter f } ws : zs
              | otherwise
-              -> Formatted mempty{ formatDelimiter = afterCollapseDelim
+              -> Formatted mempty{ formatDelimiter =
+                                      if ws == ys' -- no year suffix collapse
+                                         then Just citeGroupDelim
+                                         else afterCollapseDelim <|>
+                                              formatDelimiter f
                                   , formatSuffix =
                                      if null zs
                                         then Nothing
-                                        else formatDelimiter f } ws : zs
+                                        else afterCollapseDelim <|>
+                                             formatDelimiter f } ws : zs
   collapseRanges = map rangifyGroup . groupSuccessive isSuccessive
   isSuccessive x y
     = case ([c | Tagged (TagYearSuffix c) _ <- universe x],
