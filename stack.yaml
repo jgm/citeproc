@@ -1,5 +1,6 @@
 flags:
   citeproc:
+    executable: true
     icu: false
 resolver: lts-15.14
 extra-deps:
