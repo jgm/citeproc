@@ -136,7 +136,7 @@ pStyle defaultLocale node = do
     let hasYearSuffixVariable
           (Element (EText (TextVariable _ "year-suffix")) _) = True
         hasYearSuffixVariable
-          (Element (EGroup es) _) = any hasYearSuffixVariable es
+          (Element (EGroup _ es) _) = any hasYearSuffixVariable es
         hasYearSuffixVariable
           (Element (EChoose []) _) = False
         hasYearSuffixVariable
@@ -434,7 +434,7 @@ pGroup node = do
   let attr = getAttributes node
   let formatting = getFormatting attr
   es <- mapM pElement $ allChildren node
-  return $ Element (EGroup es) formatting
+  return $ Element (EGroup False es) formatting
 
 pText :: X.Element -> ElementParser (Element a)
 pText node = do
@@ -459,7 +459,7 @@ pText node = do
              case lookupAttribute "macro" attr of
                Just _ -> do
                  elements <- mapM pElement (allChildren node)
-                 return $ EGroup elements
+                 return $ EGroup True elements
                Nothing ->
                  case lookupAttribute "term" attr of
                    Just termname ->

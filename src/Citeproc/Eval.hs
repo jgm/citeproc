@@ -1062,7 +1062,7 @@ eElement (Element etype formatting) =
     EText textType ->
       withFormatting formatting (eText textType)
     ENumber var nform -> withFormatting formatting (eNumber var nform)
-    EGroup els -> eGroup formatting els
+    EGroup isMacro els -> eGroup isMacro formatting els
     EChoose chooseParts -> eChoose chooseParts
     ELabel var termform pluralize ->
       eLabel var termform pluralize formatting
@@ -2108,18 +2108,24 @@ getDisplayName nameFormat formatting order name = do
 
 
 eGroup :: CiteprocOutput a
-          => Formatting -> [Element a] -> Eval a (Output a)
-eGroup formatting els = do
+          => Bool -> Formatting -> [Element a] -> Eval a (Output a)
+eGroup isMacro formatting els = do
   -- A group is suppressed if it directly or indirectly
   -- calls at least one variable but all of the variables
   -- it calls are empty.
   VarCount oldVars oldNonempty <- gets stateVarCount
   xs <- mapM eElement els
   VarCount newVars newNonempty <- gets stateVarCount
-  return $
-    if oldVars == newVars || newNonempty > oldNonempty
-       then formatted formatting xs
-       else NullOutput
+  -- see
+  -- https://github.com/citation-style-language/documentation/blob/master/specification.rst#group
+  -- "When a cs:group contains a child cs:macro, if the cs:macro is
+  -- non-empty, it is treated as a non-empty variable for the purposes of
+  -- determining suppression of the outer cs:group."
+  when (isMacro && not (all (== NullOutput) xs)) $
+    updateVarCount 1 1
+  return $ if oldVars == newVars || newNonempty > oldNonempty
+              then formatted formatting xs
+              else NullOutput
 
 eChoose :: CiteprocOutput a
         => [(Match, [Condition], [Element a])] -> Eval a (Output a)

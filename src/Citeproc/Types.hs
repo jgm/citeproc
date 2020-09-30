@@ -474,7 +474,7 @@ data ElementType a =
   | ENumber Variable NumberForm
   | ENames [Variable] NamesFormat [Element a] -- last part is substitutes if any
   | ELabel Variable TermForm Pluralize
-  | EGroup [Element a]
+  | EGroup Bool [Element a]  -- Bool is true if it's an expanded macro
   | EChoose [(Match, [Condition], [Element a])]
     -- 'else' can be represented by a final trivial match condition
   deriving (Show, Eq)
