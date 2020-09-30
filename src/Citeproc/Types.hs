@@ -1638,9 +1638,9 @@ instance FromJSON a => FromJSON (Result a) where
 -- | Inputs for citation processing.
 data Inputs a =
   Inputs
-  { inputsCitations     :: [Citation a]
-  , inputsReferences    :: [Reference a]
-  , inputsStylesheet    :: Text
+  { inputsCitations     :: Maybe [Citation a]
+  , inputsReferences    :: Maybe [Reference a]
+  , inputsStylesheet    :: Maybe Text
   , inputsAbbreviations :: Maybe Abbreviations
   , inputsLang          :: Maybe Lang
   } deriving (Show)
@@ -1656,9 +1656,9 @@ instance ToJSON a => ToJSON (Inputs a) where
 
 instance (FromJSON a, Eq a) => FromJSON (Inputs a) where
   parseJSON = withObject "Inputs" $ \v ->
-    Inputs <$> v .:  "citations"
-           <*> v .:  "references"
-           <*> v .:  "stylesheet"
+    Inputs <$> v .:? "citations"
+           <*> v .:? "references"
+           <*> v .:? "stylesheet"
            <*> v .:? "abbreviations"
            <*> v .:? "lang"
 
