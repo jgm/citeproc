@@ -1528,33 +1528,59 @@ addDelimiters delim =
 
 fixPunct :: CiteprocOutput a => [a] -> [a]
 fixPunct (x:y:zs) =
-  case (T.takeEnd 1 (toText x), T.take 1 (toText y)) of
-    (":", ":") -> x : fixPunct (dropTextWhile (==':') y : zs)
-    (";", ":") -> x : fixPunct (dropTextWhile (==':') y : zs)
-    ("!", ":") -> x : fixPunct (dropTextWhile (==':') y : zs)
-    ("?", ":") -> x : fixPunct (dropTextWhile (==':') y : zs)
-    (":", ".") -> x : fixPunct (dropTextWhile (=='.') y : zs)
-    (".", ".") -> x : fixPunct (dropTextWhile (=='.') y : zs)
-    (";", ".") -> x : fixPunct (dropTextWhile (=='.') y : zs)
-    ("!", ".") -> x : fixPunct (dropTextWhile (=='.') y : zs)
-    ("?", ".") -> x : fixPunct (dropTextWhile (=='.') y : zs)
-    (";", ";") -> x : fixPunct (dropTextWhile (==';') y : zs)
-    (",", ";") -> x : fixPunct (dropTextWhile (==';') y : zs)
-    (":", "!") -> dropTextWhileEnd (==':') x : fixPunct (y : zs)
-    (";", "!") -> dropTextWhileEnd (==';') x : fixPunct (y : zs)
-    ("!", "!") -> dropTextWhileEnd (=='!') x : fixPunct (y : zs)
-    (":", "?") -> dropTextWhileEnd (==':') x : fixPunct (y : zs)
-    (";", "?") -> dropTextWhileEnd (==';') x : fixPunct (y : zs)
-    ("?", "?") -> dropTextWhileEnd (=='?') x : fixPunct (y : zs)
-    (",", ",") -> x : fixPunct (dropTextWhile (==',') y : zs)
-    (" ", t) | T.all isSpace t
-               -> dropTextWhileEnd (==' ') x : fixPunct (y : zs)
-    (t, " ") | T.all isSpace t
-               -> x : fixPunct (dropTextWhile (==' ') y : zs)
-    (" ", ",") -> dropTextWhileEnd (==' ') x : fixPunct (y : zs)
-    (" ", ".") -> dropTextWhileEnd (==' ') x : fixPunct (y : zs)
-    _ -> x : fixPunct (y : zs)
+  case (xEnd, yStart) of
+    -- https://github.com/Juris-M/citeproc-js/blob/master/src/queue.js#L724
+    ('!','.') -> keepFirst
+    ('!','?') -> keepBoth
+    ('!',':') -> keepFirst
+    ('!',',') -> keepBoth
+    ('!',';') -> keepBoth
+    ('?','!') -> keepBoth
+    ('?','.') -> keepFirst
+    ('?',':') -> keepFirst
+    ('?',',') -> keepBoth
+    ('?',';') -> keepBoth
+    ('.','!') -> keepBoth
+    ('.','?') -> keepBoth
+    ('.',':') -> keepBoth
+    ('.',',') -> keepBoth
+    ('.',';') -> keepBoth
+    (':','!') -> keepSecond
+    (':','?') -> keepSecond
+    (':','.') -> keepFirst
+    (':',',') -> keepBoth
+    (':',';') -> keepBoth
+    (',','!') -> keepBoth
+    (',','?') -> keepBoth
+    (',',':') -> keepBoth
+    (',','.') -> keepBoth
+    (',',';') -> keepFirst -- keepBoth says the code, but test suite
+                           -- seems to want keepFirst
+    (';','!') -> keepSecond
+    (';','?') -> keepSecond
+    (';',':') -> keepFirst
+    (';','.') -> keepFirst
+    (';',',') -> keepBoth
+    ('!','!') -> keepFirst
+    ('?','?') -> keepFirst
+    ('.','.') -> keepFirst
+    (':',':') -> keepFirst
+    (';',';') -> keepFirst
+    (',',',') -> keepFirst
+    (' ',' ') -> keepSecond
+    (' ',',') -> keepSecond
+    (' ','.') -> keepSecond
+    _ -> keepBoth
+ where
+  xText = toText x
+  yText = toText y
+  xEnd = if T.null xText then '\xFFFD' else T.last xText
+  yStart = if T.null yText then '\xFFFD' else T.head yText
+  keepFirst = x : fixPunct (dropTextWhile (== yStart) y : zs)
+  keepSecond = dropTextWhileEnd (== xEnd) x : fixPunct (y : zs)
+  keepBoth = x : fixPunct (y : zs)
 fixPunct zs = zs
+
 
 grouped :: [Output a] -> Output a
 grouped = formatted mempty
