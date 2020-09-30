@@ -1,8 +1,8 @@
 {-# LANGUAGE CPP #-}
+{-# LANGUAGE StrictData #-}
 {-# LANGUAGE LambdaCase #-}
 {-# LANGUAGE DeriveFoldable #-}
 {-# LANGUAGE DeriveTraversable #-}
-{-# LANGUAGE StrictData #-}
 {-# LANGUAGE MultiParamTypeClasses #-}
 {-# LANGUAGE GeneralizedNewtypeDeriving #-}
 {-# LANGUAGE FlexibleContexts #-}
@@ -836,8 +836,8 @@ instance ToJSONKey Variable where
 -- | Encodes bibliographic data for a single work.
 data Reference a =
   Reference
-  { referenceId             :: !ItemId
-  , referenceType           :: !Text
+  { referenceId             :: ItemId
+  , referenceType           :: Text
   , referenceDisambiguation :: Maybe DisambiguationData
            -- ^ This is added in processing; if you are constructing
            -- a Reference, set to Nothing
@@ -1098,9 +1098,9 @@ lookupReference ident (ReferenceMap m) = M.lookup ident m
 -- | Value associated with a certain variable in a bibliographic
 -- entry.
 data Val a =
-    TextVal !Text      -- ^ Plain text value
-  | FancyVal !a        -- ^ Formatted value with parameterized type
-  | NumVal  !Int       -- ^ Numerical value
+    TextVal Text      -- ^ Plain text value
+  | FancyVal a        -- ^ Formatted value with parameterized type
+  | NumVal  Int       -- ^ Numerical value
   | NamesVal [Name]    -- ^ Structured names
   | DateVal Date       -- ^ Structured date
   deriving (Show, Eq, Functor, Foldable, Traversable)

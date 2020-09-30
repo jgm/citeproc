@@ -19,7 +19,6 @@ main = do
   rawargs <- getArgs
   let (opts, _args, _errs) = getOpt Permute options rawargs
   let opt = foldr ($) (Opt Nothing Nothing) opts
-  print opt
   bs <- BL.getContents
   case Aeson.eitherDecode bs of
     Left e -> err e
