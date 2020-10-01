@@ -12,7 +12,7 @@ import Citeproc.Style (mergeLocales)
 import Data.Semigroup
 import Control.Monad.Trans.RWS.CPS
 import Data.Containers.ListUtils (nubOrdOn, nubOrd)
-import Safe (headMay, lastMay, initSafe, maximumMay)
+import Safe (headMay, headDef, lastMay, initSafe, tailSafe, maximumMay)
 import Data.Maybe
 import Control.Monad (foldM, zipWithM, when, unless)
 import qualified Data.Map as M
@@ -1536,13 +1536,13 @@ formatDateParts dpSpecs (date, mbNextDate) = do
             case sortOn dpName diffs of
               []     -> xs ++ ys
               (dp:_) ->
-                case (lastMay xs, ys) of
-                  (Just xlast, y':ys') ->
+                case lastMay xs of
+                  Just xlast ->
                        initSafe xs ++
                        [Formatted mempty{ formatDelimiter =
                                              Just $ dpRangeDelimiter dp }
-                         [xlast, y']] ++
-                       ys'
+                         [xlast, headDef (Literal mempty) ys]] ++
+                       tailSafe ys
                   _ -> xs ++ ys
 
       return $ removeLastSuffix $
