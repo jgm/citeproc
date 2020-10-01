@@ -93,7 +93,7 @@ to non-Haskell projects.
 ## Known bugs and limitations
 
 At this point, the library still fails some of the tests from the
-CSL test suite (73/845).  However, most of the failures are on
+CSL test suite (72/845).  However, most of the failures are on
 minor corner cases.  This library is already much more accurate
 in implementing the CSL spec than pandoc-citeproc was.
 

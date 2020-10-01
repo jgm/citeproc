@@ -1532,14 +1532,23 @@ formatDateParts dpSpecs (date, mbNextDate) = do
       diffsLeft' <- cleanup <$> mapM (eDP (yr,mo,da)) diffs
       diffsRight' <- cleanup <$> mapM (eDP (nextyr,nextmo,nextda)) diffs
       sames2' <- cleanup <$> mapM (eDP (yr,mo,da)) sames2
-      let rangeDelim = case sortOn dpName diffs of
-                         []     -> []
-                         (dp:_) -> [Literal $ fromText $ dpRangeDelimiter dp]
+      let toRange xs ys =
+            case sortOn dpName diffs of
+              []     -> xs ++ ys
+              (dp:_) ->
+                case (lastMay xs, ys) of
+                  (Just xlast, y':ys') ->
+                       initSafe xs ++
+                       [Formatted mempty{ formatDelimiter =
+                                             Just $ dpRangeDelimiter dp }
+                         [xlast, y']] ++
+                       ys'
+                  _ -> xs ++ ys
+
       return $ removeLastSuffix $
         sames1' ++
-        removeLastSuffix diffsLeft' ++
-        rangeDelim ++
-        removeFirstPrefix diffsRight' ++
+        toRange (removeLastSuffix diffsLeft')
+                (removeFirstPrefix diffsRight') ++
         sames2'
 
 removeFirstPrefix :: [Output a] -> [Output a]
