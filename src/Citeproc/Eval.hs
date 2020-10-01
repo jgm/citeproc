@@ -1235,10 +1235,11 @@ eText (TextVariable varForm v) = do
         case mbv of
           Just x | isNothing mbl || mbl == Just "page" -> do
                       updateVarCount 1 1
-                      pageRange x
+                      Tagged TagLocator <$> pageRange x
                  | otherwise -> do
                       updateVarCount 1 1
-                      return $ formatPageRange Nothing
+                      return $ Tagged TagLocator $
+                                formatPageRange Nothing
                                 (literal $ T.singleton enDash) x
           Nothing -> NullOutput <$ updateVarCount 1 0
 

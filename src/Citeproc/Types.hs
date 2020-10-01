@@ -1490,6 +1490,7 @@ data Tag =
     | TagNames Variable NamesFormat [Name]
     | TagDate Date
     | TagYearSuffix Int
+    | TagLocator
   deriving (Show, Eq)
 
 outputToText :: CiteprocOutput a => Output a -> Text
