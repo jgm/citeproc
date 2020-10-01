@@ -2310,9 +2310,13 @@ citationLabel ref = TextVal trigraph
   datevars = [v | v <- vars, variableType v == DateVariable]
   getNames var = case M.lookup var varmap of
                    Just (NamesVal ns) ->
-                     let x = if length ns > 1 then 2 else 4 in
-                     mconcat $
-                       map (T.take x . fromMaybe "" .  nameFamily) ns
+                     let x = case length ns of
+                               1  -> 4
+                               n | n >= 4 -> 1
+                                 | otherwise -> 2
+                     in mconcat $
+                        map (T.take x . fromMaybe "" .  nameFamily)
+                        (take 4 ns)
                    _ -> ""
   getYear d = case dateParts d of
                 (DateParts (x:_):_) -> T.pack $ printf "%02d"
