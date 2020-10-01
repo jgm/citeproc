@@ -687,24 +687,25 @@ groupAndCollapseCitations citeGroupDelim yearSuffixDelim afterCollapseDelim
   collapseGroup _ [] zs = zs
   collapseGroup collapseType (y:ys) zs =
     let ys' = y : map (transform removeNames) ys
-     in case collapseYearSuffix collapseType ys' of
-          ws | ws == (y:ys)  -- no collapse
-              -> Formatted mempty{ formatDelimiter = Just citeGroupDelim
-                                 , formatSuffix =
-                                     if null zs
-                                        then Nothing
-                                        else formatDelimiter f } ws : zs
-             | otherwise
-              -> Formatted mempty{ formatDelimiter =
-                                      if ws == ys' -- no year suffix collapse
-                                         then Just citeGroupDelim
-                                         else afterCollapseDelim <|>
-                                              formatDelimiter f
-                                  , formatSuffix =
-                                     if null zs
-                                        then Nothing
-                                        else afterCollapseDelim <|>
-                                             formatDelimiter f } ws : zs
+        ws = collapseYearSuffix collapseType ys'
+        noCollapse = ws == y:ys
+        noYearSuffixCollapse = ws == ys'
+        addCGDelim u [] = [u]
+        addCGDelim u us =
+          Formatted mempty{ formatSuffix =
+                              if noCollapse || noYearSuffixCollapse
+                                 then Just citeGroupDelim
+                                 else afterCollapseDelim <|>
+                                      formatDelimiter f } [u] : us
+     in Formatted mempty{ formatDelimiter = Nothing
+                        , formatSuffix =
+                            if null zs
+                               then Nothing
+                               else if noCollapse
+                                       then formatDelimiter f
+                                       else afterCollapseDelim <|>
+                                            formatDelimiter f }
+                               (foldr addCGDelim [] ws) : zs
   collapseRanges = map rangifyGroup . groupSuccessive isSuccessive
   isSuccessive x y
     = case ([c | Tagged (TagYearSuffix c) _ <- universe x],
