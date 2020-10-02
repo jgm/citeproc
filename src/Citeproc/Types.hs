@@ -1383,7 +1383,7 @@ rawDateISO raw = do
                            else return (False, t')
         let t''' = T.takeWhile (not . isSpecial) t''
         case T.split (=='-') t''' of
-          [""]         -> return $ DateParts []
+          [""]         -> return $ DateParts [0]
           [y', m', d'] -> do
             guard $ T.length y' == 4 || hasY && T.length y' >= 4
             guard $ T.length m' == 2

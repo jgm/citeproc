@@ -1571,9 +1571,10 @@ eDP (yr,mo,da) dp = do
                DPYear  -> yr
   case mbn of
     Nothing -> return NullOutput
+    Just 0 | dpName dp == DPYear
+            -> return $ Literal mempty -- open date range
     Just n  -> do
-      let litStr "0" = return $ Literal mempty -- open date range
-          litStr xs  = return . Literal . fromText . T.pack $ xs
+      let litStr xs  = return . Literal . fromText . T.pack $ xs
       suffix <- case dpName dp of
                   DPYear
                     | n < 0
