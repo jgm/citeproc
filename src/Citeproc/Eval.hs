@@ -1518,6 +1518,9 @@ formatDateParts dpSpecs (date, mbNextDate) = do
     Nothing -> mapM (eDP (yr,mo,da)) dpSpecs
     Just nextDate -> do
       let (nextyr,nextmo,nextda) = bindDateParts nextDate
+      let isOpenRange = nextyr == Just 0 &&
+                        isNothing nextmo &&
+                        isNothing nextda
       -- figure out where the range goes:
       -- first to differ out of the items selected by dpSpecs, in order y->m->d
       let dpToNs DPYear  = (yr, nextyr)
@@ -1532,24 +1535,27 @@ formatDateParts dpSpecs (date, mbNextDate) = do
       diffsLeft' <- cleanup <$> mapM (eDP (yr,mo,da)) diffs
       diffsRight' <- cleanup <$> mapM (eDP (nextyr,nextmo,nextda)) diffs
       sames2' <- cleanup <$> mapM (eDP (yr,mo,da)) sames2
+      let rangeDelim = case sortOn dpName diffs of
+                              []     -> Nothing
+                              (dp:_) -> Just $ dpRangeDelimiter dp
       let toRange xs ys =
-            case sortOn dpName diffs of
-              []     -> xs ++ ys
-              (dp:_) ->
-                case lastMay xs of
-                  Just xlast ->
-                       initSafe xs ++
-                       [Formatted mempty{ formatDelimiter =
-                                             Just $ dpRangeDelimiter dp }
-                         [xlast, headDef (Literal mempty) ys]] ++
-                       tailSafe ys
-                  _ -> xs ++ ys
+            case lastMay xs of
+              Just xlast ->
+                   initSafe xs ++
+                     [Formatted mempty{ formatDelimiter = rangeDelim }
+                     [xlast, headDef (Literal mempty) ys]] ++
+                   tailSafe ys
+              _ -> xs ++ ys
 
-      return $ removeLastSuffix $
-        sames1' ++
-        toRange (removeLastSuffix diffsLeft')
-                (removeFirstPrefix diffsRight') ++
-        sames2'
+      return $
+        if isOpenRange
+           then [Formatted mempty{ formatSuffix = rangeDelim }
+                    (removeLastSuffix $ sames1' ++ diffsLeft')]
+           else removeLastSuffix $
+                 sames1' ++
+                 toRange (removeLastSuffix diffsLeft')
+                         (removeFirstPrefix diffsRight') ++
+                 sames2'
 
 removeFirstPrefix :: [Output a] -> [Output a]
 removeFirstPrefix (Formatted f xs : rest) =
