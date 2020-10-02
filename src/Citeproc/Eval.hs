@@ -1583,32 +1583,36 @@ eDP (yr,mo,da) dp = do
                       -> (:[]) <$> lookupTerm' emptyTerm{ termName = "ad" }
                     | otherwise -> return []
                   _ -> return []
-      let n' = abs n
+      let n' = case dpName dp of
+                 DPYear -> abs n
+                 _      -> n
       formatted (dpFormatting dp) . (:suffix) <$>
           case dpForm dp of
-            DPNumeric             -> litStr (show n)
+            DPNumeric             -> litStr (show n')
             DPNumericLeadingZeros -> litStr (printf "%02d" n')
             DPOrdinal             -> do
               locale <- asks contextLocale
               if localeLimitDayOrdinalsToDay1 locale == Just True && n' /= 1
                  then litStr (show n')
                  else evalNumber NumberOrdinal Nothing (NumVal n')
-                -- TODO gender stuff on month?
-                -- month-01 etc. sometimes has gender
-                -- ordinal-01 etc sometimes has gender-form
             form -> do
               let termForMonth s = emptyTerm{ termName = T.pack s
                                             , termForm = if form == DPShort
                                                             then Short
                                                             else Long }
+
               case dpName dp of
-                DPMonth | n' <= 12 ->
-                  lookupTerm' $ termForMonth (printf "month-%02d" n')
-                        | n' <= 16 -> -- season pseudo-month
-                  lookupTerm' $ termForMonth (printf "season-%02d" (n' - 12))
-                        | otherwise  -> -- season pseudo-month
-                  lookupTerm' $ termForMonth (printf "season-%02d" (n' - 20))
+                DPMonth | n <= 0 -> return NullOutput
+                        | n <= 12 ->
+                  lookupTerm' $ termForMonth (printf "month-%02d" n)
+                        | n <= 16 -> -- season pseudo-month
+                  lookupTerm' $ termForMonth (printf "season-%02d" (n - 12))
+                        | n <= 20 -> -- season pseudo-month
+                  lookupTerm' $ termForMonth (printf "season-%02d" (n - 16))
+                        | otherwise -> -- season pseudo-month
+                  lookupTerm' $ termForMonth (printf "season-%02d" (n - 20))
                 _                 -> litStr (show n')
+
 
 bindDateParts :: DateParts -> (Maybe Int, Maybe Int, Maybe Int)
 bindDateParts date =
