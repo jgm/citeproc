@@ -191,7 +191,16 @@ evalStyle style mblang refs citations =
       let citCitations = map sortCitationItems citations
       let layoutOpts = layoutOptions $ styleCitation style
       cs <- disambiguateCitations style bibSortKeyMap citCitations
-      let cs' = case styleCiteGroupDelimiter (styleOptions style) of
+      let mbcgDelim =
+            case styleCiteGroupDelimiter (styleOptions style) of
+              Just x -> Just x
+              Nothing
+                -- grouping is activated whenever there is
+                -- collapsing; this is the default
+                -- cite-group-delimiter
+                | isJust (layoutCollapse layoutOpts) -> Just ", "
+                | otherwise -> Nothing
+      let cs' = case mbcgDelim of
                    Nothing -> cs
                    Just citeGroupDelim -> map
                       (groupAndCollapseCitations citeGroupDelim
@@ -766,23 +775,28 @@ groupAndCollapseCitations citeGroupDelim yearSuffixDelim afterCollapseDelim
      (Tagged (TagItem _ _) (Tagged (TagCitationNumber n2) _xs2))
     = n2 == n1 + 1
   isAdjacentCitationNumber _ _ = False
-  sameNames (Tagged (TagItem _ _id1) (Formatted f1 xs1))
-            (Tagged (TagItem _ _id2) (Formatted f2 xs2))
-    | isNothing (formatSuffix f1)
-    , isNothing (formatPrefix f2)
+  sameNames (Tagged (TagItem _ _id1) x1)
+            (Tagged (TagItem _ _id2) x2)
+    | hasNoSuffix x1
+    , hasNoSuffix x2
     =
-    case (unFormat xs1, unFormat xs2) of
-      ((Tagged (TagNames t1 _nf1 ns1) ws1 : _),
-       (Tagged (TagNames t2 _nf2 ns2) ws2 : _))
+    case (unFormat x1, unFormat x2) of
+      (Tagged (TagNames t1 _nf1 ns1) ws1,
+       Tagged (TagNames t2 _nf2 ns2) ws2)
        -> t1 == t2 && (if ns1 == ns2
                           then not (null ns1) || ws1 == ws2
                           else ws1 == ws2)
+          -- case where it's just a date with no name or anything;
+          -- we treat this as same name e.g. (1955a,b)
+      (Tagged TagDate{} _, Tagged TagDate{} _)
+        -> True
           -- case where title is substituted
       _ -> False
   sameNames _ _ = False
-  unFormat (Formatted _ zs : ys) = unFormat zs ++ unFormat ys
-  unFormat (x : ys) = x : unFormat ys
-  unFormat [] = []
+  hasNoSuffix (Formatted f' _) = isNothing (formatSuffix f')
+  hasNoSuffix _ = True
+  unFormat (Formatted _ (z:_)) = unFormat z
+  unFormat x = x
 groupAndCollapseCitations _ _ _ _ x = x
 
 takeSeq :: Show a => (a -> a -> Bool) -> [a] -> ([a], [a])
