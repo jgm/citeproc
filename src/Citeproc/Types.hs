@@ -1205,8 +1205,6 @@ extractParticles =
             , "\"" `T.isSuffixOf` t
               -> name { nameFamily = Just $ T.drop 1 $ T.dropEnd 1 t }
             | otherwise ->
-              let isParticlePunct c = c == '\'' || c == '’' || c == '-' ||
-                                       c == '\x2013' in
               case span (T.all isLower) (T.words t) of
                 ([],_)
                     -> case T.split isParticlePunct t of
@@ -1227,14 +1225,16 @@ extractParticles =
         case nameGiven name of
           Nothing -> name
           Just t  ->
-            case break (T.all isLower) (T.words t) of
+            case break (T.all isParticleChar) (T.words t) of
               (_,[])  -> name
               ([],_)  -> name
               (as,bs)
-                | all (T.all isLower) bs
+                | all (T.all isParticleChar) bs
                       -> name{ nameGiven = Just (T.unwords as)
                              , nameDroppingParticle = Just (T.unwords bs) }
                 | otherwise -> name
+  isParticlePunct c = c == '\'' || c == '’' || c == '-' || c == '\x2013'
+  isParticleChar c = isLower c || isParticlePunct c
 
 -- cheater syntax for name: used in parsing note:
 --  editor: Thompson || Hunter S.
