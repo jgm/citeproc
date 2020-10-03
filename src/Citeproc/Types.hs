@@ -1562,8 +1562,7 @@ fixPunct (x:y:zs) =
     (',','?') -> keepBoth
     (',',':') -> keepBoth
     (',','.') -> keepBoth
-    (',',';') -> keepFirst -- keepBoth says the code, but test suite
-                           -- seems to want keepFirst
+    (',',';') -> keepBoth
     (';','!') -> keepSecond
     (';','?') -> keepSecond
     (';',':') -> keepFirst

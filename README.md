@@ -195,7 +195,7 @@ Content will be HTML.
 ## Known bugs and limitations
 
 At this point, the library still fails some of the tests from the
-CSL test suite (61/845).  However, most of the failures are on
+CSL test suite (59/845).  However, most of the failures are on
 minor corner cases.  This library is already much more accurate
 in implementing the CSL spec than pandoc-citeproc was.
 
