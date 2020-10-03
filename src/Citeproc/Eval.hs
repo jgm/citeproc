@@ -781,12 +781,13 @@ groupAndCollapseCitations citeGroupDelim yearSuffixDelim afterCollapseDelim
      (Tagged (TagItem _ _) (Tagged (TagCitationNumber n2) _xs2))
     = n2 == n1 + 1
   isAdjacentCitationNumber _ _ = False
-  sameNames (Tagged (TagItem _ _id1) x1)
-            (Tagged (TagItem _ _id2) x2)
+  sameNames (Tagged (TagItem ty1 _id1) x1)
+            (Tagged (TagItem ty2 _id2) x2)
     | hasNoSuffix x1
     , hasNoSuffix x2
-    =
-    case (unFormat x1, unFormat x2) of
+    , ty1 /= AuthorOnly
+    , ty2 /= AuthorOnly
+    = case (unFormat x1, unFormat x2) of
       (Tagged (TagNames t1 _nf1 ns1) ws1,
        Tagged (TagNames t2 _nf2 ns2) ws2)
        -> t1 == t2 && (if ns1 == ns2
