@@ -1,4 +1,4 @@
-The official result has ". ." at the end instead of "..".
+The official result has ". ." at the end instead of ".".
 This is an insignificant difference and neither would appear
 in a better-designed style.
 
@@ -7,7 +7,7 @@ citation
 <<==== MODE ====<<
 
 >>==== RESULT ====>>
-<span style="font-variant:small-caps;">Center for History and New Media</span>, « Zotero Quick Start Guide », s.d., [En ligne]. &#60;http://zotero.org/support/quick_start_guide&#62;..
+<span style="font-variant:small-caps;">Center for History and New Media</span>, « Zotero Quick Start Guide », s.d., [En ligne]. &#60;http://zotero.org/support/quick_start_guide&#62;.
 <<==== RESULT ====<<
 
 >>==== CITATION-ITEMS ====>>

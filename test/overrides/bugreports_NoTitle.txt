@@ -1,4 +1,4 @@
-The official results have '(n.d.). .' and we get '(n.d.)..'.
+The official results have '(n.d.). .' and we get '(n.d.).'.
 This seems fine.  The extra period is due to a bug in the
 style which has since been fixed.
 
@@ -8,7 +8,7 @@ bibliography
 
 >>===== RESULT =====>>
 <div class="csl-bib-body">
-  <div class="csl-entry">ecs. (n.d.)..</div>
+  <div class="csl-entry">ecs. (n.d.).</div>
   <div class="csl-entry">Family01, G. (n.d.). XXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXX.</div>
 </div>
 <<===== RESULT =====<<

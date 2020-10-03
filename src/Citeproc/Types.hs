@@ -1583,8 +1583,8 @@ fixPunct (x:y:zs) =
   yText = toText y
   xEnd = if T.null xText then '\xFFFD' else T.last xText
   yStart = if T.null yText then '\xFFFD' else T.head yText
-  keepFirst = x : fixPunct (dropTextWhile (== yStart) y : zs)
-  keepSecond = dropTextWhileEnd (== xEnd) x : fixPunct (y : zs)
+  keepFirst = fixPunct $ x : (dropTextWhile (== yStart) y : zs)
+  keepSecond = fixPunct $ dropTextWhileEnd (== xEnd) x : y : zs
   keepBoth = x : fixPunct (y : zs)
 fixPunct zs = zs
 
