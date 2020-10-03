@@ -187,6 +187,7 @@ The output JSON will have the structure:
 { "citations":    [ ...list of strings... ],
   "bibliography": [ ...list of arrays: item id and a string... ],
   "warnings":     [ ...list of warnings... ]
+}
 ```
 
 Content will be HTML.
