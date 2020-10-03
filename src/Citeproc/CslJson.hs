@@ -381,7 +381,7 @@ cslJsonToJson locale = go (RenderContext True True True True)
   go :: RenderContext -> CslJson Text -> [Value]
   go ctx el = consolidateStrings $
     case el of
-      CslText t -> [String $ escape t]
+      CslText t -> [String t]
       CslEmpty -> []
       CslConcat x CslEmpty -> go ctx x
       CslConcat (CslConcat x y) z -> go ctx (CslConcat x (CslConcat y z))
@@ -473,12 +473,6 @@ cslJsonToJson locale = go (RenderContext True True True True)
                                ]
                             ]
       CslNoCase x -> go ctx x -- nocase is just for internal purposes
-  escape t = case T.findIndex (\c -> c == '<' || c == '>' || c == '&') t of
-               Just _ -> T.replace "<" "&#60;" .
-                         T.replace ">" "&#62;" .
-                         T.replace "&" "&#38;" $ t
-               Nothing -> t
-
 
 
 -- custom traversal which does not descend into
