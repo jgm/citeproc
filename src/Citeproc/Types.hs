@@ -301,10 +301,16 @@ instance FromJSON a => FromJSON (Citation a) where
          Just v' -> (withObject "Citation" $ \o
                       -> Citation <$> o .:? "citationID"
                                   <*> ((o .: "properties"
-                                         >>= (.: "noteIndex"))
-                                        <|> pure Nothing)
+                                             >>= (.: "noteIndex"))
+                                      <|> pure Nothing)
                                   <*> o .: "citationItems") v'
+                  <|> Citation Nothing Nothing <$> parseJSON v'
          Nothing -> fail "Empty array") v
+   <|>
+   withObject "Citation"
+     (\o -> Citation <$> o .:? "citationID"
+                     <*> o .:? "citationNoteNumber"
+                     <*> o .: "citationItems") v
    <|>
    (Citation Nothing Nothing <$> parseJSON v)
 
@@ -315,7 +321,7 @@ instance ToJSON a => ToJSON (Citation a) where
      [ ("citationItems" , toJSON $ citationItems c) ] ++
      case citationNoteNumber c of
            Nothing -> []
-           Just n  -> [ ("properties", object [("noteIndex", toJSON n)]) ]
+           Just n  -> [ ("citationNoteNumber", toJSON n) ]
 
 data Match =
     MatchAll
