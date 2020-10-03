@@ -14,6 +14,7 @@
 -- other typeclass instances.
 module Citeproc.CslJson
   ( CslJson(..)
+  , cslJsonToJson
   , renderCslJson
   , parseCslJson
   )
@@ -41,7 +42,7 @@ import qualified Data.Text as T
 import qualified Data.Map as M
 import Data.Functor.Identity
 import Data.Attoparsec.Text as P
-import Data.Aeson (FromJSON(..), ToJSON(..))
+import Data.Aeson (FromJSON(..), ToJSON(..), Value(..), object)
 import Control.Monad.Trans.State
 import Control.Monad (guard, when)
 import Control.Applicative ((<|>))
@@ -100,7 +101,6 @@ instance Uniplate (CslJson a) where
 
 instance Biplate (CslJson a) (CslJson a) where
   biplate = plateSelf
-
 
 instance CiteprocOutput (CslJson Text) where
   toText                = foldMap id
@@ -363,6 +363,123 @@ renderCslJson locale csljson = go (RenderContext True True True True) csljson
                          T.replace ">" "&#62;" .
                          T.replace "&" "&#38;" $ t
                Nothing -> t
+
+cslJsonToJson :: Locale -> CslJson Text -> [Value]
+cslJsonToJson locale = go (RenderContext True True True True)
+ where
+  (outerQuotes, innerQuotes) = lookupQuotes locale
+  isString (String _) = True
+  isString _ = False
+  consolidateStrings :: [Value] -> [Value]
+  consolidateStrings [] = []
+  consolidateStrings (String t : rest) =
+    let (xs,ys) = span isString rest
+     in String (t <> mconcat [t' |  String t' <- xs]) :
+        consolidateStrings ys
+  consolidateStrings (x : rest) =
+    x : consolidateStrings rest
+  go :: RenderContext -> CslJson Text -> [Value]
+  go ctx el = consolidateStrings $
+    case el of
+      CslText t -> [String $ escape t]
+      CslEmpty -> []
+      CslConcat x CslEmpty -> go ctx x
+      CslConcat (CslConcat x y) z -> go ctx (CslConcat x (CslConcat y z))
+      CslConcat x y -> go ctx x <> go ctx y
+      CslQuoted x
+        | useOuterQuotes ctx
+          -> [String (fst outerQuotes)] <>
+             go ctx{ useOuterQuotes = False } x <>
+             [String (snd outerQuotes)]
+        | otherwise
+          -> [String (fst innerQuotes)] <>
+             go ctx{ useOuterQuotes = True } x <>
+             [String (snd innerQuotes)]
+      CslNormal x
+        | useItalics ctx -> go ctx x
+        | otherwise      -> [ object
+                               [ ("format", "no-italics")
+                               , ("contents", toJSON $ go ctx x)
+                               ]
+                            ]
+      CslItalic x
+        | useItalics ctx -> [ object
+                               [ ("format", "italics")
+                               , ("contents", toJSON $
+                                    go ctx{ useItalics = False } x)
+                               ]
+                            ]
+        | otherwise      -> [ object
+                               [ ("format", "no-italics")
+                               , ("contents", toJSON $
+                                    go ctx{ useItalics = False } x)
+                               ]
+                            ]
+      CslBold x
+        | useItalics ctx -> [ object
+                               [ ("format", "bold")
+                               , ("contents", toJSON $
+                                    go ctx{ useBold = False } x)
+                               ]
+                            ]
+        | otherwise      -> [ object
+                               [ ("format", "no-bold")
+                               , ("contents", toJSON $
+                                    go ctx{ useBold = False } x)
+                               ]
+                            ]
+      CslUnderline x     -> [ object
+                               [ ("format", "underline")
+                               , ("contents", toJSON $ go ctx x)
+                               ]
+                            ]
+      CslNoDecoration x -> [ object
+                               [ ("format", "no-decoration")
+                               , ("contents", toJSON $ go ctx x)
+                               ]
+                           ]
+      CslSmallCaps x
+        | useSmallCaps ctx -> [ object
+                               [ ("format", "small-caps")
+                               , ("contents", toJSON $
+                                    go ctx{ useSmallCaps = False } x)
+                               ]
+                            ]
+        | otherwise      -> [ object
+                               [ ("format", "no-small-caps")
+                               , ("contents", toJSON $
+                                    go ctx{ useSmallCaps = False } x)
+                               ]
+                            ]
+      CslSup x           -> [ object
+                               [ ("format", "superscript")
+                               , ("contents", toJSON $ go ctx x)
+                               ]
+                            ]
+      CslSub x           -> [ object
+                               [ ("format", "subscript")
+                               , ("contents", toJSON $ go ctx x)
+                               ]
+                            ]
+      CslBaseline x      -> [ object
+                               [ ("format", "baseline")
+                               , ("contents", toJSON $ go ctx x)
+                               ]
+                            ]
+      CslDiv t x         -> [ object
+                               [ ("format", "div")
+                               , ("class", toJSON $ "csl-" <> t)
+                               , ("contents", toJSON $ go ctx x)
+                               ]
+                            ]
+      CslNoCase x -> go ctx x -- nocase is just for internal purposes
+  escape t = case T.findIndex (\c -> c == '<' || c == '>' || c == '&') t of
+               Just _ -> T.replace "<" "&#60;" .
+                         T.replace ">" "&#62;" .
+                         T.replace "&" "&#38;" $ t
+               Nothing -> t
+
+
 
 -- custom traversal which does not descend into
 -- CslSmallCaps, Baseline, SUp, Sub, or NoCase (implicit nocase)

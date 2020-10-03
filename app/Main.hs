@@ -20,7 +20,12 @@ main :: IO ()
 main = do
   rawargs <- getArgs
   let (opts, _args, _errs) = getOpt Permute options rawargs
-  let opt = foldr ($) (Opt Nothing Nothing) opts
+  let opt = foldr ($) (Opt Nothing Nothing Nothing) opts
+  format <- case optFormat opt of
+              Just "html" -> return Html
+              Just "json" -> return Json
+              Just _      -> err "--format must be html or json"
+              Nothing     -> return Html
   bs <- BL.getContents
   case Aeson.eitherDecode bs of
     Left e -> err e
@@ -47,23 +52,41 @@ main = do
       case parseResult of
         Left e -> err (T.unpack $ prettyCiteprocError e)
         Right parsedStyle -> do
-           BL.putStr $ AesonPretty.encodePretty'
+          let locale = mergeLocales (inputsLang inp) parsedStyle
+          let result= citeproc defaultCiteprocOptions
+                         parsedStyle
+                         (inputsLang inp)
+                         references
+                         (fromMaybe [] (inputsCitations inp))
+          let jsonResult :: Aeson.Value
+              jsonResult =
+                case format of
+                   Json -> Aeson.object
+                          [ ("citations", Aeson.toJSON $
+                               map (cslJsonToJson locale)
+                                   (resultCitations result))
+                          , ("bibliography", Aeson.toJSON $
+                               map (\(id',ent) ->
+                                 (id', cslJsonToJson locale ent))
+                               (resultBibliography result))
+                          , ("warnings", Aeson.toJSON $ resultWarnings result)
+                          ]
+                   Html -> Aeson.toJSON result
+          BL.putStr $ AesonPretty.encodePretty'
                        AesonPretty.defConfig
                          { confIndent = AesonPretty.Spaces 2
                          , confCompare = AesonPretty.keyOrder
                              ["citations","bibliography","warnings"]
-                             `mappend` comparing T.length } $
-             citeproc defaultCiteprocOptions
-                      parsedStyle
-                      (inputsLang inp)
-                      references
-                      (fromMaybe []
-                        (inputsCitations inp))
-           BL.putStr "\n"
+                             `mappend` comparing T.length }
+                       jsonResult
+          BL.putStr "\n"
+
+data Format = Json | Html deriving (Show, Ord, Eq)
 
 data Opt =
   Opt{ optCsl          :: Maybe String
      , optBibliography :: Maybe String
+     , optFormat       :: Maybe String
      } deriving Show
 
 options :: [OptDescr (Opt -> Opt)]
@@ -74,6 +97,9 @@ options =
   , Option ['b'] ["bibliography"]
      (ReqArg (\fp opt -> opt{ optBibliography = Just fp }) "FILE")
      "CSL JSON bibliography"
+  , Option [] ["format"]
+     (ReqArg (\format opt -> opt{ optFormat = Just format }) "FILE")
+     "html|json"
   ]
 
 err :: String -> IO a
