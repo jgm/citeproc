@@ -82,7 +82,8 @@ dependent styles, you can get by with `\_ -> return mempty`.
 
 If the package is compiled with the `executable` flag, an
 executable `citeproc` will be built.  `citeproc` acts as a pipe,
-reading a JSON-encoded `Inputs` object from `stdin` and writing
+reading a JSON-encoded `Inputs` object from `stdin` (or from
+a file if a filename is provided) and writing
 a JSON-encoded `Result` object from `stdout`.  This executable
 can be used to add citation processing to non-Haskell projects.
 
@@ -190,7 +191,25 @@ The output JSON will have the structure:
 }
 ```
 
-Content will be HTML.
+The contents of the entries will be HTML by default, but
+if `--format=json` is specified, it will be a structured
+representation of formatted text, e.g.
+
+``` json
+[
+  "———. 1983b. “The Concept of Truth in Formalized Languages.” In ",
+  {
+    "format": "italics",
+    "contents": [
+      "Logic, Semantics, Metamathematics"
+    ]
+  },
+  ", edited by John Corcoran, 152–278. Indianapolis: Hackett."
+]
+```
+
+This representation can be used if you want to convert the
+result to a format other than HTML.
 
 ## Known bugs and limitations
 
