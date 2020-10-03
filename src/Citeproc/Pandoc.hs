@@ -104,10 +104,13 @@ flipFlopQuotes qt = B.fromList . map (go qt) . B.toList
 punctuationInsideQuotes :: Inlines -> Inlines
 punctuationInsideQuotes = B.fromList . go . walk go . B.toList
  where
+  startsWithMovable t =
+    case T.uncons t of
+      Just (c,_) -> c == '.' || c == ',' || c == '!' || c == '?'
+      Nothing    -> False
   go [] = []
   go (Quoted qt xs : Str t : rest)
-    | "." `T.isPrefixOf` t ||
-      "," `T.isPrefixOf` t
+    | startsWithMovable t
       = Quoted qt (xs ++ [Str (T.take 1 t) | not (endWithPunct True xs)]) :
         if T.length t == 1
            then go rest

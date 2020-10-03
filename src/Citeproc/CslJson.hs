@@ -440,21 +440,21 @@ caseTransform mblang f x =
 punctuationInsideQuotes :: CslJson Text -> CslJson Text
 punctuationInsideQuotes = go
  where
+  startsWithMovable t =
+    case T.uncons t of
+      Just (c,_) -> c == '.' || c == ',' || c == '!' || c == '?'
+      Nothing    -> False
   go el =
     case el of
       CslConcat CslEmpty x -> go x
       CslConcat x CslEmpty -> go x
       CslConcat (CslQuoted x) y ->
          case go y of
-           (CslText t)
-             | "." `T.isPrefixOf` t ||
-               "," `T.isPrefixOf` t ->
-               CslQuoted (go (x <> CslText (T.take 1 t)))
+           (CslText t) | startsWithMovable t
+             -> CslQuoted (go (x <> CslText (T.take 1 t)))
                <> CslText (T.drop 1 t)
-           (CslConcat (CslText t) z)
-             | "." `T.isPrefixOf` t ||
-               "," `T.isPrefixOf` t ->
-               CslQuoted (go (x <> CslText (T.take 1 t))) <>
+           (CslConcat (CslText t) z) | startsWithMovable t
+             -> CslQuoted (go (x <> CslText (T.take 1 t))) <>
                  CslText (T.drop 1 t) <> z
            z                      -> CslQuoted x <> z
       CslConcat (CslConcat x y) z -> go (CslConcat x (CslConcat y z))
