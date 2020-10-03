@@ -1392,10 +1392,10 @@ eLabel var termform pluralize formatting = do
         let determinePlural t
              | var == "number-of-volumes"
              , t /= "1" && t /= "0"      = Plural
-             | length (splitNums t) <= 1 = Singular
              | "\\-" `T.isInfixOf` t     = Singular
+             | length (splitNums t) > 1  = Plural
                -- see label_CollapsedPageNumberPluralDetection.txt
-             | otherwise                 = Plural
+             | otherwise                 = Singular
         let number = case pluralize of
                          AlwaysPluralize     -> Plural
                          NeverPluralize      -> Singular
