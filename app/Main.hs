@@ -3,6 +3,7 @@
 module Main where
 import Citeproc
 import Citeproc.CslJson
+import Control.Monad (when)
 import Data.Maybe (fromMaybe)
 import Data.Text (Text)
 import qualified Data.Text as T
@@ -19,27 +20,32 @@ import System.Console.GetOpt
 main :: IO ()
 main = do
   rawargs <- getArgs
-  let (opts, _args, _errs) = getOpt Permute options rawargs
-  let opt = foldr ($) (Opt Nothing Nothing Nothing) opts
+  let (opts, args, _errs) = getOpt Permute options rawargs
+  let opt = foldr ($) (Opt Nothing Nothing Nothing False) opts
+  when (optHelp opt) $ do
+    putStr $ usageInfo "citeproc [OPTIONS] [FILE]" options
+    exitWith ExitSuccess
   format <- case optFormat opt of
               Just "html" -> return Html
               Just "json" -> return Json
               Just _      -> err "--format must be html or json"
               Nothing     -> return Html
-  bs <- BL.getContents
+  bs <- case args of
+          [] -> BL.getContents
+          (f:_) -> BL.readFile f
   case Aeson.eitherDecode bs of
     Left e -> err e
     Right (inp :: Inputs (CslJson Text)) -> do
       stylesheet <- case inputsStylesheet inp of
                       Just s -> return s
                       Nothing ->
-                        case optCsl opt of
+                        case optStyle opt of
                           Just fp -> TIO.readFile fp
                           Nothing -> err "No stylesheet specified"
       references <- case inputsReferences inp of
                       Just r -> return r
                       Nothing ->
-                        case optBibliography opt of
+                        case optReferences opt of
                           Just fp -> do
                             raw <- BL.readFile fp
                             case Aeson.eitherDecode raw of
@@ -84,22 +90,26 @@ main = do
 data Format = Json | Html deriving (Show, Ord, Eq)
 
 data Opt =
-  Opt{ optCsl          :: Maybe String
-     , optBibliography :: Maybe String
+  Opt{ optStyle          :: Maybe String
+     , optReferences :: Maybe String
      , optFormat       :: Maybe String
+     , optHelp         :: Bool
      } deriving Show
 
 options :: [OptDescr (Opt -> Opt)]
 options =
-  [ Option ['s'] ["csl"]
-     (ReqArg (\fp opt -> opt{ optCsl = Just fp }) "FILE")
+  [ Option ['s'] ["style"]
+     (ReqArg (\fp opt -> opt{ optStyle = Just fp }) "FILE")
      "CSL style file"
-  , Option ['b'] ["bibliography"]
-     (ReqArg (\fp opt -> opt{ optBibliography = Just fp }) "FILE")
+  , Option ['r'] ["references"]
+     (ReqArg (\fp opt -> opt{ optReferences = Just fp }) "FILE")
      "CSL JSON bibliography"
-  , Option [] ["format"]
-     (ReqArg (\format opt -> opt{ optFormat = Just format }) "FILE")
-     "html|json"
+  , Option ['f'] ["format"]
+     (ReqArg (\format opt -> opt{ optFormat = Just format }) "html|json")
+     "Controls formatting of entries in result"
+  , Option ['h'] ["help"]
+     (NoArg (\opt -> opt{ optHelp = True }))
+     "Print usage information"
   ]
 
 err :: String -> IO a
