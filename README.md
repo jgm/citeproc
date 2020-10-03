@@ -91,17 +91,17 @@ The input JSON should have the structure:
 ``` json
 { "citations":     [ ...list of citations... ],
   "references":    [ ...list of references... ],
-  "stylesheet":    "<style>...</style>",
+  "style":         "<style>...</style>",
   "abbreviations": { ...abbreviations... },
   "lang":          "fr-FR" }
 ```
 
 None of these fields is mandatory.  Instead of providing
 `references` in the input JSON, one can specify a file
-containing a CSL JSON bibliography, using the `--bibliography`
+containing a CSL JSON bibliography, using the `--references`
 option on the command line.  Instead of providing a CSL
 stylesheet in the JSON, one can specify a file using
-the `--stylesheet` option.
+the `--style` option.
 
 A citation is structured like this:
 

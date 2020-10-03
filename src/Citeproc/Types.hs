@@ -1673,7 +1673,7 @@ data Inputs a =
   Inputs
   { inputsCitations     :: Maybe [Citation a]
   , inputsReferences    :: Maybe [Reference a]
-  , inputsStylesheet    :: Maybe Text
+  , inputsStyle         :: Maybe Text
   , inputsAbbreviations :: Maybe Abbreviations
   , inputsLang          :: Maybe Lang
   } deriving (Show)
@@ -1682,7 +1682,7 @@ instance ToJSON a => ToJSON (Inputs a) where
   toJSON inp = object
     [ ("citations",     toJSON $ inputsCitations inp)
     , ("references",    toJSON $ inputsReferences inp)
-    , ("stylesheet",    toJSON $ inputsStylesheet inp)
+    , ("style",         toJSON $ inputsStyle inp)
     , ("abbreviations", toJSON $ inputsAbbreviations inp)
     , ("lang",          toJSON $ inputsLang inp)
     ]
@@ -1691,7 +1691,7 @@ instance (FromJSON a, Eq a) => FromJSON (Inputs a) where
   parseJSON = withObject "Inputs" $ \v ->
     Inputs <$> v .:? "citations"
            <*> v .:? "references"
-           <*> v .:? "stylesheet"
+           <*> v .:? "style"
            <*> v .:? "abbreviations"
            <*> v .:? "lang"
 

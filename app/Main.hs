@@ -36,7 +36,7 @@ main = do
   case Aeson.eitherDecode bs of
     Left e -> err e
     Right (inp :: Inputs (CslJson Text)) -> do
-      stylesheet <- case inputsStylesheet inp of
+      stylesheet <- case inputsStyle inp of
                       Just s -> return s
                       Nothing ->
                         case optStyle opt of
