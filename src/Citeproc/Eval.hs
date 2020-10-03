@@ -387,8 +387,10 @@ disambiguateCitations style bibSortKeyMap citations = do
                             NormalCite Nothing Nothing]
                        | ident <- refIds
                        , not (ident `Set.member` citeIds)]
-  allCites <- mapM (evalLayout False (styleCitation style))
-                 (zip [1..] (citations ++ ghostCitations))
+  allCites <- withRWST (\ctx st -> (ctx,
+                                    st { stateLastCitedMap = mempty })) $
+               mapM (evalLayout False (styleCitation style))
+                            (zip [1..] (citations ++ ghostCitations))
 
   styleOpts <- asks contextStyleOptions
   let strategy = styleDisambiguation styleOpts
@@ -443,14 +445,18 @@ disambiguateCitations style bibSortKeyMap citations = do
                      (unReferenceMap $ stateRefMap st)
                      refIds) }
            -- redo citations
-           mapM (evalLayout False (styleCitation style))
-                 (zip [1..] (citations ++ ghostCitations))
+           withRWST (\ctx st -> (ctx,
+                                 st { stateLastCitedMap = mempty })) $
+             mapM (evalLayout False (styleCitation style))
+                   (zip [1..] (citations ++ ghostCitations))
 
   case getAmbiguities allCites' of
     []          -> return $ take (length citations) allCites'
     ambiguities -> do
       analyzeAmbiguities bibSortKeyMap strategy (map snd ambiguities)
-      mapM (evalLayout False (styleCitation style)) (zip [1..] citations)
+      withRWST (\ctx st -> (ctx,
+                            st { stateLastCitedMap = mempty })) $
+        mapM (evalLayout False (styleCitation style)) (zip [1..] citations)
 
  where
   analyzeAmbiguities :: M.Map ItemId [SortKeyValue]
