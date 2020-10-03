@@ -99,6 +99,7 @@ executable citeproc
                      , bytestring
                      , text
                      , aeson
+                     , aeson-pretty
 
   ghc-options:         -Wall
                        -Wincomplete-record-updates

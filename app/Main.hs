@@ -9,6 +9,8 @@ import qualified Data.Text as T
 import qualified Data.Text.IO as TIO
 import qualified Data.ByteString.Lazy as BL
 import qualified Data.Aeson as Aeson
+import Data.Aeson.Encode.Pretty as AesonPretty
+import Data.Ord (comparing)
 import System.IO
 import System.Exit
 import System.Environment
@@ -45,13 +47,18 @@ main = do
       case parseResult of
         Left e -> err (T.unpack $ prettyCiteprocError e)
         Right parsedStyle -> do
-           BL.putStr $ Aeson.encode $ citeproc
-                                        defaultCiteprocOptions
-                                        parsedStyle
-                                        (inputsLang inp)
-                                        references
-                                        (fromMaybe []
-                                          (inputsCitations inp))
+           BL.putStr $ AesonPretty.encodePretty'
+                       AesonPretty.defConfig
+                         { confIndent = AesonPretty.Spaces 2
+                         , confCompare = AesonPretty.keyOrder
+                             ["citations","bibliography","warnings"]
+                             `mappend` comparing T.length } $
+             citeproc defaultCiteprocOptions
+                      parsedStyle
+                      (inputsLang inp)
+                      references
+                      (fromMaybe []
+                        (inputsCitations inp))
            BL.putStr "\n"
 
 data Opt =
