@@ -211,7 +211,7 @@ addFormatting f x =
        $ x
  where
   addPrefix z = case formatPrefix f of
-                  Just s   -> fromText s <> z
+                  Just s   -> mconcat $ fixPunct [fromText s, z]
                   Nothing  -> z
   addSuffix z = case formatSuffix f of
                   Just s   -> mconcat $ fixPunct [z, fromText s]
