@@ -83,12 +83,113 @@ dependent styles, you can get by with `\_ -> return mempty`.
 If the package is compiled with the `executable` flag, an
 executable `citeproc` will be built.  `citeproc` acts as a pipe,
 reading a JSON-encoded `Inputs` object from `stdin` and writing
-a JSON-encoded `Result` object from `stdout`.
+a JSON-encoded `Result` object from `stdout`.  This executable
+can be used to add citation processing to non-Haskell projects.
 
-TODO more on the JSON encoding.
+The input JSON should have the structure:
 
-The `citeproc` executable can be used to add citation processing
-to non-Haskell projects.
+``` json
+{ "citations":     [ ...list of citations... ],
+  "references":    [ ...list of references... ],
+  "stylesheet":    "<style>...</style>",
+  "abbreviations": { ...abbreviations... },
+  "lang":          "fr-FR" }
+```
+
+None of these fields is mandatory.  Instead of providing
+`references` in the input JSON, one can specify a file
+containing a CSL JSON bibliography, using the `--bibliography`
+option on the command line.  Instead of providing a CSL
+stylesheet in the JSON, one can specify a file using
+the `--stylesheet` option.
+
+A citation is structured like this:
+
+``` json
+{ "citationID": "foo",
+  "citationItems": [ ...list of citationItems... ],
+  "citationNoteNumber": 3 }
+```
+
+Only `citationItems` is necessary.  And, instead of
+
+``` json
+{ "citationItems": [ ... ] }
+```
+
+one can just specify an array of items directly:
+
+``` json
+[ ... ]
+```
+
+A citation item is structured like this:
+
+``` json
+{ "id":       "foo",
+  "type":     "suppress-author",
+  "label":    "page",
+  "locator":  "45",
+  "prefix":   "see ",
+  "suffix":   " and others" }
+```
+
+Only `id` is mandatory.  If `type` is omitted, it will
+be assumed to be `normal-cite` (other values are
+`suppress-author` and `author-only`).
+
+A reference is structured like this:
+
+``` json
+{
+  "author": [
+    {
+      "family": "Aristotle"
+    }
+  ],
+  "id": "aristotle:prior",
+  "issued": {
+    "date-parts": [
+      [
+        1989
+      ]
+    ]
+  },
+  "publisher": "Hackett",
+  "publisher-place": "Indianapolis",
+  "title": "Prior analytics",
+  "translator": [
+    {
+      "family": "Smith",
+      "given": "Robin"
+    }
+  ],
+  "type": "book"
+}
+```
+
+An abbreviations object has this form:
+
+``` json
+{ "default": {
+    "container-title": {
+            "Lloyd's Law Reports": "Lloyd's Rep",
+            "Estates Gazette": "EG",
+            "Scots Law Times": "SLT"
+    }
+  }
+}
+```
+
+The output JSON will have the structure:
+
+``` json
+{ "citations":    [ ...list of strings... ],
+  "bibliography": [ ...list of arrays: item id and a string... ],
+  "warnings":     [ ...list of warnings... ]
+```
+
+Content will be HTML.
 
 ## Known bugs and limitations
 
