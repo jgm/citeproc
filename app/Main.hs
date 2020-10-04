@@ -3,7 +3,8 @@
 module Main where
 import Citeproc
 import Citeproc.CslJson
-import Control.Monad (when)
+import Control.Monad (when, unless)
+import Control.Applicative ((<|>))
 import Data.Maybe (fromMaybe)
 import Data.Text (Text)
 import qualified Data.Text as T
@@ -20,8 +21,11 @@ import System.Console.GetOpt
 main :: IO ()
 main = do
   rawargs <- getArgs
-  let (opts, args, _errs) = getOpt Permute options rawargs
-  let opt = foldr ($) (Opt Nothing Nothing Nothing False) opts
+  let (opts, args, errs) = getOpt Permute options rawargs
+  unless (null errs) $ do
+    mapM_ err errs
+    exitWith $ ExitFailure 1
+  let opt = foldr ($) defaultOpt opts
   when (optHelp opt) $ do
     putStr $ usageInfo "citeproc [OPTIONS] [FILE]" options
     exitWith ExitSuccess
@@ -36,32 +40,41 @@ main = do
   case Aeson.eitherDecode bs of
     Left e -> err e
     Right (inp :: Inputs (CslJson Text)) -> do
-      stylesheet <- case inputsStyle inp of
-                      Just s -> return s
+      stylesheet <- case optStyle opt of
+                      Just fp -> TIO.readFile fp
                       Nothing ->
-                        case optStyle opt of
-                          Just fp -> TIO.readFile fp
-                          Nothing -> err "No stylesheet specified"
-      references <- case inputsReferences inp of
-                      Just r -> return r
+                        case inputsStyle inp of
+                          Just s  -> return s
+                          Nothing -> err "No style specified"
+      references <- case optReferences opt of
+                      Just fp -> do
+                        raw <- BL.readFile fp
+                        case Aeson.eitherDecode raw of
+                          Left e   -> err e
+                          Right rs -> return rs
                       Nothing ->
-                        case optReferences opt of
+                        case inputsReferences inp of
+                          Just rs  -> return rs
+                          Nothing  -> err "No references specified"
+      abbreviations <- case optAbbreviations opt of
                           Just fp -> do
                             raw <- BL.readFile fp
                             case Aeson.eitherDecode raw of
                               Left e   -> err e
-                              Right rs -> return rs
-                          Nothing -> err "No references specified"
+                              Right ab -> return $ Just ab
+                          Nothing -> return $ inputsAbbreviations inp
+      let lang = optLang opt <|> inputsLang inp
 
       parseResult <-
         parseStyle (\_ -> return mempty) stylesheet
       case parseResult of
         Left e -> err (T.unpack $ prettyCiteprocError e)
         Right parsedStyle -> do
-          let locale = mergeLocales (inputsLang inp) parsedStyle
+          let style = parsedStyle{ styleAbbreviations = abbreviations }
+          let locale = mergeLocales lang style
           let result= citeproc defaultCiteprocOptions
-                         parsedStyle
-                         (inputsLang inp)
+                         style
+                         lang
                          references
                          (fromMaybe [] (inputsCitations inp))
           let jsonResult :: Aeson.Value
@@ -83,18 +96,30 @@ main = do
                          { confIndent = AesonPretty.Spaces 2
                          , confCompare = AesonPretty.keyOrder
                              ["citations","bibliography","warnings"]
-                             `mappend` comparing T.length }
+                             `mappend` comparing T.length
+                         , confTrailingNewline = True }
                        jsonResult
-          BL.putStr "\n"
 
 data Format = Json | Html deriving (Show, Ord, Eq)
 
 data Opt =
-  Opt{ optStyle          :: Maybe String
-     , optReferences :: Maybe String
-     , optFormat       :: Maybe String
-     , optHelp         :: Bool
+  Opt{ optStyle         :: Maybe String
+     , optReferences    :: Maybe String
+     , optAbbreviations :: Maybe String
+     , optFormat        :: Maybe String
+     , optLang          :: Maybe Lang
+     , optHelp          :: Bool
      } deriving Show
+
+defaultOpt :: Opt
+defaultOpt =
+  Opt { optStyle = Nothing
+      , optReferences = Nothing
+      , optAbbreviations = Nothing
+      , optFormat = Nothing
+      , optLang = Nothing
+      , optHelp = False
+      }
 
 options :: [OptDescr (Opt -> Opt)]
 options =
@@ -104,6 +129,13 @@ options =
   , Option ['r'] ["references"]
      (ReqArg (\fp opt -> opt{ optReferences = Just fp }) "FILE")
      "CSL JSON bibliography"
+  , Option ['a'] ["abbrevations"]
+     (ReqArg (\fp opt -> opt{ optAbbreviations = Just fp }) "FILE")
+     "CSL abbreviations table"
+  , Option ['l'] ["lang"]
+     (ReqArg (\lang opt -> opt{ optLang = Just $ parseLang $ T.pack lang })
+        "IETF language")
+     "Override locale"
   , Option ['f'] ["format"]
      (ReqArg (\format opt -> opt{ optFormat = Just format }) "html|json")
      "Controls formatting of entries in result"
