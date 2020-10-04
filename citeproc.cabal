@@ -17,6 +17,7 @@ extra-doc-files:     README.md
                    , CHANGELOG.md
 extra-source-files:  locales/*.xml
                      locales/locales.json
+                     man/citeproc.1.md
                      test/NOTES.md
                      test/csl/*.txt
                      test/extra/*.txt
