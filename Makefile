@@ -1,3 +1,4 @@
+VERSION?=$(shell grep '^[Vv]ersion:' citeproc.cabal | awk '{print $$2;}')
 LOCALE_DATA=$(patsubst locales-upstream/locales-%.xml,locales/%.xml, $(wildcard locales-upstream/*.xml)) locales/locales.json
 
 .PHONY: test-suite locales test bench ghcid repl clean update-locales update-test-suite update-locales-upstream test-diff
@@ -35,6 +36,9 @@ locales/%.xml: locales-upstream/locales-%.xml
 
 locales/locales.json: locales-upstream/locales.json
 	cp $< $@
+
+man/citeproc.1: man/citeproc.1.md
+	pandoc $< -s -Vfooter="citeproc $(VERSION)" -o $@
 
 test-suite:
 	git clone https://github.com/citation-style-language/test-suite

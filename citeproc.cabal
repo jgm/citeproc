@@ -80,6 +80,7 @@ library
                        -Wcompat
                        -Widentities
                        -Wredundant-constraints
+
   if impl(ghc >= 8.2)
     ghc-options:       -Wcpp-undef
   if impl(ghc >= 8.4)
@@ -107,6 +108,7 @@ executable citeproc
                        -Wcompat
                        -Widentities
                        -Wredundant-constraints
+                       -optP-Wno-nonportable-include-path
   if impl(ghc >= 8.2)
     ghc-options:       -Wcpp-undef
   if impl(ghc >= 8.4)

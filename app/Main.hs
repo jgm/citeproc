@@ -1,3 +1,4 @@
+{-# LANGUAGE CPP #-}
 {-# LANGUAGE OverloadedStrings #-}
 {-# LANGUAGE ScopedTypeVariables #-}
 module Main where
@@ -28,6 +29,9 @@ main = do
   let opt = foldr ($) defaultOpt opts
   when (optHelp opt) $ do
     putStr $ usageInfo "citeproc [OPTIONS] [FILE]" options
+    exitWith ExitSuccess
+  when (optVersion opt) $ do
+    putStrLn $ "citeproc version " <> VERSION_citeproc
     exitWith ExitSuccess
   format <- case optFormat opt of
               Just "html" -> return Html
@@ -109,6 +113,7 @@ data Opt =
      , optFormat        :: Maybe String
      , optLang          :: Maybe Lang
      , optHelp          :: Bool
+     , optVersion       :: Bool
      } deriving Show
 
 defaultOpt :: Opt
@@ -119,6 +124,7 @@ defaultOpt =
       , optFormat = Nothing
       , optLang = Nothing
       , optHelp = False
+      , optVersion = False
       }
 
 options :: [OptDescr (Opt -> Opt)]
@@ -142,6 +148,9 @@ options =
   , Option ['h'] ["help"]
      (NoArg (\opt -> opt{ optHelp = True }))
      "Print usage information"
+  , Option ['V'] ["version"]
+     (NoArg (\opt -> opt{ optVersion = True }))
+     "Print version number"
   ]
 
 err :: String -> IO a
