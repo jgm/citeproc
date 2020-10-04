@@ -182,6 +182,10 @@ An abbreviations object has this form:
 }
 ```
 
+The abbreviations will be substituted in the output
+only when the `form` attribute for the variable is
+set to `short`.
+
 The output JSON will have the structure:
 
 ``` json
