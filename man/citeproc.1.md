@@ -21,20 +21,20 @@ citation processing to non-Haskell projects.
 
 # OPTIONS
 
-`-s` *FILE*, `--style`=*FILE*
+`-s` *FILE*, `--style=`*FILE*
 :   Specify a CSL style to be used.
 
-`-r` *FILE*, `--references`=*FILE*
+`-r` *FILE*, `--references=`*FILE*
 :   Specify a CSL JSON bibliography to be used as a source for references.
 
-`a` *FILE*, `--abbreviations`=*FILE*
+`a` *FILE*, `--abbreviations=`*FILE*
 :   Specify a CSL abbreviations file.
 
-`l` *LANG*, `--lang`=*LANG*
+`l` *LANG*, `--lang=`*LANG*
 :   Specify a locale to override the style's default (IETF
     language code).
 
-`f` *html|json*, `--format`=*html|json*
+`f` *html|json*, `--format=`*html|json*
 :   Specify the format to be used for the entries.  `html` (the
     default) uses HTML tags and entities for formatting.  `json`
     creates a structured JSON representation of a formatted document.
