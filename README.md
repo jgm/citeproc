@@ -81,11 +81,13 @@ dependent styles, you can get by with `\_ -> return mempty`.
 ## The citeproc executable
 
 If the package is compiled with the `executable` flag, an
-executable `citeproc` will be built.  `citeproc` acts as a pipe,
-reading a JSON-encoded `Inputs` object from `stdin` (or from
-a file if a filename is provided) and writing
-a JSON-encoded `Result` object from `stdout`.  This executable
+executable `citeproc` will be built.  `citeproc` reads
+a JSON-encoded `Inputs` object from `stdin` (or from
+a file if a filename is provided) and writes
+a JSON-encoded `Result` object to `stdout`.  This executable
 can be used to add citation processing to non-Haskell projects.
+
+`citeproc --help` will summarize usage information.
 
 The input JSON should have the structure:
 
@@ -102,7 +104,10 @@ None of these fields is mandatory.  Instead of providing
 containing a CSL JSON bibliography, using the `--references`
 option on the command line.  Instead of providing a CSL
 stylesheet in the JSON, one can specify a file using
-the `--style` option.
+the `--style` option.  `--abbreviations` and `--lang`
+may also be used on the command line to specify an
+abbreviations file or a locale.  (Command-line options
+always override any values given in the JSON file.)
 
 A citation is structured like this:
 
