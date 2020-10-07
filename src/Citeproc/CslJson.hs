@@ -205,7 +205,7 @@ pCslJson locale = P.choice
   ]
  where
   ((outerOpenQuote, outerCloseQuote), (innerOpenQuote, innerCloseQuote)) =
-    lookupQuotes locale
+     fromMaybe (("\x201C","\x201D"),("\x2018","\x2019")) $ lookupQuotes locale
   isSpecialChar c = c == '<' || c == '>' || c == '\'' || c == '"' ||
        c == '’' || (not (isAscii c) && (isSuperscriptChar c || isQuoteChar c))
   isQuoteChar = P.inClass
@@ -296,13 +296,13 @@ lookupTerm locale termname = do
      Just ((_,t):_) -> Just t
      _              -> Nothing
 
-lookupQuotes :: Locale -> ((Text, Text), (Text, Text))
-lookupQuotes locale = (outerQuotes, innerQuotes)
- where
-  outerQuotes = (fromMaybe "“" $ lookupTerm locale "open-quote",
-                 fromMaybe "”" $ lookupTerm locale "close-quote")
-  innerQuotes = (fromMaybe "‘" $ lookupTerm locale "open-inner-quote",
-                 fromMaybe "’" $ lookupTerm locale "close-inner-quote")
+lookupQuotes :: Locale -> Maybe ((Text, Text), (Text, Text))
+lookupQuotes locale = do
+  outerQuotes <- (,) <$> lookupTerm locale "open-quote"
+                     <*> lookupTerm locale "close-quote"
+  innerQuotes <- (,) <$> lookupTerm locale "open-inner-quote"
+                     <*> lookupTerm locale "close-inner-quote"
+  return (outerQuotes, innerQuotes)
 
 -- | Render 'CslJson' as 'Text'.  Set the first parameter to True
 -- when rendering HTML output (so that entities are escaped).
@@ -314,7 +314,8 @@ renderCslJson :: Bool          -- ^ Escape < > & using entities
 renderCslJson useEntities locale csljson =
   go (RenderContext True True True True) csljson
  where
-  (outerQuotes, innerQuotes) = lookupQuotes locale
+  (outerQuotes, innerQuotes) = fromMaybe (("\"","\""),("'","'"))
+                                   $ lookupQuotes locale
   go :: RenderContext -> CslJson Text -> Text
   go ctx el =
     case el of
@@ -377,7 +378,8 @@ renderCslJson useEntities locale csljson =
 cslJsonToJson :: Locale -> CslJson Text -> [Value]
 cslJsonToJson locale = go (RenderContext True True True True)
  where
-  (outerQuotes, innerQuotes) = lookupQuotes locale
+  (outerQuotes, innerQuotes) = fromMaybe
+       (("\"","\""),("'","'")) $ lookupQuotes locale
   isString (String _) = True
   isString _ = False
   consolidateStrings :: [Value] -> [Value]
