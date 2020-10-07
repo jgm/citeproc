@@ -115,7 +115,7 @@ renderCslJson' loc x =
      then "[CSL STYLE ERROR: reference with no printed form.]"
      else res
  where
-  res = renderCslJson loc x
+  res = renderCslJson True loc x
 
 addDivs :: [Text] -> [Text]
 addDivs ts = "<div class=\"csl-bib-body\">" : map addItemDiv ts ++ ["</div>"]

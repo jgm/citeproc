@@ -80,7 +80,7 @@ instance FromJSON (CslJson Text) where
   parseJSON = fmap (parseCslJson mempty) . parseJSON
 
 instance ToJSON (CslJson Text) where
-  toJSON = toJSON . renderCslJson mempty
+  toJSON = toJSON . renderCslJson False mempty
 
 instance Uniplate (CslJson a) where
   uniplate (CslText x)         = plate CslText |- x
@@ -304,8 +304,15 @@ lookupQuotes locale = (outerQuotes, innerQuotes)
   innerQuotes = (fromMaybe "‘" $ lookupTerm locale "open-inner-quote",
                  fromMaybe "’" $ lookupTerm locale "close-inner-quote")
 
-renderCslJson :: Locale -> CslJson Text -> Text
-renderCslJson locale csljson = go (RenderContext True True True True) csljson
+-- | Render 'CslJson' as 'Text'.  Set the first parameter to True
+-- when rendering HTML output (so that entities are escaped).
+-- Set it to False when rendering for CSL JSON bibliographies.
+renderCslJson :: Bool          -- ^ Escape < > & using entities
+              -> Locale        -- ^ Locale (used for quote styles)
+              -> CslJson Text  -- ^ CslJson to render
+              -> Text
+renderCslJson useEntities locale csljson =
+  go (RenderContext True True True True) csljson
  where
   (outerQuotes, innerQuotes) = lookupQuotes locale
   go :: RenderContext -> CslJson Text -> Text
@@ -358,11 +365,14 @@ renderCslJson locale csljson = go (RenderContext True True True True) csljson
       CslBaseline x -> "<span style=\"baseline\">" <> go ctx x <> "</span>"
       CslDiv t x -> "<div class=\"csl-" <> t <> "\">" <> go ctx x <> "</div>"
       CslNoCase x -> go ctx x -- nocase is just for internal purposes
-  escape t = case T.findIndex (\c -> c == '<' || c == '>' || c == '&') t of
+  escape t
+    | useEntities
+      = case T.findIndex (\c -> c == '<' || c == '>' || c == '&') t of
                Just _ -> T.replace "<" "&#60;" .
                          T.replace ">" "&#62;" .
                          T.replace "&" "&#38;" $ t
                Nothing -> t
+    | otherwise = t
 
 cslJsonToJson :: Locale -> CslJson Text -> [Value]
 cslJsonToJson locale = go (RenderContext True True True True)
