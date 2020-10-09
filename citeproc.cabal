@@ -15,7 +15,9 @@ category:            Text
 build-type:          Simple
 extra-doc-files:     README.md
                    , CHANGELOG.md
-extra-source-files:  locales/*.xml
+extra-source-files:  stack.yaml
+                     cabal.project
+                     locales/*.xml
                      locales/locales.json
                      man/citeproc.1.md
                      test/NOTES.md
