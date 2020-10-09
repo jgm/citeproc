@@ -27,11 +27,11 @@ import Data.Char (isSpace, isPunctuation, isDigit, isUpper, isLower, isLetter,
 import Text.Printf (printf)
 import Control.Applicative
 import Data.Generics.Uniplate.Operations (universe, transform)
-import Debug.Trace (trace)
-import Text.Show.Pretty (ppShow)
 
-ppTrace :: Show a => a -> a
-ppTrace x = trace (ppShow x) x
+-- import Debug.Trace (trace)
+-- import Text.Show.Pretty (ppShow)
+-- ppTrace :: Show a => a -> a
+-- ppTrace x = trace (ppShow x) x
 
 data Context a =
   Context

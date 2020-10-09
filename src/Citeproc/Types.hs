@@ -129,16 +129,17 @@ import qualified Data.Attoparsec.Text as P
 import Safe (readMay)
 import Data.String (IsString)
 
-import Debug.Trace
-import Text.Show.Pretty (ppShow)
 #ifdef MIN_VERSION_text_icu
 import qualified Data.Text.ICU as ICU
 #else
 import qualified Data.RFC5051 as RFC5051
 #endif
 
-ppTrace :: Show a => a -> a
-ppTrace x = trace (ppShow x) x
+-- import Debug.Trace
+-- import Text.Show.Pretty (ppShow)
+--
+-- ppTrace :: Show a => a -> a
+-- ppTrace x = trace (ppShow x) x
 
 -- | Options affecting the output in ways that go beyond
 -- what can be specified in styles.
