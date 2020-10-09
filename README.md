@@ -92,8 +92,9 @@ the [man page](man/citeproc.1.md) for more information.
 
 ## Known bugs and limitations
 
-At this point, the library still fails some of the tests from the
-CSL test suite (59/845).  However, most of the failures are on
-minor corner cases.  This library is already much more accurate
-in implementing the CSL spec than pandoc-citeproc was.
+Although this library is much more accurate in implementing the
+CSL spec than pandoc-citeproc was, it still fails some of the
+tests from the CSL test suite (59/845).  However, most of the
+failures are on minor corner cases, and in many cases the
+expected behavior goes beyond what is required by the CSL spec.
 
