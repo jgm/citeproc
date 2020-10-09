@@ -936,7 +936,7 @@ parseReference rawmap =
           NameVariable -> do
             v' <- parseJSON v
             return $ M.insert k (NamesVal v') m
-          UnknownVariable -> do -- treat as string variable if possible
+          UnknownVariable -> -- treat as string variable if possible
             case v of
               String{}  -> (\x -> M.insert k x m) <$>
                     (FancyVal <$> parseJSON v <|> TextVal <$> readString v)
@@ -955,7 +955,7 @@ consolidateNameVariables ((k,v):kvs)
   = case variableType k of
       NameVariable
         -> (k, Array
-                 (V.fromList ([String t | (k',t) <- ((k,v):kvs), k' == k]))) :
+                 (V.fromList [String t | (k',t) <- ((k,v):kvs), k' == k])) :
             consolidateNameVariables (filter ((/= k) . fst) kvs)
       _ -> (k, String v) : consolidateNameVariables kvs
 

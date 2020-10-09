@@ -1,6 +1,5 @@
 {-# LANGUAGE OverloadedStrings #-}
 {-# LANGUAGE ViewPatterns #-}
-{-# LANGUAGE TypeSynonymInstances #-}
 {-# LANGUAGE FlexibleInstances #-}
 {-# LANGUAGE FlexibleContexts #-}
 {-# OPTIONS_GHC -fno-warn-orphans #-}
@@ -30,8 +29,8 @@ instance CiteprocOutput Inlines where
                           (if " " `T.isSuffixOf` t
                               then B.space
                               else mempty)
-  dropTextWhile f       = dropTextWhile' f
-  dropTextWhileEnd f    = dropTextWhileEnd' f
+  dropTextWhile         = dropTextWhile'
+  dropTextWhileEnd      = dropTextWhileEnd'
   addFontVariant x      =
     case x of
       NormalVariant    -> id
@@ -167,8 +166,7 @@ dropTextWhileEnd' f ils =
              unless (T.null t') $
                put False
              return $ Str t'
-           Space | f ' ' -> do
-             return $ Str ""
+           Space | f ' ' -> return $ Str ""
            _ -> return x
        else return x
 

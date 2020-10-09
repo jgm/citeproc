@@ -105,8 +105,8 @@ instance Biplate (CslJson a) (CslJson a) where
 instance CiteprocOutput (CslJson Text) where
   toText                = foldMap id
   fromText              = parseCslJson mempty
-  dropTextWhile f       = dropTextWhile' f
-  dropTextWhileEnd f    = dropTextWhileEnd' f
+  dropTextWhile         = dropTextWhile'
+  dropTextWhileEnd      = dropTextWhileEnd'
   addFontVariant x      =
     case x of
       NormalVariant    -> id
@@ -226,11 +226,11 @@ pCslJson locale = P.choice
                  <* notFollowedBySpace
   pSpace = P.skipWhile isSpaceChar
   pCslText = CslText . addNarrowSpace <$>
-    ( (do t <- P.takeWhile1 (\c -> isAlphaNum c && not (isSpecialChar c))
+    (  do t <- P.takeWhile1 (\c -> isAlphaNum c && not (isSpecialChar c))
           -- apostrophe
           P.option t $ do _ <- P.satisfy isApostrophe
                           t' <- P.takeWhile1 isAlphaNum
-                          return (t <> "’" <> t'))
+                          return (t <> "’" <> t')
     <|>
       (P.takeWhile1 (\c -> not (isAlphaNum c || isSpecialChar c))) )
   pCslQuoted = CslQuoted <$>
@@ -244,7 +244,7 @@ pCslJson locale = P.choice
     c <- P.satisfy isSpecialChar
     return $
        if isApostrophe c
-          then CslText $ "’"
+          then CslText "’"
           else charToSup c
   pCslItalic = CslItalic . mconcat <$>
     (P.string "<i>" *> P.manyTill' pCsl (P.string "</i>"))
@@ -311,8 +311,8 @@ renderCslJson :: Bool          -- ^ Escape < > & using entities
               -> Locale        -- ^ Locale (used for quote styles)
               -> CslJson Text  -- ^ CslJson to render
               -> Text
-renderCslJson useEntities locale csljson =
-  go (RenderContext True True True True) csljson
+renderCslJson useEntities locale =
+  go (RenderContext True True True True)
  where
   (outerQuotes, innerQuotes) = fromMaybe (("\"","\""),("'","'"))
                                    $ lookupQuotes locale
@@ -491,7 +491,7 @@ cslJsonToJson locale = go (RenderContext True True True True)
 -- CslSmallCaps, Baseline, SUp, Sub, or NoCase (implicit nocase)
 caseTransform' :: (CaseTransformState -> Text -> Text)
                -> Int -- level in hierarchy
-               -> (CslJson Text)
+               -> CslJson Text
                -> State CaseTransformState (CslJson Text)
 caseTransform' f lev el =
   case el of

@@ -215,8 +215,7 @@ evalStyle style mblang refs citations =
           removeNamesIfSuppressAuthor x = x
 
       -- we need to do this after disambiguation and collapsing
-      let handleSuppressAuthors formattedCit =
-            transform removeNamesIfSuppressAuthor formattedCit
+      let handleSuppressAuthors = transform removeNamesIfSuppressAuthor
 
       let isNoteCitation = styleIsNoteStyle (styleOptions style)
 
@@ -228,10 +227,7 @@ evalStyle style mblang refs citations =
                 (x@(Tagged (TagItem AuthorOnly _) _):xs)
                   | isNoteCitation
                     -> formatted mempty
-                        (x :
-                         if null xs
-                            then []
-                            else [InNote (formatted f xs)])
+                        (x : [InNote (formatted f xs) | not (null xs)])
                   | otherwise
                     -> formatted mempty
                         (x :
@@ -439,11 +435,11 @@ disambiguateCitations style bibSortKeyMap citations = do
            -- use this same names map for every citation
            modify $ \st ->
               st{ stateRefMap = ReferenceMap $
-                   (foldr
+                   foldr
                      (M.adjust (alterReferenceDisambiguation
                        (\d -> d{ disambNameMap = namesMap })))
                      (unReferenceMap $ stateRefMap st)
-                     refIds) }
+                     refIds }
            -- redo citations
            withRWST (\ctx st -> (ctx,
                                  st { stateLastCitedMap = mempty })) $
@@ -490,7 +486,7 @@ disambiguateCitations style bibSortKeyMap citations = do
     disambiguatedName = nameParts . take etAlMin . ddNames
     nameParts =
       case mbrule of
-        Just AllNames -> map id
+        Just AllNames -> id
         Just AllNamesWithInitials ->
              map (\name -> name{ nameGiven = initialize True False ""
                                               <$> nameGiven name })
@@ -503,7 +499,7 @@ disambiguateCitations style bibSortKeyMap citations = do
             [] -> []
             (z:zs) -> z{ nameGiven = initialize True False "" <$> nameGiven z } :
                        map (\name -> name{ nameGiven = Nothing }) zs
-        Just ByCite -> map id -- hints will be added later
+        Just ByCite -> id -- hints will be added later
         _ -> map (\name -> name{ nameGiven = Nothing })
 
   tryAddNames mbrule bs = (case mbrule of
@@ -536,7 +532,7 @@ disambiguateCitations style bibSortKeyMap citations = do
         go (as' :: [DisambData]) (ns :: [(ItemId, Name)]) = do
           hintedIds <- Set.fromList . catMaybes <$>
                           mapM (addNameHint (map snd ns)) ns
-          return $ filter (\x -> (ddItem x) `Set.notMember` hintedIds) as'
+          return $ filter (\x -> ddItem x `Set.notMember` hintedIds) as'
     foldM go as correspondingNames
 
   addYearSuffixes bibSortKeyMap' as = do
@@ -554,7 +550,7 @@ disambiguateCitations style bibSortKeyMap citations = do
                  $ stateRefMap st }
     mapM_ (\xs -> zipWithM addYearSuffix (map ddItem xs) [1..]) groups
 
-  tryDisambiguateCondition as = do
+  tryDisambiguateCondition as =
     case as of
       [] -> return ()
       xs -> modify $ \st ->
@@ -683,7 +679,7 @@ groupAndCollapseCitations citeGroupDelim yearSuffixDelim afterCollapseDelim
   --   so we can't just use Data.ListgroupBy
   groupWith _ [] = []
   groupWith isMatched (z:zs) =
-    (z : (filter (isMatched z) zs)) :
+    (z : filter (isMatched z) zs) :
          groupWith isMatched (filter (not . isMatched z) zs)
   collapseRange ys zs
     | length ys >= 3
@@ -756,11 +752,11 @@ groupAndCollapseCitations citeGroupDelim yearSuffixDelim afterCollapseDelim
      (cur, items) = foldl' (goYearSuffix True) ([], []) zs
   collapseYearSuffix _ zs = zs
   getDates x = [d | Tagged (TagDate d) _ <- universe x]
-  getYears x = [map (\e -> case e of
-                             DateParts (y:_) -> Just y
-                             _               -> Nothing) (dateParts d)
+  getYears x = [map (\case
+                        DateParts (y:_) -> Just y
+                        _               -> Nothing) (dateParts d)
                 | d <- getDates x
-                , dateLiteral d == Nothing]
+                , isNothing (dateLiteral d)]
   goYearSuffix useRanges (cur, items) item =
     case cur of
       []     -> ([item], items)
@@ -975,7 +971,7 @@ evalLayout isBibliography layout (citationGroupNumber, citation) = do
     -- we only update the map in the citations section
     unless isBibliography $ do
       lastCitedMap <- gets stateLastCitedMap
-      let notenum = NumVal $ fromMaybe citationGroupNumber $ mbNoteNumber
+      let notenum = NumVal $ fromMaybe citationGroupNumber mbNoteNumber
       case M.lookup (citationItemId item) lastCitedMap of
         Nothing | isNote -> -- first citation
           modify $ \st ->
@@ -992,12 +988,12 @@ evalLayout isBibliography layout (citationGroupNumber, citation) = do
           st{ stateLastCitedMap =
             M.insert (citationItemId item)
               (citationGroupNumber, mbNoteNumber, positionInCitation,
-               (case citationItems citation of
+               case citationItems citation of
                   [_]   -> True
                   [x,y] -> citationItemId x == citationItemId y
                           && citationItemType x == AuthorOnly
                           && citationItemType y == SuppressAuthor
-                  _     -> False),
+                  _     -> False,
                citationItemLabel item,
                citationItemLocator item)
             lastCitedMap }
@@ -1305,7 +1301,7 @@ eText (TextVariable varForm v) = do
                                  Tagged TagCitationLabel $
                                   grouped $
                                   Literal x
-                                  : maybe [] (:[]) mbsuff
+                                  : maybeToList mbsuff
           _ -> do
             warn $ "citation-label of unknown type for " <>
                       coerce (referenceId ref)
@@ -1601,7 +1597,7 @@ eDP (yr,mo,da) dp = do
     Just 0 | dpName dp == DPYear
             -> return $ Literal mempty -- open date range
     Just n  -> do
-      let litStr xs  = return . Literal . fromText . T.pack $ xs
+      let litStr = return . Literal . fromText . T.pack
       suffix <- case dpName dp of
                   DPYear
                     | n < 0
@@ -1941,8 +1937,8 @@ getNamePartSortOrder name = do
                             nameGiven name,
                             nameSuffix name]
         | otherwise
-           -> return $ [nameFamily name,
-                        nameGiven name]
+           -> return [nameFamily name,
+                      nameGiven name]
       Just n -> return [Just n]
 
 literal :: CiteprocOutput a => Text -> Output a
