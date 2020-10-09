@@ -20,6 +20,7 @@ import qualified Text.PrettyPrint as Pretty
 import qualified Data.Text as T
 import qualified Data.Text.IO as TIO
 import Data.List (foldl', isInfixOf, intersperse, sortOn, sort)
+import Data.Containers.ListUtils (nubOrdOn)
 import Data.Char (isLetter, toLower)
 import Data.ByteString (ByteString)
 import qualified Data.ByteString.Char8 as B
@@ -64,9 +65,11 @@ runTest test = do
             case citeItems test of
                 Nothing
                   | mode test == "citation"
-                    -> [referencesToCitation (input test)]
+                    -> [referencesToCitation
+                         (nubOrdOn referenceId (input test))]
                   | otherwise
-                    -> map (referencesToCitation . (:[])) (input test)
+                    -> map (referencesToCitation . (:[]))
+                        (nubOrdOn referenceId (input test))
                 Just cs -> cs
   let doError err = do
         modify $ \st -> st{ errored = category test : errored st }
