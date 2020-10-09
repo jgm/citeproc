@@ -22,8 +22,13 @@ extra-source-files:  locales/*.xml
                      test/csl/*.txt
                      test/extra/*.txt
                      test/overrides/*.txt
+tested-with:         GHC == 8.2.2, GHC == 8.4.4,
+                     GHC == 8.6.5, GHC == 8.8.1,
+                     GHC == 8.10.1
 
-tested-with:         GHC == 8.8.3
+source-repository    head
+  type:              git
+  location:          https://github.com/jgm/citeproc.git
 
 flag icu
   description: Use Haskell bindings to the ICU library
