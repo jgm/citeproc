@@ -1361,7 +1361,10 @@ eText (TextTerm term) = do
 -- (“2, 3” can become “2nd, 3rd”, “second, third” or “ii, iii”).
 -- So, first we split on punctuation and spaces:
 splitNums :: Text -> [Val a]
-splitNums = map go . T.groupBy sameClass
+splitNums x
+  | let x' = T.take 2 x in -- like hyphenated name e.g. Michaelson-Morley
+        T.any isUpper x' && T.any isLower x' = [TextVal x]
+  | otherwise = map go . T.groupBy sameClass $ x
  where
   go t = case readAsInt t of
            Just i  -> NumVal i
