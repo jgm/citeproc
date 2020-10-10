@@ -3,12 +3,7 @@
 [![BSD2 license](https://img.shields.io/badge/license-BSD2-blue.svg)](LICENSE)
 [![CI
 tests](https://github.com/jgm/citeproc/workflows/CI%20tests/badge.svg)](https://github.com/jgm/citeproc/actions)
-
-<!--
 [![Hackage](https://img.shields.io/hackage/v/citeproc.svg)](https://hackage.haskell.org/package/citeproc)
-[![Stackage Lts](http://stackage.org/package/citeproc/badge/lts)](http://stackage.org/lts/package/citeproc)
-[![Stackage Nightly](http://stackage.org/package/citeproc/badge/nightly)](http://stackage.org/nightly/package/citeproc)
--->
 
 This library generates citations and bibliography formatted
 according to a [CSL] style.  Currently version 1.0.2 of the CSL
