@@ -45,7 +45,8 @@ main = do
     Left e -> err e
     Right (inp :: Inputs (CslJson Text)) -> do
       stylesheet <- case optStyle opt of
-                      Just fp -> TIO.readFile fp
+                      Just fp -> T.dropWhile (=='\xFEFF') <$> -- drop BOM
+                                       TIO.readFile fp
                       Nothing ->
                         case inputsStyle inp of
                           Just s  -> return s
