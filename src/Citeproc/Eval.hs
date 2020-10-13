@@ -28,7 +28,7 @@ import Text.Printf (printf)
 import Control.Applicative
 import Data.Generics.Uniplate.Operations (universe, transform)
 
--- import Debug.Trace (trace)
+-- import Debug.Trace (traceShowId)
 -- import Text.Show.Pretty (ppShow)
 -- ppTrace :: Show a => a -> a
 -- ppTrace x = trace (ppShow x) x
@@ -777,25 +777,26 @@ groupAndCollapseCitations citeGroupDelim yearSuffixDelim afterCollapseDelim
      (Tagged (TagItem _ _) (Tagged (TagCitationNumber n2) _xs2))
     = n2 == n1 + 1
   isAdjacentCitationNumber _ _ = False
-  sameNames (Tagged (TagItem ty1 _id1) x1)
-            (Tagged (TagItem ty2 _id2) x2)
-    | hasNoSuffix x1
-    , hasNoSuffix x2
-    , ty1 /= AuthorOnly
-    , ty2 /= AuthorOnly
-    = case (unFormat x1, unFormat x2) of
-      (Tagged (TagNames t1 _nf1 ns1) ws1,
-       Tagged (TagNames t2 _nf2 ns2) ws2)
-       -> t1 == t2 && (if ns1 == ns2
-                          then not (null ns1) || ws1 == ws2
-                          else ws1 == ws2)
-          -- case where it's just a date with no name or anything;
-          -- we treat this as same name e.g. (1955a,b)
-      (Tagged TagDate{} _, Tagged TagDate{} _)
-        -> True
-          -- case where title is substituted
+  sameNames x y =
+    case (unFormat x, unFormat y) of
+      (Tagged (TagItem ty1 _id1) x1, Tagged (TagItem ty2 _id2) x2)
+       | hasNoSuffix x1
+       , hasNoSuffix x2
+       , ty1 /= AuthorOnly
+       , ty2 /= AuthorOnly
+       -> case (unFormat x1, unFormat x2) of
+            (Tagged (TagNames t1 _nf1 ns1) ws1,
+             Tagged (TagNames t2 _nf2 ns2) ws2)
+              -> t1 == t2 && (if ns1 == ns2
+                                 then not (null ns1) || ws1 == ws2
+                                 else ws1 == ws2)
+            -- case where it's just a date with no name or anything;
+            -- we treat this as same name e.g. (1955a,b)
+            (Tagged TagDate{} _, Tagged TagDate{} _)
+              -> True
+                -- case where title is substituted
+            _ -> False
       _ -> False
-  sameNames _ _ = False
   hasNoSuffix (Formatted f' _) = isNothing (formatSuffix f')
   hasNoSuffix _ = True
   unFormat (Formatted _ (z:_)) = unFormat z
