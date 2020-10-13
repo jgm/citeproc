@@ -10,7 +10,6 @@ module Citeproc
        , citeproc
        , Result(..)
        ) where
-import Data.Text (Text)
 import Data.Semigroup
 import qualified Data.Text as T
 import qualified Data.Set as Set
