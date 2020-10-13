@@ -780,9 +780,7 @@ groupAndCollapseCitations citeGroupDelim yearSuffixDelim afterCollapseDelim
   sameNames x y =
     case (unFormat x, unFormat y) of
       (Tagged (TagItem ty1 _id1) x1, Tagged (TagItem ty2 _id2) x2)
-       | hasNoSuffix x1
-       , hasNoSuffix x2
-       , ty1 /= AuthorOnly
+       | ty1 /= AuthorOnly
        , ty2 /= AuthorOnly
        -> case (unFormat x1, unFormat x2) of
             (Tagged (TagNames t1 _nf1 ns1) ws1,
@@ -797,8 +795,6 @@ groupAndCollapseCitations citeGroupDelim yearSuffixDelim afterCollapseDelim
                 -- case where title is substituted
             _ -> False
       _ -> False
-  hasNoSuffix (Formatted f' _) = isNothing (formatSuffix f')
-  hasNoSuffix _ = True
   unFormat (Formatted _ (z:_)) = unFormat z
   unFormat x = x
 groupAndCollapseCitations _ _ _ _ x = x
