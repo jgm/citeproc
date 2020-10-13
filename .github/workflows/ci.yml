@@ -1,131 +1,100 @@
-name: CI tests
+name: CI
 
-on: [push, pull_request]
+# Trigger the workflow on push or pull request, but only for the master branch
+on:
+  pull_request:
+  push:
+    branches: [master]
 
 jobs:
-  linux:
+  cabal:
+    name: ${{ matrix.os }} / ghc ${{ matrix.ghc }}
+    runs-on: ${{ matrix.os }}
+    strategy:
+      matrix:
+        os: [ubuntu-latest, macOS-latest, windows-latest]
+        cabal: ["3.2"]
+        ghc:
+          - "8.0.2"
+          - "8.2.2"
+          - "8.4.4"
+          - "8.6.5"
+          - "8.8.3"
+          - "8.10.1"
+        exclude:
+          - os: macOS-latest
+            ghc: 8.8.3
+          - os: macOS-latest
+            ghc: 8.6.5
+          - os: windows-latest
+            ghc: 8.8.3
+          - os: windows-latest
+            ghc: 8.6.5
 
+    steps:
+    - uses: actions/checkout@v2
+      if: github.event.action == 'opened' || github.event.action == 'synchronize' || github.event.ref == 'refs/heads/master'
+
+    - uses: actions/setup-haskell@v1.1.1
+      id: setup-haskell-cabal
+      name: Setup Haskell
+      with:
+        ghc-version: ${{ matrix.ghc }}
+        cabal-version: ${{ matrix.cabal }}
+
+    - name: Freeze
+      run: |
+        cabal freeze
+
+    - uses: actions/cache@v1
+      name: Cache ~/.cabal/store
+      with:
+        path: ${{ steps.setup-haskell-cabal.outputs.cabal-store }}
+        key: ${{ runner.os }}-${{ matrix.ghc }}-${{ hashFiles('cabal.project.freeze') }}
+
+    - name: Build dependencies
+      run: |
+        cabal configure --enable-tests --enable-benchmarks --test-show-details=direct
+        cabal build --dependencies-only all
+
+    - name: Build
+      run: |
+        cabal build all 2>&1 | tee build.log
+        # fail if warnings in local build
+        # ! grep -q ": *[Ww]arning:" build.log || exit 1
+
+    - name: Test
+      run: |
+        cabal test all
+
+  stack:
+    name: stack / ghc ${{ matrix.ghc }}
     runs-on: ubuntu-latest
     strategy:
-      fail-fast: false
       matrix:
-        versions:
-          - ghc: '8.0.2'
-            cabal: '2.4'
-          - ghc: '8.2.2'
-            cabal: '2.4'
-          - ghc: '8.4.4'
-            cabal: '2.4'
-          - ghc: '8.6.5'
-            cabal: '2.4'
-          - ghc: '8.8.1'
-            cabal: '3.0'
-          - ghc: '8.10.1'
-            cabal: '3.2'
-    steps:
-    - uses: actions/checkout@v1
-    - name: Install recent cabal/ghc
-      uses: actions/setup-haskell@v1.1
-      with:
-        ghc-version: ${{ matrix.versions.ghc }}
-        cabal-version: ${{ matrix.versions.cabal }}
-
-    - name: Cache cabal global package db
-      id:   cabal-global
-      uses: actions/cache@v2
-      with:
-        path: |
-          ~/.cabal
-        key: ${{ runner.os }}-${{ matrix.versions.ghc }}-${{ matrix.versions.cabal }}-cabal-global-${{ hashFiles('cabal.project') }}
-
-    - name: Cache cabal work
-      id:   cabal-local
-      uses: actions/cache@v2
-      with:
-        path: |
-          dist-newstyle
-        key: ${{ runner.os }}-${{ matrix.versions.ghc }}-${{ matrix.versions.cabal }}-cabal-local
-
-    - name: Install dependencies
-      run: |
-          cabal v2-update
-          cabal v2-build --dependencies-only --enable-tests --disable-optimization all
-    - name: Build and test
-      run: |
-          cabal v2-build --enable-tests --disable-optimization all 2>&1 | tee build.log
-          # fail if warnings in local build
-          # ! grep -q ": *[Ww]arning:" build.log || exit 1
-          cabal v2-test --disable-optimization all
-
-  windows:
-
-    runs-on: windows-latest
+        stack: ["2.3.1"]
+        ghc: ["8.8.3"]
 
     steps:
-    - uses: actions/checkout@v1
-    - name: Install recent cabal/ghc
-      uses: actions/setup-haskell@v1.1
-      with:
-        ghc-version: '8.10.1'
-        cabal-version: '3.2'
+    - uses: actions/checkout@v2
+      if: github.event.action == 'opened' || github.event.action == 'synchronize' || github.event.ref == 'refs/heads/master'
 
-    - name: Cache cabal global package db
-      id:   cabal-global
-      uses: actions/cache@v2
+    - uses: actions/setup-haskell@v1.1
+      name: Setup Haskell Stack
       with:
-        path: |
-          ~/.cabal
-        key: ${{ runner.os }}-${{ matrix.versions.ghc }}-${{ matrix.versions.cabal }}-cabal-global-${{ hashFiles('cabal.project') }}
+        ghc-version: ${{ matrix.ghc }}
+        stack-version: ${{ matrix.stack }}
 
-    - name: Cache cabal work
-      id:   cabal-local
-      uses: actions/cache@v2
+    - uses: actions/cache@v1
+      name: Cache ~/.stack
       with:
-        path: |
-          dist-newstyle
-        key: ${{ runner.os }}-${{ matrix.versions.ghc }}-${{ matrix.versions.cabal }}-cabal-local
+        path: ~/.stack
+        key: ${{ runner.os }}-${{ matrix.ghc }}-stack
 
-    - name: Install dependencies
+    - name: Build
       run: |
-          cabal v2-update
-          cabal v2-build --dependencies-only --enable-tests --disable-optimization all
-    - name: Build and test
+        stack build --system-ghc --test --bench --no-run-tests --no-run-benchmarks
+
+    - name: Test
       run: |
-          chcp 65001
-          cabal v2-test --disable-optimization all
-
-  macos:
-
-    runs-on: macOS-latest
-
-    steps:
-    - uses: actions/checkout@v1
-    - name: Install recent cabal/ghc
-      uses: actions/setup-haskell@v1.1
-      with:
-        ghc-version: '8.10.1'
-        cabal-version: '3.2'
-
-    - name: Cache cabal global package db
-      id:   cabal-global
-      uses: actions/cache@v2
-      with:
-        path: |
-          ~/.cabal
-        key: ${{ runner.os }}-${{ matrix.versions.ghc }}-${{ matrix.versions.cabal }}-cabal-global-${{ hashFiles('cabal.project') }}
-
-    - name: Cache cabal work
-      id:   cabal-local
-      uses: actions/cache@v2
-      with:
-        path: |
-          dist-newstyle
-        key: ${{ runner.os }}-${{ matrix.versions.ghc }}-${{ matrix.versions.cabal }}-cabal-local
-
-    - name: Install dependencies
-      run: |
-          cabal v2-update
-          cabal v2-build --dependencies-only --enable-tests --disable-optimization all
-    - name: Build and test
-      run: |
-          cabal v2-test --disable-optimization all
+        stack test --system-ghc
