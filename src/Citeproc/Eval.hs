@@ -28,7 +28,7 @@ import Text.Printf (printf)
 import Control.Applicative
 import Data.Generics.Uniplate.Operations (universe, transform)
 
-import Debug.Trace (traceShowId)
+-- import Debug.Trace (traceShowId)
 -- import Text.Show.Pretty (ppShow)
 -- ppTrace :: Show a => a -> a
 -- ppTrace x = trace (ppShow x) x
@@ -127,6 +127,11 @@ evalStyle style mblang refs citations =
   addIfMissing _ (Just x) = Just x
 
   go = do
+      -- list of citationItemIds that are actually cited
+      let citationOrder = M.fromList $ reverse $ zip
+            (concatMap (map citationItemId . citationItems) citations)
+            [(1 :: Int)..]
+      let citeIds = M.keysSet citationOrder
       assignCitationNumbers (map referenceId refs)
       -- sorting of bibliography, insertion of citation-number
       (bibCitations, bibSortKeyMap) <-
@@ -140,10 +145,10 @@ evalStyle style mblang refs citations =
                              . referenceId)
                           refs
             let sortedIds =
-                  if null (layoutSortKeys biblayout)
-                     then map referenceId refs
-                     else sortOn (`M.lookup` bibSortKeyMap)
-                              (map referenceId refs)
+                  (if null (layoutSortKeys biblayout)
+                      then sortOn (`M.lookup` citationOrder)
+                      else sortOn (`M.lookup` bibSortKeyMap))
+                  (map referenceId refs)
             assignCitationNumbers $
               case layoutSortKeys biblayout of
                 (SortKeyVariable Descending "citation-number":_)
@@ -160,9 +165,6 @@ evalStyle style mblang refs citations =
                    [CitationItem ident Nothing Nothing
                       NormalCite Nothing Nothing]) sortedIds
             return (bibCitations, bibSortKeyMap)
-      -- list of citationItemIds that are actually cited
-      let citeIds = foldr (Set.insert . citationItemId) mempty
-                            (concatMap citationItems citations)
       -- styling of citations
       sortKeyMap <-
         foldM (\m citeId -> do
