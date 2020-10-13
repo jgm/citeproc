@@ -132,7 +132,9 @@ evalStyle style mblang refs citations =
             (concatMap (map citationItemId . citationItems) citations)
             [(1 :: Int)..]
       let citeIds = M.keysSet citationOrder
-      assignCitationNumbers (map referenceId refs)
+      let sortedCiteIds = sortOn (`M.lookup` citationOrder)
+                                  (map referenceId refs)
+      assignCitationNumbers sortedCiteIds
       -- sorting of bibliography, insertion of citation-number
       (bibCitations, bibSortKeyMap) <-
         case styleBibliography style of
@@ -145,10 +147,10 @@ evalStyle style mblang refs citations =
                              . referenceId)
                           refs
             let sortedIds =
-                  (if null (layoutSortKeys biblayout)
-                      then sortOn (`M.lookup` citationOrder)
-                      else sortOn (`M.lookup` bibSortKeyMap))
-                  (map referenceId refs)
+                  if null (layoutSortKeys biblayout)
+                     then sortedCiteIds
+                     else sortOn (`M.lookup` bibSortKeyMap)
+                            (map referenceId refs)
             assignCitationNumbers $
               case layoutSortKeys biblayout of
                 (SortKeyVariable Descending "citation-number":_)
