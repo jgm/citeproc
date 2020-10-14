@@ -12,7 +12,7 @@ jobs:
     runs-on: ${{ matrix.os }}
     strategy:
       matrix:
-        os: [ubuntu-latest, macOS-latest, windows-latest]
+        os: [ubuntu-latest, macOS-latest]
         cabal: ["3.2"]
         ghc:
           - "8.0.2"
@@ -31,16 +31,6 @@ jobs:
           - os: macOS-latest
             ghc: 8.6.5
           - os: macOS-latest
-            ghc: 8.8.3
-          - os: windows-latest
-            ghc: 8.0.2
-          - os: windows-latest
-            ghc: 8.2.2
-          - os: windows-latest
-            ghc: 8.4.4
-          - os: windows-latest
-            ghc: 8.6.5
-          - os: windows-latest
             ghc: 8.8.3
 
     steps:
@@ -80,12 +70,13 @@ jobs:
         cabal test all
 
   stack:
-    name: stack / ghc ${{ matrix.ghc }}
-    runs-on: ubuntu-latest
+    name: ${{ matrix.os }} / stack / ghc ${{ matrix.ghc }}
+    runs-on: ${{ matrix.os }}
     strategy:
       matrix:
         stack: ["2.3.1"]
         ghc: ["8.8.3"]
+        os: [ubuntu-latest, windows-latest]
 
     steps:
     - uses: actions/checkout@v2
@@ -105,8 +96,8 @@ jobs:
 
     - name: Build
       run: |
-        stack build --system-ghc --test --bench --no-run-tests --no-run-benchmarks
+        stack build --system-ghc --fast --test --bench --no-run-tests --no-run-benchmarks
 
     - name: Test
       run: |
-        stack test --system-ghc
+        stack test --system-ghc --fast
