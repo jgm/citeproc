@@ -67,17 +67,17 @@ jobs:
     - name: Build dependencies
       run: |
         cabal configure --enable-tests --enable-benchmarks --test-show-details=direct
-        cabal build --dependencies-only all
+        cabal build --dependencies-only --disable-optimization all
 
     - name: Build
       run: |
-        cabal build all 2>&1 | tee build.log
+        cabal build --disable-optimization all 2>&1 | tee build.log
         # fail if warnings in local build
         # ! grep -q ": *[Ww]arning:" build.log || exit 1
 
     - name: Test
       run: |
-        cabal test all
+        cabal test --disable-optimization all
 
   stack:
     name: stack / ghc ${{ matrix.ghc }}
@@ -105,7 +105,7 @@ jobs:
 
     - name: Build
       run: |
-        stack build --system-ghc --test --bench --no-run-tests --no-run-benchmarks
+        stack build --system-ghc --fast --test --bench --no-run-tests --no-run-benchmarks
 
     - name: Test
       run: |
