@@ -1,8 +1,11 @@
 # citeproc changelog
 
-## 0.1
+## 0.1.0.2
 
-* Initial release.
+  * Don't enclose contents of e:choose in a Formatted element (#19).
+    The e:choose element is "transparent" and the delimiter
+    controlling its formatting should be inserted between
+    the items it returns.
 
 ## 0.1.0.1
 
@@ -20,4 +23,8 @@
   * Remove unneeded import
 
   * `citeproc` executable: strip BOM before parsing style (#18).
+
+## 0.1
+
+  * Initial release.
 
