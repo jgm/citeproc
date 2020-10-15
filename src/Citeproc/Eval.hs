@@ -837,7 +837,7 @@ evalSortKey citeId (SortKeyMacro sortdir elts) = do
     Just ref -> do
         k <- normalizeSortKey . toText .
               renderOutput defaultCiteprocOptions . grouped
-              <$> withRWS newContext (mapM eElement elts)
+              <$> withRWS newContext (mconcat <$> mapM eElement elts)
         return $ SortKeyValue (sortdir, Just k)
      where
       newContext oldContext s =
@@ -952,7 +952,7 @@ evalLayout isBibliography layout (citationGroupNumber, citation) = do
                    },
                 st{ stateReference = ref
                   , stateUsedYearSuffix = False }))
-                $ do xs <- mapM eElement (layoutElements layout)
+                $ do xs <- mconcat <$> mapM eElement (layoutElements layout)
                      let mblang = parseLang <$>
                                   (lookupVariable "language" ref
                                     >>= valToText)
@@ -1081,21 +1081,23 @@ getPosition item groupNum mbNoteNum posInGroup = do
                       | otherwise -> (IbidWithLocator :) . (Ibid :)
              else id)
         $ [Subsequent]
- 
-eElement :: CiteprocOutput a => Element a -> Eval a (Output a)
+
+eElement :: CiteprocOutput a => Element a -> Eval a [Output a]
 eElement (Element etype formatting) =
   case etype of
     EText textType ->
-      withFormatting formatting (eText textType)
-    ENumber var nform -> withFormatting formatting (eNumber var nform)
-    EGroup isMacro els -> eGroup isMacro formatting els
+      (:[]) <$> withFormatting formatting (eText textType)
+    ENumber var nform ->
+      (:[]) <$> withFormatting formatting (eNumber var nform)
+    EGroup isMacro els ->
+      (:[]) <$> eGroup isMacro formatting els
     EChoose chooseParts -> eChoose chooseParts
     ELabel var termform pluralize ->
-      eLabel var termform pluralize formatting
+      (:[]) <$> eLabel var termform pluralize formatting
     EDate var dateType mbShowDateParts dps ->
-      eDate var dateType mbShowDateParts dps formatting
+      (:[]) <$> eDate var dateType mbShowDateParts dps formatting
     ENames vars namesFormat subst ->
-      eNames vars namesFormat subst formatting
+      (:[]) <$> eNames vars namesFormat subst formatting
 
 withFormatting :: CiteprocOutput a
                => Formatting -> Eval a (Output a) -> Eval a (Output a)
@@ -1715,12 +1717,12 @@ eNames vars namesFormat' subst formatting = do
                                st)) $ eSubstitute els
            return $
              case res of
-               Tagged TagNames{} _ -> formatted formatting [res]
+               (Tagged TagNames{} _:_) -> formatted formatting res
                -- important to have title (or whatever) tagged as
                -- substituting for Names, for purposes of
                -- disambiguation:
                _ -> formatted formatting
-                    [Tagged (TagNames "" namesFormat []) res]
+                    [Tagged (TagNames "" namesFormat []) $ grouped res]
          _ -> return NullOutput
      else do
         xs <- mapM (formatNames namesFormat nameFormat nameFormatting)
@@ -1741,15 +1743,15 @@ eNames vars namesFormat' subst formatting = do
 
 eSubstitute :: CiteprocOutput a
             => [Element a]
-            -> Eval a (Output a)
+            -> Eval a [Output a]
 eSubstitute els =
   case els of
-    [] -> return NullOutput
+    [] -> return []
     (e:es) -> do
       res <- eElement e
-      case res of
-        NullOutput -> eSubstitute es
-        _ -> return res
+      case filter (/= NullOutput) res of
+        [] -> eSubstitute es
+        xs -> return xs
 
 formatNames :: CiteprocOutput a
             => NamesFormat
@@ -2161,7 +2163,7 @@ eGroup isMacro formatting els = do
   -- calls at least one variable but all of the variables
   -- it calls are empty.
   VarCount oldVars oldNonempty <- gets stateVarCount
-  xs <- mapM eElement els
+  xs <- mconcat <$> mapM eElement els
   VarCount newVars newNonempty <- gets stateVarCount
   -- see
   -- https://github.com/citation-style-language/documentation/blob/master/specification.rst#group
@@ -2175,8 +2177,8 @@ eGroup isMacro formatting els = do
               else NullOutput
 
 eChoose :: CiteprocOutput a
-        => [(Match, [Condition], [Element a])] -> Eval a (Output a)
-eChoose [] = return NullOutput
+        => [(Match, [Condition], [Element a])] -> Eval a [Output a]
+eChoose [] = return []
 eChoose ((match, conditions, els):rest) = do
   ref <- gets stateReference
   label <- asks contextLabel
@@ -2218,7 +2220,7 @@ eChoose ((match, conditions, els):rest) = do
                    MatchAny  -> any testCondition
                    MatchNone -> not . any testCondition) conditions
   if matched
-     then grouped <$> mapM eElement els
+     then mconcat <$> mapM eElement els
      else eChoose rest
 
 
