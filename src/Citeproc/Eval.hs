@@ -213,9 +213,14 @@ evalStyle style mblang refs citations =
                        (layoutCollapse layoutOpts))
                       cs
 
+      let removeIfEqual x y
+           | x == y    = NullOutput
+           | otherwise = y
       let removeNamesIfSuppressAuthor
            (Tagged (TagItem SuppressAuthor cid') x)
-             = Tagged (TagItem SuppressAuthor cid') (transform removeNames x)
+             = let y = getAuthors x
+                in Tagged (TagItem SuppressAuthor cid')
+                     (transform (removeIfEqual y) x)
           removeNamesIfSuppressAuthor x = x
 
       -- we need to do this after disambiguation and collapsing
@@ -1011,7 +1016,7 @@ evalLayout isBibliography layout (citationGroupNumber, citation) = do
                                                   (citationItemId item)) x)
         . formatted mempty
         . (if citationItemType item == AuthorOnly
-              then filter isNames . concatMap universe
+              then map getAuthors
               else id)
         . (case citationItemPrefix item of
              Just t | isNote
@@ -1029,10 +1034,12 @@ evalLayout isBibliography layout (citationGroupNumber, citation) = do
         $ xs
 
 
-isNames :: Output a -> Bool
-isNames (Tagged TagNames{} _) = True
-isNames _ = False
-
+-- | The first-occurring element tagged as Names will be
+-- treated as the "author"; generally that is the author
+-- but it might be the editor if it's an edited volume.
+getAuthors :: Output a -> Output a
+getAuthors x =
+  headDef NullOutput [y | y@(Tagged TagNames{} _) <- universe x]
 
 removeNames :: Output a -> Output a
 removeNames (Tagged TagNames{} _) = NullOutput
