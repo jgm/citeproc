@@ -1,5 +1,13 @@
 # citeproc changelog
 
+## 0.1.0.3
+
+  * Better handling of author-only/suppress-author.
+    Previously all results of "names" elements were treated
+    as authors.  But only the first should be (generally this
+    is the author, but it could be the editor of an edited
+    volume with no author).  See jgm/pandoc#6765.
+
 ## 0.1.0.2
 
   * Don't enclose contents of e:choose in a Formatted element (#19).
