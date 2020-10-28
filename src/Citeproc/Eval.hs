@@ -2202,11 +2202,8 @@ eChoose ((match, conditions, els):rest) = do
            HasVariable "locator" -> hasLocator
            HasVariable t ->
              case lookupVariable t ref of
-               Just (TextVal x)   -> x /= mempty
-               Just (FancyVal x)  -> toText x /= mempty
-               Just (NamesVal xs) -> not (null xs)
-               Just _             -> True
-               Nothing            -> False
+               Just x  -> isNonEmpty x
+               Nothing -> False
            HasType t -> lookupVariable "type" ref == Just (TextVal t)
            IsUncertainDate t -> case lookupVariable t ref of
                                   Just (DateVal d) -> dateCirca d
@@ -2331,12 +2328,19 @@ askVariable "page-first" = do
 askVariable v = do
   ref <- gets stateReference
   case lookupVariable v ref of
-    Just x -> do
+    Just x | isNonEmpty x -> do
       updateVarCount 1 1
       return $ Just x
-    Nothing -> do
+    _ -> do
       updateVarCount 1 0
       return Nothing
+
+isNonEmpty :: CiteprocOutput a => Val a -> Bool
+isNonEmpty (TextVal t) = not (T.null t)
+isNonEmpty (FancyVal x) = x /= mempty
+isNonEmpty (NamesVal []) = False
+isNonEmpty (DateVal (Date [] _ Nothing Nothing)) = False
+isNonEmpty _       = True
 
 citationLabel :: Reference a -> Val a
 citationLabel ref = TextVal trigraph
