@@ -112,7 +112,7 @@ import qualified Data.CaseInsensitive as CI
 import Data.Semigroup
 import Control.Monad (foldM, guard, mzero)
 import Control.Applicative ((<|>))
-import Data.Char (isLower, isDigit, isLetter)
+import Data.Char (isLower, isDigit, isLetter, isSpace)
 import Data.Text (Text)
 import qualified Data.Text as T
 import Data.List (elemIndex)
@@ -189,6 +189,7 @@ class (Semigroup a, Monoid a, Show a, Eq a, Ord a) => CiteprocOutput a where
   addDisplay                  :: DisplayStyle -> a -> a
   addQuotes                   :: a -> a
   movePunctuationInsideQuotes :: a -> a
+  inNote                      :: a -> a
   mapText                     :: (Text -> Text) -> a -> a
   addHyperlink                :: Text -> a -> a
 
@@ -1472,6 +1473,7 @@ removeEmptyStrings = filter (not . isEmptyString)
 
 data Output a =
     Formatted Formatting [Output a]
+  | InNote (Output a)
   | Literal a
   | Tagged Tag (Output a)
   | NullOutput
@@ -1479,6 +1481,7 @@ data Output a =
 
 instance Uniplate (Output a) where
   uniplate (Formatted f xs) = plate Formatted |- f ||* xs
+  uniplate (InNote x)       = plate InNote |* x
   uniplate (Literal x)      = plate Literal |- x
   uniplate (Tagged t x)     = plate Tagged |- t |* x
   uniplate NullOutput       = plate NullOutput
@@ -1503,6 +1506,7 @@ outputToText NullOutput = mempty
 outputToText (Literal x ) = toText x
 outputToText (Tagged _ x) = outputToText x
 outputToText (Formatted _ xs) = T.unwords $ map outputToText xs
+outputToText (InNote x)   = outputToText x
 
 renderOutput :: CiteprocOutput a => CiteprocOptions -> Output a -> a
 renderOutput _ NullOutput = mempty
@@ -1516,6 +1520,10 @@ renderOutput opts (Formatted formatting xs) =
     (case formatDelimiter formatting of
        Just d  -> addDelimiters (fromText d)
        Nothing -> id) . filter (/= mempty) $ map (renderOutput opts) xs
+renderOutput opts (InNote x) = inNote $
+  dropTextWhile isSpace $
+  dropTextWhile (\c -> c == ',' || c == ';' || c == '.' || c == ':') $
+  renderOutput opts x
 
 addDelimiters :: CiteprocOutput a => a -> [a] -> [a]
 addDelimiters delim =
