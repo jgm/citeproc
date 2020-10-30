@@ -145,7 +145,6 @@ instance CiteprocOutput (CslJson Text) where
       DisplayRightInline -> CslDiv "right-inline"
       DisplayIndent      -> CslDiv "indent"
   addQuotes             = CslQuoted
-  inNote                = id -- no-op
   movePunctuationInsideQuotes
                         = punctuationInsideQuotes
   mapText f             = runIdentity . traverse (return . f)

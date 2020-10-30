@@ -226,18 +226,12 @@ evalStyle style mblang refs citations =
       -- we need to do this after disambiguation and collapsing
       let handleSuppressAuthors = transform removeNamesIfSuppressAuthor
 
-      let isNoteCitation = styleIsNoteStyle (styleOptions style)
-
       -- if we have an author-only citation at the beginning
       -- separate it out:
       let handleAuthorOnly formattedCit =
             case formattedCit of
               Formatted f
                 (x@(Tagged (TagItem AuthorOnly _) _):xs)
-                  | isNoteCitation
-                    -> formatted mempty
-                        (x : [InNote (formatted f xs) | not (null xs)])
-                  | otherwise
                     -> formatted mempty
                         (x :
                          if null xs
@@ -247,15 +241,6 @@ evalStyle style mblang refs citations =
               Formatted f
                 (Formatted f'
                   (x@(Tagged (TagItem AuthorOnly _) _):xs) : ys)
-                  | isNoteCitation
-                    -> formatted mempty
-                        (Formatted f'{ formatPrefix = Nothing
-                                     , formatSuffix = Nothing } [x] :
-                         if null xs && null ys
-                            then []
-                            else [InNote (formatted f
-                                           (formatted f' xs : ys))])
-                  | otherwise
                     -> Formatted mempty
                         (Formatted f'{ formatPrefix = Nothing
                                      , formatSuffix = Nothing } [x] :
@@ -263,8 +248,7 @@ evalStyle style mblang refs citations =
                             then []
                             else [Literal (fromText " "),
                                   formatted f (formatted f' xs : ys)])
-              _ | isNoteCitation -> InNote formattedCit
-                | otherwise      -> formattedCit
+              _  -> formattedCit
 
       let cs'' = map (handleSuppressAuthors . handleAuthorOnly) cs'
 
@@ -2058,7 +2042,6 @@ getDisplayName nameFormat formatting order name = do
                               Just t | endsWithSpace t -> Nothing
                               _ -> Just " " } [formatted f x, y]
       Tagged _ x <+> y = x <+> y
-      InNote x <+> y = x <+> y
   let x <:> NullOutput = x
       NullOutput <:> x = x
       Literal x <:> y =
@@ -2066,7 +2049,6 @@ getDisplayName nameFormat formatting order name = do
       Formatted f x <:> y = formatted
         (mempty{ formatDelimiter = Just separator }) [Formatted f x, y]
       Tagged _ x <:> y = x <:> y
-      InNote x <:> y = x <:> y
 
   let familyAffixes = formatted
           (case nameFamilyFormatting nameFormat of
