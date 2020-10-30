@@ -919,13 +919,10 @@ evalLayout isBibliography layout (citationGroupNumber, citation) = do
             | otherwise -> (\ys' -> initSafe zs ++ [Formatted f ys']) <$>
                              moveSuffixInsideDisplay ys
           _ -> Nothing
-  let items' = if isNote
-                  then capitalizeInitialTerm items
-                  else items
   return $
-    case moveSuffixInsideDisplay items' of
-      Nothing      -> formatted formatting items'
-      Just items'' -> formatted formatting{ formatSuffix = Nothing } items''
+    case moveSuffixInsideDisplay items of
+      Nothing     -> formatted formatting items
+      Just items' -> formatted formatting{ formatSuffix = Nothing } items'
  where
   formatting = layoutFormatting layout
 
