@@ -1,5 +1,18 @@
 # citeproc changelog
 
+## 0.1.1
+
+  * Ensure that uncited references are sorted last
+    when it comes to assigning citation numbers (#22).
+  * Remove "capitalize initial term" feature.  This is required by
+    the test suite but not the spec.  It makes more sense for us to do
+    this capitalization in the calling program, e.g. pandoc.  For some
+    citations in note styles may already be in notes and thus not
+    trigger separate footnotes.  If initial terms had been capitalized,
+    we'd need to uncapitalize, and that is hard to do reliably.
+  * Treat empty `FancyVal` as an empty value.
+  * Derive Functor, Traversable, Foldable for Result [API change].
+
 ## 0.1.0.3
 
   * Better handling of author-only/suppress-author.
