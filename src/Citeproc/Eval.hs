@@ -132,8 +132,9 @@ evalStyle style mblang refs citations =
             (concatMap (map citationItemId . citationItems) citations)
             [(1 :: Int)..]
       let citeIds = M.keysSet citationOrder
-      let sortedCiteIds = sortOn (`M.lookup` citationOrder)
-                                  (map referenceId refs)
+      let sortedCiteIds = sortOn
+              (fromMaybe maxBound . (`M.lookup` citationOrder))
+              (map referenceId refs)
       assignCitationNumbers sortedCiteIds
       -- sorting of bibliography, insertion of citation-number
       (bibCitations, bibSortKeyMap) <-
@@ -900,9 +901,6 @@ evalLayout isBibliography layout (citationGroupNumber, citation) = do
                     (c:_) | citationItemType c == AuthorOnly -> [0..]
                     _ -> [1..]
   items <- mapM evalItem (zip positions (citationItems citation))
-
-  styleOpts <- asks contextStyleOptions
-  let isNote = styleIsNoteStyle styleOpts
 
   -- see display_SecondFieldAlignMigratePunctuation.txt
   let moveSuffixInsideDisplay zs =

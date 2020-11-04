@@ -1,0 +1,540 @@
+>>===== MODE =====>>
+citation
+<<===== MODE =====<<
+
+>>===== RESULT =====>>
+<sup>1</sup>
+<<===== RESULT =====<<
+
+>>===== CSL =====>>
+<?xml version="1.0" encoding="utf-8"?>
+<style xmlns="http://purl.org/net/xbiblio/csl" class="in-text" version="1.0" demote-non-dropping-particle="sort-only" page-range-format="minimal">
+  <info>
+    <title>Vancouver (superscript)</title>
+    <id>http://www.zotero.org/styles/vancouver-superscript</id>
+    <link href="http://www.zotero.org/styles/vancouver-superscript" rel="self"/>
+    <link href="http://www.nlm.nih.gov/bsd/uniform_requirements.html" rel="documentation"/>
+    <author>
+      <name>Michael Berkowitz</name>
+      <email>mberkowi@gmu.edu</email>
+    </author>
+    <contributor>
+      <name>Sean Takats</name>
+      <email>stakats@gmu.edu</email>
+    </contributor>
+    <contributor>
+      <name>Sebastian Karcher</name>
+    </contributor>
+    <category citation-format="numeric"/>
+    <category field="medicine"/>
+    <summary>Vancouver style as outlined by International Committee of Medical Journal Editors Uniform Requirements for Manuscripts Submitted to Biomedical Journals: Sample References</summary>
+    <updated>2012-09-27T22:06:38+00:00</updated>
+    <rights license="http://creativecommons.org/licenses/by-sa/3.0/">This work is licensed under a Creative Commons Attribution-ShareAlike 3.0 License</rights>
+  </info>
+  <locale xml:lang="en">
+    <date form="text" delimiter=" ">
+      <date-part name="year"/>
+      <date-part name="month" form="short" strip-periods="true"/>
+      <date-part name="day"/>
+    </date>
+    <terms>
+      <term name="collection-editor" form="long">
+        <single>editor</single>
+        <multiple>editors</multiple>
+      </term>
+      <term name="presented at">presented at</term>
+      <term name="available at">available from</term>
+      <term name="section" form="short">sect.</term>
+    </terms>
+  </locale>
+  <locale xml:lang="fr">
+    <date form="text" delimiter=" ">
+      <date-part name="day"/>
+      <date-part name="month" form="short" strip-periods="true"/>
+      <date-part name="year"/>
+    </date>
+  </locale>
+  <macro name="author">
+    <names variable="author">
+      <name sort-separator=" " initialize-with="" name-as-sort-order="all" delimiter=", " delimiter-precedes-last="always"/>
+      <label form="long" prefix=", "/>
+      <substitute>
+        <names variable="editor"/>
+      </substitute>
+    </names>
+  </macro>
+  <macro name="editor">
+    <names variable="editor" suffix=".">
+      <name sort-separator=" " initialize-with="" name-as-sort-order="all" delimiter=", " delimiter-precedes-last="always"/>
+      <label form="long" prefix=", "/>
+    </names>
+  </macro>
+  <macro name="chapter-marker">
+    <choose>
+      <if type="chapter paper-conference entry-dictionary entry-encyclopedia" match="any">
+        <text term="in" text-case="capitalize-first"/>
+      </if>
+    </choose>
+  </macro>
+  <macro name="publisher">
+    <choose>
+      <!--discard publisher info for articles-->
+      <if type="article-journal article-magazine article-newspaper" match="none">
+        <group delimiter=": " suffix=";">
+          <choose>
+            <if type="thesis">
+              <text variable="publisher-place" prefix="[" suffix="]"/>
+            </if>
+            <else-if type="speech"/>
+            <else>
+              <text variable="publisher-place"/>
+            </else>
+          </choose>
+          <text variable="publisher"/>
+        </group>
+      </if>
+    </choose>
+  </macro>
+  <macro name="access">
+    <choose>
+      <if variable="URL">
+        <group delimiter=": ">
+          <text term="available at" text-case="capitalize-first"/>
+          <text variable="URL"/>
+        </group>
+      </if>
+    </choose>
+  </macro>
+  <macro name="accessed-date">
+    <choose>
+      <if variable="URL">
+        <group prefix="[" suffix="]" delimiter=" ">
+          <text term="cited" text-case="lowercase"/>
+          <date variable="accessed" form="text"/>
+        </group>
+      </if>
+    </choose>
+  </macro>
+  <macro name="container-title">
+    <choose>
+      <if type="article-journal article-magazine chapter paper-conference article-newspaper review review-book entry-dictionary entry-encyclopedia" match="any">
+        <group suffix="." delimiter=" ">
+          <choose>
+            <if type="article-journal review review-book" match="any">
+              <text variable="container-title" form="short" strip-periods="true"/>
+            </if>
+            <else>
+              <text variable="container-title" strip-periods="true"/>
+            </else>
+          </choose>
+          <choose>
+            <if variable="URL">
+              <text term="internet" prefix="[" suffix="]" text-case="capitalize-first"/>
+            </if>
+          </choose>
+        </group>
+        <text macro="edition" prefix=" "/>
+      </if>
+      <!--add event-name and event-place once they become available-->
+      <else-if type="bill legislation" match="any">
+        <group delimiter=", ">
+          <group delimiter=". ">
+            <text variable="container-title"/>
+            <group delimiter=" ">
+              <text term="section" form="short" text-case="capitalize-first"/>
+              <text variable="section"/>
+            </group>
+          </group>
+          <text variable="number"/>
+        </group>
+      </else-if>
+      <else-if type="speech">
+        <group delimiter=": " suffix=";">
+          <group delimiter=" ">
+            <text variable="genre" text-case="capitalize-first"/>
+            <text term="presented at"/>
+          </group>
+          <text variable="event"/>
+        </group>
+      </else-if>
+      <else>
+        <group delimiter=", " suffix=".">
+          <choose>
+            <if variable="collection-title" match="none">
+              <group delimiter=" ">
+                <label variable="volume" form="short" text-case="capitalize-first"/>
+                <text variable="volume"/>
+              </group>
+            </if>
+          </choose>
+          <text variable="container-title"/>
+        </group>
+      </else>
+    </choose>
+  </macro>
+  <macro name="title">
+    <text variable="title"/>
+    <choose>
+      <if type="article-journal article-magazine chapter paper-conference article-newspaper review review-book entry-dictionary entry-encyclopedia" match="none">
+        <choose>
+          <if variable="URL">
+            <text term="internet" prefix=" [" suffix="]" text-case="capitalize-first"/>
+          </if>
+        </choose>
+        <text macro="edition" prefix=". "/>
+      </if>
+    </choose>
+    <choose>
+      <if type="thesis">
+        <text variable="genre" prefix=" [" suffix="]"/>
+      </if>
+    </choose>
+  </macro>
+  <macro name="edition">
+    <choose>
+      <if is-numeric="edition">
+        <group delimiter=" ">
+          <number variable="edition" form="ordinal"/>
+          <text term="edition" form="short"/>
+        </group>
+      </if>
+      <else>
+        <text variable="edition" suffix="."/>
+      </else>
+    </choose>
+  </macro>
+  <macro name="date">
+    <choose>
+      <if type="article-journal article-magazine article-newspaper review review-book" match="any">
+        <group suffix=";" delimiter=" ">
+          <date variable="issued" form="text"/>
+          <text macro="accessed-date"/>
+        </group>
+      </if>
+      <else-if type="bill legislation" match="any">
+        <group delimiter=", ">
+          <date variable="issued" delimiter=" ">
+            <date-part name="month" form="short" strip-periods="true"/>
+            <date-part name="day"/>
+          </date>
+          <date variable="issued">
+            <date-part name="year"/>
+          </date>
+        </group>
+      </else-if>
+      <else-if type="report">
+        <date variable="issued" delimiter=" ">
+          <date-part name="year"/>
+          <date-part name="month" form="short" strip-periods="true"/>
+        </date>
+        <text macro="accessed-date" prefix=" "/>
+      </else-if>
+      <else-if type="patent">
+        <group suffix=".">
+          <group delimiter=", ">
+            <text variable="number"/>
+            <date variable="issued">
+              <date-part name="year"/>
+            </date>
+          </group>
+          <text macro="accessed-date" prefix=" "/>
+        </group>
+      </else-if>
+      <else-if type="speech">
+        <group delimiter="; ">
+          <group delimiter=" ">
+            <date variable="issued" delimiter=" ">
+              <date-part name="year"/>
+              <date-part name="month" form="short" strip-periods="true"/>
+              <date-part name="day"/>
+            </date>
+            <text macro="accessed-date"/>
+          </group>
+          <text variable="event-place"/>
+        </group>
+      </else-if>
+      <else>
+        <group suffix=".">
+          <date variable="issued">
+            <date-part name="year"/>
+          </date>
+          <text macro="accessed-date" prefix=" "/>
+        </group>
+      </else>
+    </choose>
+  </macro>
+  <macro name="pages">
+    <choose>
+      <if type="article-journal article-magazine article-newspaper review review-book" match="any">
+        <text variable="page" prefix=":"/>
+      </if>
+      <else-if type="book" match="any">
+        <text variable="number-of-pages" prefix=" "/>
+        <choose>
+          <if is-numeric="number-of-pages">
+            <label variable="number-of-pages" form="short" prefix=" " plural="never"/>
+          </if>
+        </choose>
+      </else-if>
+      <else>
+        <group prefix=" " delimiter=" ">
+          <label variable="page" form="short" plural="never"/>
+          <text variable="page"/>
+        </group>
+      </else>
+    </choose>
+  </macro>
+  <macro name="journal-location">
+    <choose>
+      <if type="article-journal article-magazine review review-book" match="any">
+        <text variable="volume"/>
+        <text variable="issue" prefix="(" suffix=")"/>
+      </if>
+    </choose>
+  </macro>
+  <macro name="collection-details">
+    <choose>
+      <if type="article-journal article-magazine article-newspaper review review-book" match="none">
+        <choose>
+          <if variable="collection-title">
+            <group delimiter=" " prefix="(" suffix=")">
+              <names variable="collection-editor" suffix=".">
+                <name sort-separator=" " initialize-with="" name-as-sort-order="all" delimiter=", " delimiter-precedes-last="always"/>
+                <label form="long" prefix=", "/>
+              </names>
+              <group delimiter="; ">
+                <text variable="collection-title"/>
+                <group delimiter=" ">
+                  <label variable="volume" form="short"/>
+                  <text variable="volume"/>
+                </group>
+              </group>
+            </group>
+          </if>
+        </choose>
+      </if>
+    </choose>
+  </macro>
+  <macro name="report-details">
+    <choose>
+      <if type="report">
+        <text variable="number" prefix="Report No.: "/>
+      </if>
+    </choose>
+  </macro>
+  <citation collapse="citation-number">
+    <sort>
+      <key variable="citation-number"/>
+    </sort>
+    <layout delimiter="," vertical-align="sup">
+      <text variable="citation-number"/>
+    </layout>
+  </citation>
+  <bibliography et-al-min="7" et-al-use-first="6" second-field-align="flush">
+    <layout>
+      <text variable="citation-number" suffix=". "/>
+      <group delimiter=". " suffix=". ">
+        <text macro="author"/>
+        <text macro="title"/>
+      </group>
+      <group delimiter=" " suffix=". ">
+        <group delimiter=": ">
+          <text macro="chapter-marker"/>
+          <group delimiter=" ">
+            <text macro="editor"/>
+            <text macro="container-title"/>
+          </group>
+        </group>
+        <text macro="publisher"/>
+        <group>
+          <text macro="date"/>
+          <text macro="journal-location"/>
+          <text macro="pages"/>
+        </group>
+      </group>
+      <text macro="collection-details" suffix=". "/>
+      <text macro="report-details" suffix=". "/>
+      <text macro="access"/>
+    </layout>
+  </bibliography>
+</style>
+<<===== CSL =====<<
+
+>>===== INPUT =====>>
+[
+  {
+    "URL": "https://global.ihs.com/doc_detail.cfm?&rid=TIA&item_s_key=00125234&item_key_date=870024&input_doc_number=232&input_doc_title=&org_code=TIA",
+    "author": [
+      {
+        "literal": "Telecommunications Industry Association"
+      }
+    ],
+    "edition": "Revision F",
+    "id": "tia232",
+    "issued": {
+      "date-parts": [
+        [
+          1997,
+          10
+        ]
+      ]
+    },
+    "language": "en",
+    "number-of-pages": "54",
+    "publisher": "Telecommunications Industry Association",
+    "title": "TIA-232 Interface Between Data Terminal Equipment and Data Circuit- Terminating Equipment Employing Serial Binary Data Interchange",
+    "title-short": "TIA-232-F",
+    "type": "book"
+  },
+  {
+    "URL": "https://www.iso.org/obp/ui/#iso:std:iso-iec:11172:-1:ed-1:v1:en",
+    "author": [
+      {
+        "literal": "ISO/IEC Joint Technical Committee 1"
+      }
+    ],
+    "id": "iso/iec11172-1",
+    "issued": {
+      "date-parts": [
+        [
+          1993,
+          8
+        ]
+      ]
+    },
+    "language": "en",
+    "number-of-pages": "6",
+    "publisher": "International Organization for Standardization",
+    "title": "ISO/IEC 11172-1 Information technology — Coding of moving pictures and associated audio for digital storage media at up to about 1,5 Mbit/s — Part 1: Systems",
+    "title-short": "ISO/IEC 11172-1:1993(E)",
+    "type": "book"
+  },
+  {
+    "URL": "https://www.iso.org/obp/ui/#iso:std:iso-iec:11172:-2:ed-1:v1:en",
+    "author": [
+      {
+        "literal": "ISO/IEC Joint Technical Committee 1"
+      }
+    ],
+    "id": "iso/iec11172-2",
+    "issued": {
+      "date-parts": [
+        [
+          1993,
+          8
+        ]
+      ]
+    },
+    "language": "en",
+    "number-of-pages": "112",
+    "publisher": "International Organization for Standardization",
+    "title": "ISO/IEC 11172-2 Information technology — Coding of moving pictures and associated audio for digital storage media at up to about 1,5 Mbit/s — Part 2: Video",
+    "title-short": "ISO/IEC 11172-2:1993(E)",
+    "type": "book"
+  },
+  {
+    "URL": "https://www.iso.org/obp/ui/#iso:std:iso-iec:11172:-3:ed-1:v1:en",
+    "author": [
+      {
+        "literal": "ISO/IEC Joint Technical Committee 1"
+      }
+    ],
+    "id": "iso/iec11172-3",
+    "issued": {
+      "date-parts": [
+        [
+          1993,
+          8
+        ]
+      ]
+    },
+    "language": "en",
+    "number-of-pages": "150",
+    "publisher": "International Organization for Standardization",
+    "title": "ISO/IEC 11172-3 Information technology — Coding of moving pictures and associated audio for digital storage media at up to about 1,5 Mbit/s — Part 3: Audio",
+    "title-short": "ISO/IEC 11172-3:1993(E)",
+    "type": "book"
+  },
+  {
+    "URL": "https://www.iso.org/standard/75928.html",
+    "author": [
+      {
+        "literal": "ISO/IEC Joint Technical Committee 1"
+      }
+    ],
+    "edition": "7",
+    "id": "iso/iec13818-1",
+    "issued": {
+      "date-parts": [
+        [
+          2019,
+          7
+        ]
+      ]
+    },
+    "language": "en",
+    "number-of-pages": "288",
+    "publisher": "International Organization for Standardization",
+    "title": "ISO/IEC 13818-1 Information technology — Generic coding of moving pictures and associated audio information — Part 1: Systems",
+    "title-short": "ISO/IEC 13818-1:2019(E)",
+    "type": "book"
+  },
+  {
+    "URL": "https://gwg.nga.mil/misb/docs/standards/ST1602.1.pdf",
+    "author": [
+      {
+        "literal": "Motion Imagery Standards Board"
+      }
+    ],
+    "edition": "1",
+    "id": "misbst1602",
+    "issued": {
+      "date-parts": [
+        [
+          2018,
+          11
+        ]
+      ]
+    },
+    "language": "en",
+    "number-of-pages": "19",
+    "publisher": "Motion Imagery Standards Board",
+    "title": "MISB ST 1602 Composite Imaging Local Set",
+    "title-short": "MISB ST 1602",
+    "type": "book"
+  },
+  {
+    "URL": "https://www.gwg.nga.mil/misb/docs/standards/ST0603.5.pdf",
+    "author": [
+      {
+        "literal": "Motion Imagery Standards Board"
+      }
+    ],
+    "edition": "5",
+    "id": "msibst0603",
+    "issued": {
+      "date-parts": [
+        [
+          2017,
+          10
+        ]
+      ]
+    },
+    "language": "en",
+    "number-of-pages": "8",
+    "title": "MISB ST 0603 MISP Time System and Timestamps",
+    "title-short": "MISB ST 0603",
+    "type": "book"
+  }
+]
+<<===== INPUT =====<<
+
+
+>>===== CITATION-ITEMS =====>>
+[[{"id":"misbst1602"}]]
+<<===== CITATION-ITEMS =====<<
+
+>>===== VERSION =====>>
+1.0
+<<===== VERSION =====<<
+
