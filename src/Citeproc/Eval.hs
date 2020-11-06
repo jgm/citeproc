@@ -63,6 +63,7 @@ data EvalState a =
                                           Bool, Maybe Text, Maybe Text)
                         -- (citegroup, noteNum, posInGroup,
                         --      aloneInCitation, label, locator)
+  , stateNoteMap        :: M.Map Int (Set.Set ItemId) -- ids cited in note
   , stateRefMap         :: ReferenceMap a
   , stateReference      :: Reference a
   , stateUsedYearSuffix :: Bool
@@ -103,6 +104,7 @@ evalStyle style mblang refs citations =
       EvalState
       { stateVarCount = VarCount 0 0
       , stateLastCitedMap = mempty
+      , stateNoteMap = mempty
       , stateRefMap = makeReferenceMap refs
       , stateReference = Reference mempty mempty Nothing mempty
       , stateUsedYearSuffix = False
@@ -394,7 +396,8 @@ disambiguateCitations style bibSortKeyMap citations = do
                        | ident <- refIds
                        , not (ident `Set.member` citeIds)]
   allCites <- withRWST (\ctx st -> (ctx,
-                                    st { stateLastCitedMap = mempty })) $
+                                    st { stateLastCitedMap = mempty
+                                       , stateNoteMap = mempty })) $
                mapM (evalLayout False (styleCitation style))
                             (zip [1..] (citations ++ ghostCitations))
 
@@ -452,7 +455,8 @@ disambiguateCitations style bibSortKeyMap citations = do
                      refIds }
            -- redo citations
            withRWST (\ctx st -> (ctx,
-                                 st { stateLastCitedMap = mempty })) $
+                                 st { stateLastCitedMap = mempty
+                                    , stateNoteMap = mempty })) $
              mapM (evalLayout False (styleCitation style))
                    (zip [1..] (citations ++ ghostCitations))
 
@@ -461,7 +465,8 @@ disambiguateCitations style bibSortKeyMap citations = do
     ambiguities -> do
       analyzeAmbiguities bibSortKeyMap strategy (map snd ambiguities)
       withRWST (\ctx st -> (ctx,
-                            st { stateLastCitedMap = mempty })) $
+                            st { stateLastCitedMap = mempty
+                               , stateNoteMap = mempty })) $
         mapM (evalLayout False (styleCitation style)) (zip [1..] citations)
 
  where
@@ -974,6 +979,18 @@ evalLayout isBibliography layout (citationGroupNumber, citation) = do
     unless isBibliography $ do
       lastCitedMap <- gets stateLastCitedMap
       let notenum = NumVal $ fromMaybe citationGroupNumber mbNoteNumber
+      -- keep track of how many citations in each note.
+      -- two citations from the same note don't count as "alone"
+      -- for ibid purposes. See citation-style-language/documentation#121
+      case mbNoteNumber of
+        Nothing -> return ()
+        Just n  -> modify $ \st ->
+                       st{ stateNoteMap = M.alter
+                            (maybe
+                              (Just (Set.singleton (citationItemId item)))
+                              (Just . Set.insert (citationItemId item)))
+                            n
+                            (stateNoteMap st) }
       case M.lookup (citationItemId item) lastCitedMap of
         Nothing | isNote -> -- first citation
           modify $ \st ->
@@ -990,12 +1007,12 @@ evalLayout isBibliography layout (citationGroupNumber, citation) = do
           st{ stateLastCitedMap =
             M.insert (citationItemId item)
               (citationGroupNumber, mbNoteNumber, positionInCitation,
-               case citationItems citation of
+               (case citationItems citation of
                   [_]   -> True
                   [x,y] -> citationItemId x == citationItemId y
                           && citationItemType x == AuthorOnly
                           && citationItemType y == SuppressAuthor
-                  _     -> False,
+                  _     -> False),
                citationItemLabel item,
                citationItemLocator item)
             lastCitedMap }
@@ -1054,6 +1071,7 @@ capitalizeInitialTerm (z:zs) = go z : zs
 getPosition :: CitationItem a -> Int -> Maybe Int -> Int -> Eval a [Position]
 getPosition item groupNum mbNoteNum posInGroup = do
   lastCitedMap <- gets stateLastCitedMap
+  noteMap <- gets stateNoteMap
   case M.lookup (citationItemId item) lastCitedMap of
     Nothing -> return [FirstPosition]
     Just (prevGroupNum, mbPrevNoteNum,
@@ -1063,6 +1081,11 @@ getPosition item groupNum mbNoteNum posInGroup = do
                            asks (styleNearNoteDistance . contextStyleOptions)
       let noteNum = fromMaybe groupNum mbNoteNum
       let prevNoteNum = fromMaybe prevGroupNum mbPrevNoteNum
+      let prevAloneInNote =
+            case M.lookup prevNoteNum noteMap of
+              Nothing -> True
+              Just s  -> Set.size s <= 1
+      let prevAlone = prevAloneInGroup && prevAloneInNote
       return $
         (if isNote && noteNum - prevNoteNum < nearNoteDistance
             then (NearNote :)
@@ -1072,7 +1095,7 @@ getPosition item groupNum mbNoteNum posInGroup = do
             (groupNum == prevGroupNum + 1 &&
               (((-) <$> mbNoteNum <*> mbPrevNoteNum) <= Just 1) &&
              posInGroup == 1 &&
-             prevAloneInGroup)
+             prevAlone)
              then case (prevLoc, citationItemLocator item) of
                     (Nothing, Just _)  -> (IbidWithLocator :) . (Ibid :)
                     (Nothing, Nothing) -> (Ibid :)
