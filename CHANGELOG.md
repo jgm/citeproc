@@ -1,5 +1,14 @@
 # citeproc changelog
 
+## 0.1.1.1
+
+  * Pay attention to citationNoteNumber in computing position.
+    In calculating whether an item is alone in its citation,
+    we need to take into account citationNoteNumber, since
+    two citations may occur in the same note and they should
+    not be ranked "alone." See jgm/pandoc#6813,
+    citation-style-language/documentation#121
+
 ## 0.1.1
 
   * Ensure that uncited references are sorted last
