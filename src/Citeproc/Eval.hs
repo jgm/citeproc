@@ -401,7 +401,7 @@ disambiguateCitations style bibSortKeyMap citations = do
                                        , stateNoteMap = mempty })) $
                mapM (evalLayout False (styleCitation style))
                             (zip [1..] (citations ++ ghostCitations))
-
+  mblang <- asks (localeLanguage . contextLocale)
   styleOpts <- asks contextStyleOptions
   let strategy = styleDisambiguation styleOpts
   let allNameGroups = [ns | Tagged (TagNames _ _ ns) _ <-
@@ -424,7 +424,7 @@ disambiguateCitations style bibSortKeyMap citations = do
                                 , nameFamily v == Just name])
                           familyNames
            let toHint names name =
-                  if any (initialsMatch name) (filter (/= name) names)
+                  if any (initialsMatch mblang name) (filter (/= name) names)
                      then
                        case rule of
                          AllNamesWithInitials    -> Nothing
@@ -464,25 +464,27 @@ disambiguateCitations style bibSortKeyMap citations = do
   case getAmbiguities allCites' of
     []          -> return $ take (length citations) allCites'
     ambiguities -> do
-      analyzeAmbiguities bibSortKeyMap strategy (map snd ambiguities)
+      analyzeAmbiguities mblang bibSortKeyMap strategy (map snd ambiguities)
       withRWST (\ctx st -> (ctx,
                             st { stateLastCitedMap = mempty
                                , stateNoteMap = mempty })) $
         mapM (evalLayout False (styleCitation style)) (zip [1..] citations)
 
  where
-  analyzeAmbiguities :: M.Map ItemId [SortKeyValue]
+  analyzeAmbiguities :: Maybe Lang
+                     -> M.Map ItemId [SortKeyValue]
                      -> DisambiguationStrategy
                      -> [[DisambData]]
                      -> Eval a ()
-  analyzeAmbiguities bibSortKeyMap' strategy ambiguities = do
+  analyzeAmbiguities mblang bibSortKeyMap' strategy ambiguities = do
     -- add names to et al.
     as1 <- if disambiguateAddNames strategy
-              then mapM (tryAddNames (disambiguateAddGivenNames strategy))
+              then mapM (tryAddNames mblang
+                       (disambiguateAddGivenNames strategy))
                        ambiguities
               else return ambiguities
     as2 <- case disambiguateAddGivenNames strategy of
-             Just ByCite -> mapM tryAddGivenNames as1
+             Just ByCite -> mapM (tryAddGivenNames mblang) as1
              _           -> return as1
     as3 <- if disambiguateAddYearSuffix strategy
               then do
@@ -491,12 +493,13 @@ disambiguateCitations style bibSortKeyMap citations = do
               else return as2
     mapM_ tryDisambiguateCondition as3
 
-  isDisambiguated :: Maybe GivenNameDisambiguationRule
+  isDisambiguated :: Maybe Lang
+                  -> Maybe GivenNameDisambiguationRule
                   -> Int -- et al min
                   -> [DisambData]
                   -> DisambData
                   -> Bool
-  isDisambiguated mbrule etAlMin xs x =
+  isDisambiguated mblang mbrule etAlMin xs x =
     all (\y -> x == y || disambiguatedName y /= disambiguatedName x) xs
    where
     disambiguatedName = nameParts . take etAlMin . ddNames
@@ -504,7 +507,7 @@ disambiguateCitations style bibSortKeyMap citations = do
       case mbrule of
         Just AllNames -> id
         Just AllNamesWithInitials ->
-             map (\name -> name{ nameGiven = initialize True False ""
+             map (\name -> name{ nameGiven = initialize mblang True False ""
                                               <$> nameGiven name })
         Just PrimaryName ->
           \case
@@ -513,13 +516,15 @@ disambiguateCitations style bibSortKeyMap citations = do
         Just PrimaryNameWithInitials ->
           \case
             [] -> []
-            (z:zs) -> z{ nameGiven = initialize True False "" <$> nameGiven z } :
+            (z:zs) -> z{ nameGiven =
+                       initialize mblang True False "" <$> nameGiven z } :
                        map (\name -> name{ nameGiven = Nothing }) zs
         Just ByCite -> id -- hints will be added later
         _ -> map (\name -> name{ nameGiven = Nothing })
 
-  tryAddNames mbrule bs = (case mbrule of
-                            Just ByCite -> bs <$ tryAddGivenNames bs
+  tryAddNames mblang mbrule bs =
+                       (case mbrule of
+                            Just ByCite -> bs <$ tryAddGivenNames mblang bs
                             _ -> return bs) >>= go 1
                           -- if ByCite, we want to make sure that
                           -- tryAddGivenNames is still applied, as
@@ -529,7 +534,7 @@ disambiguateCitations style bibSortKeyMap citations = do
      go n as
        | n > maxnames as = return as
        | otherwise = do
-           let ds = filter (isDisambiguated mbrule n as) as
+           let ds = filter (isDisambiguated mblang mbrule n as) as
            if null ds
               then go (n + 1) as
               else do
@@ -539,15 +544,16 @@ disambiguateCitations style bibSortKeyMap citations = do
                           (unReferenceMap $ stateRefMap st) as }
                 go (n + 1) (as \\ ds)
 
-  tryAddGivenNames :: [DisambData]
+  tryAddGivenNames :: Maybe Lang
+                   -> [DisambData]
                    -> Eval a [DisambData]
-  tryAddGivenNames as = do
+  tryAddGivenNames mblang as = do
     let correspondingNames =
            map (zip (map ddItem as)) $ transpose $ map ddNames as
         go [] _ = return []
         go (as' :: [DisambData]) (ns :: [(ItemId, Name)]) = do
           hintedIds <- Set.fromList . catMaybes <$>
-                          mapM (addNameHint (map snd ns)) ns
+                          mapM (addNameHint mblang (map snd ns)) ns
           return $ filter (\x -> ddItem x `Set.notMember` hintedIds) as'
     foldM go as correspondingNames
 
@@ -587,20 +593,21 @@ disambiguateCitations style bibSortKeyMap citations = do
                  }
                Just x  -> Just x }
 
-  initialsMatch x y =
+  initialsMatch mblang x y =
     case (nameGiven x, nameGiven y) of
       (Just x', Just y') ->
-        initialize True False "" x' == initialize True False "" y'
+        initialize mblang True False "" x' ==
+          initialize mblang True False "" y'
       _ -> False
 
-  addNameHint names (item, name) = do
+  addNameHint mblang names (item, name) = do
     let familyMatches = [n | n <- names
                            , n /= name
                            , nameFamily n == nameFamily name]
     case familyMatches of
       [] -> return Nothing
       _  -> do
-        let hint = if any (initialsMatch name) familyMatches
+        let hint = if any (initialsMatch mblang name) familyMatches
                       then AddGivenName
                       else AddInitials
         modify $ \st ->
@@ -1982,12 +1989,13 @@ showYearSuffix x
        in T.pack [chr (ord 'a' - 1 + (x' `div` 26)),
                   chr (ord 'a' + (x' `mod` 26))]
 
-initialize :: Bool       -- ^ initialize
+initialize :: Maybe Lang
+           -> Bool       -- ^ initialize
            -> Bool       -- ^ with hyphen
            -> Text       -- ^ initialize with (suffix)
            -> Text
            -> Text
-initialize makeInitials useHyphen initializeWith =
+initialize mblang makeInitials useHyphen initializeWith =
    T.strip . T.replace " -" "-" . mconcat . map initializeWord . splitWords
   where
    -- Left values are already initials
@@ -2020,9 +2028,8 @@ initialize makeInitials useHyphen initializeWith =
            case T.uncons t' of
              Just (c, _)
                | isUpper c
-               , useHyphen -> "-" <> Unicode.toUpper Nothing (T.singleton c)
-               -- TODO mblang
-               | isUpper c -> Unicode.toUpper Nothing (T.singleton c)
+               , useHyphen -> "-" <> Unicode.toUpper mblang (T.singleton c)
+               | isUpper c -> Unicode.toUpper mblang (T.singleton c)
              _ -> mempty  -- e.g. Ji-ping -> J. not J.-p.
          Just (c, t')
            | isUpper c ->
@@ -2051,6 +2058,7 @@ getDisplayName nameFormat formatting order name = do
     asks (styleDemoteNonDroppingParticle . contextStyleOptions)
   initializeWithHyphen <-
     asks (styleInitializeWithHyphen . contextStyleOptions)
+  mblang <- asks (localeLanguage . contextLocale)
   let initialize' =
         case nameFamily name of
           Nothing -> id
@@ -2058,6 +2066,7 @@ getDisplayName nameFormat formatting order name = do
             case nameInitializeWith nameFormat of
               Just initializeWith ->
                 initialize
+                mblang
                 (nameInitialize nameFormat)
                 initializeWithHyphen
                 initializeWith
