@@ -1,4 +1,3 @@
-{-# LANGUAGE CPP #-}
 {-# LANGUAGE StrictData #-}
 {-# LANGUAGE LambdaCase #-}
 {-# LANGUAGE DeriveFoldable #-}
@@ -128,12 +127,8 @@ import Data.Generics.Uniplate.Direct
 import qualified Data.Attoparsec.Text as P
 import Safe (readMay)
 import Data.String (IsString)
-
-#ifdef MIN_VERSION_text_icu
-import qualified Data.Text.ICU as ICU
-#else
-import qualified Data.RFC5051 as RFC5051
-#endif
+import Citeproc.Unicode (Lang(..), parseLang, renderLang)
+import qualified Citeproc.Unicode as Unicode
 
 -- import Debug.Trace
 -- import Text.Show.Pretty (ppShow)
@@ -608,16 +603,10 @@ keyLEQ :: [Text] -> [Text] -> Bool
 keyLEQ _  [] = False
 keyLEQ [] _  = True
 keyLEQ (x:xs) (y:ys) =
-  case comp x y of
+  case Unicode.comp Nothing x y of  -- TODO mblang
     EQ -> xs `keyLEQ` ys
     GT -> False
     LT -> True
- where
-#ifdef MIN_VERSION_text_icu
-  comp = ICU.collate (ICU.collator ICU.Current)
-#else
-  comp = RFC5051.compareUnicode
-#endif
 
 data Layout a =
   Layout
@@ -762,29 +751,6 @@ instance Ord Term where
      (isNothing gen1   || isNothing gen2   || gen1 == gen2) &&
      (isNothing gf1    || isNothing gf2    || gf1  == gf2 ) &&
      (isNothing match1 || isNothing match2 || match1 == match2)
-
--- | A parsed IETF language tag, with language and optional variant.
--- For example, @Lang "en" (Just "US")@ corresponds to @en-US@.
-data Lang = Lang{ langLanguage :: Text
-                , langVariant  :: Maybe Text }
-  deriving (Show, Eq, Ord)
-
-instance ToJSON Lang where
-  toJSON = toJSON . renderLang
-
-instance FromJSON Lang where
-  parseJSON = fmap parseLang . parseJSON
-
--- | Render a 'Lang' an an IETF language tag.
-renderLang :: Lang -> Text
-renderLang (Lang l Nothing)  = l
-renderLang (Lang l (Just v)) = l <> "-" <> v
-
--- | Parse an IETF language tag.
-parseLang :: Text -> Lang
-parseLang t = Lang l (snd <$> T.uncons v)
-  where
-   (l,v) = T.break (\c -> c == '-' || c == '_') t
 
 -- | Defines locale-specific terms, punctuation styles, and date
 -- formats.

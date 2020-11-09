@@ -9,6 +9,7 @@ module Citeproc.Eval
 where
 import Citeproc.Types
 import Citeproc.Style (mergeLocales)
+import qualified Citeproc.Unicode as Unicode
 import Data.Semigroup
 import Control.Monad.Trans.RWS.CPS
 import Data.Containers.ListUtils (nubOrdOn, nubOrd)
@@ -2019,8 +2020,9 @@ initialize makeInitials useHyphen initializeWith =
            case T.uncons t' of
              Just (c, _)
                | isUpper c
-               , useHyphen -> "-" <> T.toUpper (T.singleton c)
-               | isUpper c -> T.toUpper (T.singleton c)
+               , useHyphen -> "-" <> Unicode.toUpper Nothing (T.singleton c)
+               -- TODO mblang
+               | isUpper c -> Unicode.toUpper Nothing (T.singleton c)
              _ -> mempty  -- e.g. Ji-ping -> J. not J.-p.
          Just (c, t')
            | isUpper c ->

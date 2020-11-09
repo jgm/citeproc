@@ -22,7 +22,8 @@ import Data.Semigroup
 import Data.Char (isUpper, isLower, isAscii)
 import Data.Text (Text)
 import qualified Data.Text as T
-import Citeproc.Types (Lang(..))
+import Citeproc.Types (Lang(..), renderLang)
+import qualified Citeproc.Unicode as Unicode
 
 -- | Wraps a function used to define textcase transformations.
 newtype CaseTransformer =
@@ -40,31 +41,15 @@ data CaseTransformState =
     | BeforeLastWord
     deriving (Show, Eq)
 
-toUpper' :: Maybe Lang -> Text -> Text
-toUpper' mblang = T.toUpper .
-  case mblang of
-    Just (Lang "tr" _) -> T.map (\c -> case c of
-                                        'i' -> 'İ'
-                                        'ı' -> 'I'
-                                        _   -> c)
-    _                  -> id
-
-toLower' :: Maybe Lang -> Text -> Text
-toLower' mblang = T.toLower .
-  case mblang of
-    Just (Lang "tr" _) -> T.map (\c -> case c of
-                                        'İ' -> 'i'
-                                        'I' -> 'ı'
-                                        _   -> c)
-    _                  -> id
-
 -- | Uppercase everything.
 withUppercaseAll :: CaseTransformer
-withUppercaseAll = CaseTransformer (\mblang _ -> toUpper' mblang)
+withUppercaseAll =
+  CaseTransformer (\mblang _ -> Unicode.toUpper mblang)
 
 -- | Lowercase everything.
 withLowercaseAll :: CaseTransformer
-withLowercaseAll = CaseTransformer (\mblang _ -> toLower' mblang)
+withLowercaseAll =
+  CaseTransformer (\mblang _ -> Unicode.toLower mblang)
 
 -- | Capitalize all words.
 withCapitalizeWords :: CaseTransformer
@@ -98,10 +83,10 @@ withSentenceCase = CaseTransformer go
   go mblang st chunk
      | isCapitalized chunk
      , not (st == Start || st == StartSentence)
-       = T.toLower chunk
+       = Unicode.toLower mblang chunk
      | isCapitalized chunk || T.all isLower chunk
      , st == Start || st == StartSentence
-       = capitalizeText mblang $ T.toLower chunk
+       = capitalizeText mblang $ Unicode.toLower mblang chunk
      | otherwise = chunk
 
 -- | Use title case.
@@ -114,12 +99,14 @@ withTitleCase = CaseTransformer go
                                     -- textcase_TitleCapitalization.txt
      | T.any (not . isAscii) chunk = chunk
      | st == StartSentence || st == Start =
-       capitalizeText mblang $ T.toLower chunk
+       capitalizeText mblang $ Unicode.toLower mblang chunk
      | st == AfterWordEnd
      , not (isStopWord chunk)
-     , T.compareLength chunk 1 == GT = capitalizeText mblang $ T.toLower chunk
+     , T.compareLength chunk 1 == GT =
+         capitalizeText mblang $ Unicode.toLower mblang chunk
      | st == BeforeLastWord
-     , T.compareLength chunk 1 == GT = capitalizeText mblang $ T.toLower chunk
+     , T.compareLength chunk 1 == GT =
+         capitalizeText mblang $ Unicode.toLower mblang chunk
      | otherwise = chunk
 
 isCapitalized :: Text -> Bool
@@ -134,7 +121,7 @@ isMixedCase t = T.any isUpper t && T.any isLower t
 capitalizeText :: Maybe Lang -> Text -> Text
 capitalizeText mblang x =
   case T.uncons x of
-    Just (c,x') -> toUpper' mblang (T.singleton c) <> x'
+    Just (c,x') -> Unicode.toUpper mblang (T.singleton c) <> x'
     Nothing     -> x
 
 isStopWord :: Text -> Bool
