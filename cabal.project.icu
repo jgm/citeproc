@@ -1,0 +1,8 @@
+packages: citeproc.cabal
+
+package text-icu
+  extra-include-dirs: /usr/local/Cellar/icu4c/67.1/include
+  extra-lib-dirs: /usr/local/Cellar/icu4c/67.1/lib
+
+package citeproc
+  flags: +icu +executable
