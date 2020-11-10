@@ -850,20 +850,22 @@ evalSortKey :: CiteprocOutput a
             -> SortKey a
             -> Eval a SortKeyValue
 evalSortKey citeId (SortKeyMacro sortdir elts) = do
+  mblang <- asks (localeLanguage . contextLocale)
   refmap <- gets stateRefMap
   case lookupReference citeId refmap of
-    Nothing  -> return $ SortKeyValue (sortdir, Nothing)
+    Nothing  -> return $ SortKeyValue sortdir mblang Nothing
     Just ref -> do
         k <- normalizeSortKey . toText .
               renderOutput defaultCiteprocOptions . grouped
               <$> withRWS newContext (mconcat <$> mapM eElement elts)
-        return $ SortKeyValue (sortdir, Just k)
+        return $ SortKeyValue sortdir mblang (Just k)
      where
       newContext oldContext s =
         (oldContext, s{ stateReference = ref })
 evalSortKey citeId (SortKeyVariable sortdir var) = do
+  mblang <- asks (localeLanguage . contextLocale)
   refmap <- gets stateRefMap
-  SortKeyValue . (sortdir,) <$>
+  SortKeyValue sortdir mblang <$>
     case lookupReference citeId refmap >>= lookupVariable var of
       Nothing           -> return Nothing
       Just (TextVal t)  -> return $ Just $ normalizeSortKey t

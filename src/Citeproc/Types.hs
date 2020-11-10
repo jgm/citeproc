@@ -576,35 +576,37 @@ data SortKey a =
    | SortKeyMacro SortDirection [Element a]
   deriving (Show, Eq)
 
-newtype SortKeyValue =
-  SortKeyValue (SortDirection, Maybe [Text])
+data SortKeyValue =
+  SortKeyValue SortDirection (Maybe Lang) (Maybe [Text])
   deriving (Show, Eq)
 
 -- absence should sort AFTER all values
 -- see sort_StatusFieldAscending.txt, sort_StatusFieldDescending.txt
 instance Ord SortKeyValue where
-  SortKeyValue (Ascending, _)  <= SortKeyValue (Ascending, Nothing)
+  SortKeyValue Ascending _ _ <= SortKeyValue Ascending _ Nothing
     = True
-  SortKeyValue (Ascending, Nothing)  <= SortKeyValue (Ascending, Just _)
+  SortKeyValue Ascending _ Nothing <= SortKeyValue Ascending _ (Just _)
     = False
-  SortKeyValue (Ascending, Just t1) <= SortKeyValue (Ascending, Just t2) =
-    t1 `keyLEQ` t2
-  SortKeyValue (Descending, _) <= SortKeyValue (Descending, Nothing)
+  SortKeyValue Ascending mblang (Just t1) <=
+    SortKeyValue Ascending _ (Just t2) =
+    keyLEQ mblang t1 t2
+  SortKeyValue Descending _ _ <= SortKeyValue Descending _ Nothing
     = True
-  SortKeyValue (Descending, Nothing) <= SortKeyValue (Descending, Just _)
+  SortKeyValue Descending _ Nothing <= SortKeyValue Descending _ (Just _)
     = False
-  SortKeyValue (Descending, Just t1) <= SortKeyValue (Descending, Just t2) =
-    t2 `keyLEQ` t1
-  SortKeyValue _ <= SortKeyValue _ = False
+  SortKeyValue Descending mblang (Just t1) <=
+    SortKeyValue Descending _ (Just t2) =
+    keyLEQ mblang t2 t1
+  SortKeyValue{} <= SortKeyValue{} = False
 
 -- We need special comparison operators to ensure that
 -- á sorts before b, for example.
-keyLEQ :: [Text] -> [Text] -> Bool
-keyLEQ _  [] = False
-keyLEQ [] _  = True
-keyLEQ (x:xs) (y:ys) =
-  case Unicode.comp Nothing x y of  -- TODO mblang
-    EQ -> xs `keyLEQ` ys
+keyLEQ :: Maybe Lang -> [Text] -> [Text] -> Bool
+keyLEQ _ _  [] = False
+keyLEQ _ [] _  = True
+keyLEQ mblang (x:xs) (y:ys) =
+  case Unicode.comp mblang x y of
+    EQ -> keyLEQ mblang xs ys
     GT -> False
     LT -> True
 
