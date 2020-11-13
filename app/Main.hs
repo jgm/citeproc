@@ -136,7 +136,7 @@ options =
   , Option ['r'] ["references"]
      (ReqArg (\fp opt -> opt{ optReferences = Just fp }) "FILE")
      "CSL JSON bibliography"
-  , Option ['a'] ["abbrevations"]
+  , Option ['a'] ["abbreviations"]
      (ReqArg (\fp opt -> opt{ optAbbreviations = Just fp }) "FILE")
      "CSL abbreviations table"
   , Option ['l'] ["lang"]
