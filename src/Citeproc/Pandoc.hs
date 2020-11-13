@@ -107,15 +107,6 @@ punctuationInsideQuotes = B.fromList . go . walk go . B.toList
       Just (c,_) -> c == '.' || c == ',' || c == '!' || c == '?'
       Nothing    -> False
   go [] = []
-  go (Str q : Str t : rest)
-    | Just (q',c) <- T.unsnoc q
-    , c == '\8221' || c == '\8217'
-    , startsWithMovable t
-      = [Str q' | not (T.null q')] ++
-        Str (T.take 1 t) :
-        Str (T.singleton c) :
-        [Str (T.drop 1 t) | T.length t > 1] ++
-        go rest
   go (Quoted qt xs : Str t : rest)
     | startsWithMovable t
       = Quoted qt (xs ++ [Str (T.take 1 t) | not (endWithPunct True xs)]) :
