@@ -1,5 +1,20 @@
 # citeproc changelog
 
+## 0.2
+
+  * Remove `AfterOtherPunctuation` constructor from
+    `CaseTransformState` [API change].
+    This gave bad results with things like parentheses (#27).
+  * Change `SortKeyValue` to include `Maybe Lang` [API change].
+    This allows us to do locale-sensitive sorting (though this
+    won't matter much unless the `icu` flag is used).
+  * Add `Maybe Lang` parameter on `initialize` (since
+    capitalization can be locale-dependent).
+  * Add cabal.project.icu for building with icu lib.
+  * Add (unexported) Citeproc.Unicode compatibility module.
+    This allows us to use the same functions whether or not
+    the `icu` flag is used.
+
 ## 0.1.1.1
 
   * Pay attention to citationNoteNumber in computing position.
