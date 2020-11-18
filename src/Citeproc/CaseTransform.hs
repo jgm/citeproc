@@ -22,7 +22,7 @@ import Data.Semigroup
 import Data.Char (isUpper, isLower, isAscii)
 import Data.Text (Text)
 import qualified Data.Text as T
-import Citeproc.Types (Lang(..), renderLang)
+import Citeproc.Types (Lang(..))
 import qualified Citeproc.Unicode as Unicode
 
 -- | Wraps a function used to define textcase transformations.
@@ -37,7 +37,6 @@ data CaseTransformState =
     | AfterWordEnd
     | AfterWordChar
     | AfterSentenceEndingPunctuation
-    | AfterOtherPunctuation
     | BeforeLastWord
     deriving (Show, Eq)
 

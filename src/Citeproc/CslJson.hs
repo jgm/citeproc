@@ -534,7 +534,7 @@ caseTransform' f lev el =
               | isSpace c
               , st == AfterSentenceEndingPunctuation -> StartSentence
               | isWordBreak c -> AfterWordEnd
-              | otherwise -> AfterOtherPunctuation
+              | otherwise -> st
     return $
       if T.all isAlphaNum t
          then f st t
