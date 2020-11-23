@@ -1125,19 +1125,25 @@ instance ToJSON Name where
       maybe id (\x -> (("literal", toJSON x):)) (nameLiteral n) $
       []
 
+fixApos :: Text -> Text
+fixApos = T.map fixAposC
+ where
+  fixAposC '\'' = '\x2019'
+  fixAposC c    = c
+
 instance FromJSON Name where
   parseJSON (String t) = parseCheaterName t
   parseJSON x =
     extractParticles <$>
      (withObject "Name" $ \v -> Name
-      <$> v .:? "family"
-      <*> v .:? "given"
-      <*> v .:? "dropping-particle"
-      <*> v .:? "non-dropping-particle"
-      <*> v .:? "suffix"
+      <$> (fmap fixApos <$> v .:? "family")
+      <*> (fmap fixApos <$> v .:? "given")
+      <*> (fmap fixApos <$> v .:? "dropping-particle")
+      <*> (fmap fixApos <$> v .:? "non-dropping-particle")
+      <*> (fmap fixApos <$> v .:? "suffix")
       <*> (v .:? "comma-suffix" >>= maybe (return False) asBool)
       <*> (v .:? "static-ordering" >>= maybe (return False) asBool)
-      <*> v .:? "literal"
+      <*> (fmap fixApos <$> v .:? "literal")
      ) x
 
 -- "lowercase elements before the family name are treated as “non-dropping”
