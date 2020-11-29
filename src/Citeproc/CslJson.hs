@@ -34,7 +34,6 @@ where
 import Citeproc.Types
 import Citeproc.CaseTransform
 import Data.Ord ()
-import Data.Semigroup
 import Data.Char (isAlphaNum, isSpace, isAscii)
 import Data.Text (Text)
 import Data.Maybe (fromMaybe)

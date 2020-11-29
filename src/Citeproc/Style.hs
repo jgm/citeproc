@@ -15,13 +15,10 @@ import Control.Applicative ((<|>))
 import qualified Text.XML as X
 import qualified Data.Text as T
 import qualified Data.Map as M
-import Data.Semigroup
 import Data.Maybe (fromMaybe, isNothing)
 import Data.Default (def)
 import qualified Data.Text.Lazy as TL
 import Control.Monad.Trans.Reader (local)
-
-import Debug.Trace
 
 -- | Merge the locale specified by the first parameter, if any,
 -- with the default locale of the style and locale definitions

@@ -10,7 +10,6 @@ where
 import Citeproc.Types
 import Citeproc.Style (mergeLocales)
 import qualified Citeproc.Unicode as Unicode
-import Data.Semigroup
 import Control.Monad.Trans.RWS.CPS
 import Data.Containers.ListUtils (nubOrdOn, nubOrd)
 import Safe (headMay, headDef, lastMay, initSafe, tailSafe, maximumMay)

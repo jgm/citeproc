@@ -108,7 +108,6 @@ import qualified Data.Map as M
 import qualified Data.Text.Read as TR
 import qualified Data.Scientific as S
 import qualified Data.CaseInsensitive as CI
-import Data.Semigroup
 import Control.Monad (foldM, guard, mzero)
 import Control.Applicative ((<|>))
 import Data.Char (isLower, isDigit, isLetter, isSpace)
