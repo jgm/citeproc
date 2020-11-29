@@ -1,4 +1,3 @@
-{-# LANGUAGE CPP #-}
 {-# LANGUAGE OverloadedStrings #-}
 -- | Process citations using the formatting instructions encoded
 -- in a CSL stylesheet.  The library targets version 1.0.1 of the

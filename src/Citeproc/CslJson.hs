@@ -2,8 +2,6 @@
 {-# LANGUAGE MultiParamTypeClasses #-}
 {-# LANGUAGE FlexibleInstances #-}
 {-# LANGUAGE OverloadedStrings #-}
-{-# LANGUAGE DeriveFunctor #-}
-{-# LANGUAGE DeriveFoldable #-}
 {-# LANGUAGE DeriveTraversable #-}
 -- | CSL JSON is the structured text format defined in
 -- <https://citeproc-js.readthedocs.io/en/latest/csl-json/markup.html>.

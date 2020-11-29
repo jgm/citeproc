@@ -1,6 +1,5 @@
 {-# LANGUAGE StrictData #-}
 {-# LANGUAGE LambdaCase #-}
-{-# LANGUAGE DeriveFoldable #-}
 {-# LANGUAGE DeriveTraversable #-}
 {-# LANGUAGE MultiParamTypeClasses #-}
 {-# LANGUAGE GeneralizedNewtypeDeriving #-}
