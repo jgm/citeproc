@@ -17,7 +17,6 @@ module Citeproc.Element
   )
 where
 import Citeproc.Types
-import Data.Semigroup
 import Data.Maybe (fromMaybe)
 import Control.Monad (foldM)
 import qualified Data.Map as M
@@ -27,8 +26,6 @@ import qualified Data.Text as T
 import Control.Monad.Trans.Reader
 import Control.Monad.Trans.Except
 import Control.Monad.Trans.Class (lift)
-
-import Debug.Trace
 
 newtype Attributes = Attributes (M.Map Text Text)
   deriving (Show, Semigroup, Monoid, Eq)

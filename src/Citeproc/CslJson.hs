@@ -2,8 +2,6 @@
 {-# LANGUAGE MultiParamTypeClasses #-}
 {-# LANGUAGE FlexibleInstances #-}
 {-# LANGUAGE OverloadedStrings #-}
-{-# LANGUAGE DeriveFunctor #-}
-{-# LANGUAGE DeriveFoldable #-}
 {-# LANGUAGE DeriveTraversable #-}
 -- | CSL JSON is the structured text format defined in
 -- <https://citeproc-js.readthedocs.io/en/latest/csl-json/markup.html>.
@@ -34,7 +32,6 @@ where
 import Citeproc.Types
 import Citeproc.CaseTransform
 import Data.Ord ()
-import Data.Semigroup
 import Data.Char (isAlphaNum, isSpace, isAscii)
 import Data.Text (Text)
 import Data.Maybe (fromMaybe)

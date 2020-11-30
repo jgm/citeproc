@@ -17,7 +17,6 @@ import qualified Data.RFC5051 as RFC5051
 import Data.Text (Text)
 import qualified Data.Text as T
 import Data.Aeson (FromJSON (..), ToJSON (..))
-import Data.Semigroup
 
 -- | A parsed IETF language tag, with language and optional variant.
 -- For example, @Lang "en" (Just "US")@ corresponds to @en-US@.

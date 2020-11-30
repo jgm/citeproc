@@ -1,4 +1,3 @@
-{-# LANGUAGE CPP #-}
 {-# LANGUAGE OverloadedStrings #-}
 -- | Process citations using the formatting instructions encoded
 -- in a CSL stylesheet.  The library targets version 1.0.1 of the
@@ -10,7 +9,6 @@ module Citeproc
        , citeproc
        , Result(..)
        ) where
-import Data.Semigroup
 import qualified Data.Text as T
 import qualified Data.Set as Set
 import Citeproc.Types

@@ -1,5 +1,4 @@
 {-# LANGUAGE StrictData #-}
-{-# LANGUAGE MultiParamTypeClasses #-}
 {-# LANGUAGE FlexibleInstances #-}
 {-# LANGUAGE OverloadedStrings #-}
 -- | Provides functions that facilitate defining textcase transformations.
@@ -18,7 +17,6 @@ module Citeproc.CaseTransform
 where
 
 import Data.Ord ()
-import Data.Semigroup
 import Data.Char (isUpper, isLower, isAscii)
 import Data.Text (Text)
 import qualified Data.Text as T
