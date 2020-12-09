@@ -5,6 +5,9 @@
   * FromJSON for Name: make straight quotes curly.
     Otherwise nothing will do this, when we are decoding
     JSON to (Reference a), a /= CslJson Text.
+  * Remove redundant pragmas and imports (Albert Krewinkel).
+  * Use custom prelude with GHC 8.6.* and older (Albert
+    Krewinkel).  This adds support for GHC 8.0.x.
 
 ## 0.2
 
