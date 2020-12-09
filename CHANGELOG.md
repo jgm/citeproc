@@ -1,5 +1,11 @@
 # citeproc changelog
 
+## 0.2.0.1
+
+  * FromJSON for Name: make straight quotes curly.
+    Otherwise nothing will do this, when we are decoding
+    JSON to (Reference a), a /= CslJson Text.
+
 ## 0.2
 
   * Remove `AfterOtherPunctuation` constructor from
