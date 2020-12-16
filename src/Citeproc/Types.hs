@@ -103,6 +103,7 @@ module Citeproc.Types
   , Inputs(..)
   )
 where
+import qualified Data.Set as Set
 import qualified Data.Map as M
 import qualified Data.Text.Read as TR
 import qualified Data.Scientific as S
@@ -1061,9 +1062,20 @@ newtype (ReferenceMap a) =
   ReferenceMap { unReferenceMap :: M.Map ItemId (Reference a) }
   deriving (Show)
 
-makeReferenceMap :: [Reference a] -> ReferenceMap a
-makeReferenceMap refs =
-  ReferenceMap (M.fromList (map (\r -> (referenceId r, r)) refs))
+-- | Returns a pair consisting of the cleaned up list of
+-- references and a reference map.  If the original reference
+-- list contains items with the same id, then the one that
+-- occurs last in the list is retained, and the others are
+-- omittedfrom the cleaned-up list.
+makeReferenceMap :: [Reference a] -> ([Reference a], ReferenceMap a)
+makeReferenceMap = snd . foldr go (mempty, ([], ReferenceMap mempty))
+  where
+   go ref (ids, (rs, ReferenceMap refmap)) =
+     let rid = referenceId ref
+      in if Set.member rid ids
+            then (ids, (rs, ReferenceMap refmap))
+            else (Set.insert rid ids,
+                   (ref:rs, ReferenceMap (M.insert rid ref refmap)))
 
 lookupReference :: ItemId -> ReferenceMap a -> Maybe (Reference a)
 lookupReference ident (ReferenceMap m) = M.lookup ident m

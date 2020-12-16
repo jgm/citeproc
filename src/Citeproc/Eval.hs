@@ -86,9 +86,11 @@ evalStyle  :: CiteprocOutput a
            -> [Citation a]     -- ^ List of citations.
            -> ([Output a], [(Text, Output a)], [Text])
                        -- ^ (citations, (id, bibentry) pairs, warnings)
-evalStyle style mblang refs citations =
+evalStyle style mblang refs' citations =
   (citationOs, bibliographyOs, Set.toList warnings)
  where
+  (refs, refmap) = makeReferenceMap refs'
+
   ((citationOs, bibliographyOs), warnings) = evalRWS go
      Context
       { contextLocale              = mergeLocales mblang style
@@ -105,7 +107,7 @@ evalStyle style mblang refs citations =
       { stateVarCount = VarCount 0 0
       , stateLastCitedMap = mempty
       , stateNoteMap = mempty
-      , stateRefMap = makeReferenceMap refs
+      , stateRefMap = refmap
       , stateReference = Reference mempty mempty Nothing mempty
       , stateUsedYearSuffix = False
       }
