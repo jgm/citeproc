@@ -1,5 +1,13 @@
 # citeproc changelog
 
+## 0.3
+
+  * Change `makeReferenceMap` to return a cleaned-up list of
+    references as well as a reference map.  The cleanup-up list
+    removes references with duplicate ids.  When there are multiple
+    references with the same id, the last one is included and
+    the others discarded.  [API change]
+
 ## 0.2.0.1
 
   * FromJSON for Name: make straight quotes curly.
