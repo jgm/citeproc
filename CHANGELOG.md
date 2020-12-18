@@ -1,5 +1,12 @@
 # citeproc changelog
 
+## 0.3.0.1
+
+  * Better handle `initialize-with` that ends in a nonbreaking space.
+    In this case, citeproc should not add an additional space
+    or strip the nonbreaking space.  Closes #37.
+
+
 ## 0.3
 
   * Change `makeReferenceMap` to return a cleaned-up list of
