@@ -1,0 +1,56 @@
+>>===== MODE =====>>
+citation
+<<===== MODE =====<<
+
+>>===== RESULT =====>>
+J. Doe
+<<===== RESULT =====<<
+
+>>===== CSL =====>>
+<?xml version="1.0" encoding="utf-8"?>
+<style xmlns="http://purl.org/net/xbiblio/csl" class="in-text" version="1.0.1" name-form="long" initialize-with=".&#xa0;"> <!-- with a non-breakable space after the dot in initialize-with value -->
+    <citation>
+    <layout>
+      <names variable="author">
+        <name>
+          <name-part name="given" form="short"/>
+        </name>
+      </names>
+    </layout>
+    </citation>
+    <bibliography/>
+</style>
+<<===== CSL =====<<
+
+>>==== CITATION-ITEMS ====>>
+[
+    [
+        {
+            "id": "doeA"
+        }
+    ]
+]
+<<==== CITATION-ITEMS ====<<
+
+
+>>===== INPUT =====>>
+[
+  {
+    "author": [
+      {
+        "family": "Doe",
+        "given": "John"
+      }
+    ],
+    "id": "doeA",
+    "title": "Fruits",
+    "type": "book"
+  }
+]
+<<===== INPUT =====<<
+
+
+>>===== VERSION =====>>
+1.0
+<<===== VERSION =====<<
+

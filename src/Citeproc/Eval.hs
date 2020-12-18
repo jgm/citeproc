@@ -1999,8 +1999,9 @@ initialize :: Maybe Lang
            -> Text
            -> Text
 initialize mblang makeInitials useHyphen initializeWith =
-   T.strip . T.replace " -" "-" . mconcat . map initializeWord . splitWords
+   stripSpaces . T.replace " -" "-" . mconcat . map initializeWord . splitWords
   where
+   stripSpaces = T.dropWhile (==' ') . T.dropWhileEnd (==' ') -- preserve nbsp
    -- Left values are already initials
    -- Right values are not
    splitWords =
@@ -2079,7 +2080,8 @@ getDisplayName nameFormat formatting order name = do
       NullOutput <+> x = x
       Literal x <+> y =
         case T.unsnoc (toText x) of
-          Just (_, c) | c == '’' || c == '\'' || c == '-' || c == '\x2013' ->
+          Just (_, c) | c == '’' || c == '\'' || c == '-' || c == '\x2013' ||
+                        c == '\xa0' ->
                formatted mempty [Literal x, y]
           _ | isByzantineName name ->
                formatted mempty{ formatDelimiter = Just " " } [Literal x, y]
