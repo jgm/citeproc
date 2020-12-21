@@ -726,6 +726,7 @@ groupAndCollapseCitations citeGroupDelim yearSuffixDelim afterCollapseDelim
         noCollapse = ws == y:ys
         noYearSuffixCollapse = ws == ys'
         hasLocator u = not $ null [x | x@(Tagged TagLocator _) <- universe u]
+        anyHasLocator = any hasLocator ws
         -- https://github.com/citation-style-language/test-suite/issues/36 :
         flippedAfterCollapseDelim = collapseType == CollapseYear
         addCGDelim u [] = [u]
@@ -733,7 +734,7 @@ groupAndCollapseCitations citeGroupDelim yearSuffixDelim afterCollapseDelim
           Formatted mempty{ formatSuffix =
                               if noCollapse || noYearSuffixCollapse &&
                                  not (flippedAfterCollapseDelim &&
-                                      hasLocator u)
+                                      anyHasLocator)
                                  then Just citeGroupDelim
                                  else afterCollapseDelim <|>
                                       formatDelimiter f } [u] : us
