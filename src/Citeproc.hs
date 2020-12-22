@@ -9,6 +9,7 @@ module Citeproc
        , citeproc
        , Result(..)
        ) where
+import Data.Bifunctor (second)
 import qualified Data.Text as T
 import qualified Data.Set as Set
 import Citeproc.Types
@@ -34,10 +35,9 @@ citeproc opts style mblang refs citations =
         , resultWarnings = warnings ++ noPrintedFormWarnings }
  where
   rCitations = map (trimR . movePunct . renderOutput opts) citationOs
-  rBibliography = map (\(ident, out) ->
-                          (ident, trimR . movePunct .
-                            renderOutput opts{ linkCitations = False } $ out))
-                          bibliographyOs
+  rBibliography = map (second (trimR . movePunct .
+                               renderOutput opts{ linkCitations = False }))
+                      bibliographyOs
   locale = mergeLocales mblang style
   trimR = dropTextWhileEnd (== ' ')
   movePunct = case localePunctuationInQuote locale of

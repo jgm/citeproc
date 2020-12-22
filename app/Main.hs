@@ -6,6 +6,7 @@ import Citeproc
 import Citeproc.CslJson
 import Control.Monad (when, unless)
 import Control.Applicative ((<|>))
+import Data.Bifunctor (second)
 import Data.Maybe (fromMaybe)
 import Data.Text (Text)
 import qualified Data.Text as T
@@ -29,10 +30,10 @@ main = do
   let opt = foldr ($) defaultOpt opts
   when (optHelp opt) $ do
     putStr $ usageInfo "citeproc [OPTIONS] [FILE]" options
-    exitWith ExitSuccess
+    exitSuccess
   when (optVersion opt) $ do
     putStrLn $ "citeproc version " <> VERSION_citeproc
-    exitWith ExitSuccess
+    exitSuccess
   format <- case optFormat opt of
               Just "html" -> return Html
               Just "json" -> return Json
@@ -90,9 +91,8 @@ main = do
                                map (cslJsonToJson locale)
                                    (resultCitations result))
                           , ("bibliography", Aeson.toJSON $
-                               map (\(id',ent) ->
-                                 (id', cslJsonToJson locale ent))
-                               (resultBibliography result))
+                               map (second $ cslJsonToJson locale)
+                                   (resultBibliography result))
                           , ("warnings", Aeson.toJSON $ resultWarnings result)
                           ]
                    Html -> Aeson.toJSON result

@@ -1044,7 +1044,7 @@ evalLayout isBibliography layout (citationGroupNumber, citation) = do
               else id)
         . (case citationItemPrefix item of
              Just t | isNote
-                    , ". " `T.isSuffixOf` (toText t)
+                    , ". " `T.isSuffixOf` toText t
                     , T.count " " (toText t) > 1 -- exclude single word
                                  -> capitalizeInitialTerm
              _                   -> id)
@@ -1337,7 +1337,7 @@ eText (TextVariable varForm v) = do
                                 Tagged TagCitationLabel $
                                   grouped $
                                   Literal (fromText t)
-                                  : maybe [] (:[]) mbsuff
+                                  : maybeToList mbsuff
           Just (FancyVal x) -> return $
                                  Tagged TagCitationLabel $
                                   grouped $
@@ -1456,7 +1456,7 @@ eLabel var termform pluralize formatting = do
              ("locator", Just loc, Just lab) -> getTerm lab (TextVal loc)
              ("locator", Just loc, Nothing)
                 | beginsWithSpace loc -> return NullOutput
-                | ". " `T.isPrefixOf` (T.dropWhile isLetter loc)
+                | ". " `T.isPrefixOf` T.dropWhile isLetter loc
                                          -> return NullOutput
                 | otherwise              -> getTerm "page" (TextVal loc)
              ("page", Just loc, _) ->
@@ -1471,7 +1471,7 @@ eLabel var termform pluralize formatting = do
         | "." `T.isPrefixOf` suff
           -> case term' of
                Literal x
-                 | "." `T.isSuffixOf` (toText x)
+                 | "." `T.isSuffixOf` toText x
                  , not (formatStripPeriods formatting)
                  -> formatted
                      formatting{ formatSuffix =
@@ -1849,15 +1849,12 @@ formatNames namesFormat nameFormat formatting (var, Just (NamesVal names)) =
                        _                       -> ""
                 PrecedesAlways            -> delim
                 PrecedesNever             -> ""
-  let andPreSpace =
-        if T.null beforeLastDelim
-           then case formatSuffix formatting of
-                  Just t | endsWithSpace t -> ""
-                  _ -> " "
-           else
-             if endsWithSpace beforeLastDelim
-                then ""
-                else " "
+  let andPreSpace = case beforeLastDelim of
+        "" -> case formatSuffix formatting of
+                Just t | endsWithSpace t -> ""
+                _ -> " "
+        t | endsWithSpace t -> ""
+        _  -> " "
   let andPostSpace = case formatPrefix formatting of
                        Just t | beginsWithSpace t -> ""
                        _ -> " "
@@ -1931,7 +1928,7 @@ formatName :: CiteprocOutput a
 formatName nameFormat formatting order name = do
   disamb <- gets (referenceDisambiguation . stateReference)
   let nameFormat' =
-        case disambNameMap <$> disamb >>= M.lookup name of
+        case M.lookup name . disambNameMap =<< disamb of
           Nothing -> nameFormat
           Just AddInitials
             -> nameFormat{ nameForm = LongName }

@@ -1,0 +1,29 @@
+# HLint configuration file
+# https://github.com/ndmitchell/hlint
+#####################################
+
+# Undesired hints
+#
+- ignore: {name: "Replace case with maybe"}
+- ignore: {name: "Use bimap"}
+- ignore: {name: "Use Just"}
+- ignore:
+    name: Redundant bracket
+    within:
+      - Citeproc.CslJson
+      - Citeproc.Eval.evalLayout
+- ignore:
+    name: Use list comprehension
+    within: Citeproc.Eval.evalStyle
+
+# The checks are derived from a regex and easier to read with
+# more 'low-level' checks.
+- ignore:
+    name: Use isDigit
+    within: Citeproc.Types.isByzantineChar
+- ignore:
+    name: Use isAsciiLower
+    within: Citeproc.Types.isByzantineChar
+- ignore:
+    name: Use isAsciiUpper
+    within: Citeproc.Types.isByzantineChar
