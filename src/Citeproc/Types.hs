@@ -109,7 +109,7 @@ import qualified Data.Text.Read as TR
 import qualified Data.Scientific as S
 import qualified Data.CaseInsensitive as CI
 import Control.Monad (foldM, guard, mzero)
-import Control.Applicative ((<|>))
+import Control.Applicative ((<|>), optional)
 import Data.Char (isLower, isDigit, isLetter, isSpace)
 import Data.Text (Text)
 import qualified Data.Text as T
@@ -253,7 +253,7 @@ instance FromJSON a => FromJSON (CitationItem a) where
   parseJSON = withObject "CitationItem" $ \v -> CitationItem
     <$> (v .: "id" >>= fmap ItemId . asText)
     <*> v .:? "label"
-    <*> (Just <$> (v .: "locator" >>= asText) <|> pure Nothing)
+    <*> optional (v .: "locator" >>= asText)
     <*> ( (v .: "type")
         <|> (do suppressAuth <- v .:? "suppress-author"
                 authorOnly <- v .:? "author-only"
@@ -922,7 +922,7 @@ consolidateNameVariables ((k,v):kvs)
   = case variableType k of
       NameVariable
         -> (k, Array
-                 (V.fromList [String t | (k',t) <- ((k,v):kvs), k' == k])) :
+                 (V.fromList [String t | (k',t) <- (k,v):kvs, k' == k])) :
             consolidateNameVariables (filter ((/= k) . fst) kvs)
       _ -> (k, String v) : consolidateNameVariables kvs
 

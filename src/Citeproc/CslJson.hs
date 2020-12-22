@@ -37,6 +37,7 @@ import Data.Text (Text)
 import Data.Maybe (fromMaybe)
 import qualified Data.Text as T
 import qualified Data.Map as M
+import Data.Foldable (fold)
 import Data.Functor.Identity
 import Data.Attoparsec.Text as P
 import Data.Aeson (FromJSON(..), ToJSON(..), Value(..), object)
@@ -100,7 +101,7 @@ instance Biplate (CslJson a) (CslJson a) where
   biplate = plateSelf
 
 instance CiteprocOutput (CslJson Text) where
-  toText                = foldMap id
+  toText                = fold
   fromText              = parseCslJson mempty
   dropTextWhile         = dropTextWhile'
   dropTextWhileEnd      = dropTextWhileEnd'

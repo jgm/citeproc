@@ -13,7 +13,6 @@ import Control.Monad.IO.Class (liftIO)
 import System.Environment (getArgs)
 import System.Exit
 import System.Directory (getDirectoryContents, doesFileExist)
-import Data.Char (isDigit)
 import Data.Text (Text)
 import qualified Data.Set as Set
 import qualified Text.PrettyPrint as Pretty
@@ -21,7 +20,7 @@ import qualified Data.Text as T
 import qualified Data.Text.IO as TIO
 import Data.List (foldl', isInfixOf, intersperse, sortOn, sort)
 import Data.Containers.ListUtils (nubOrdOn)
-import Data.Char (isLetter, toLower)
+import Data.Char (isDigit, isLetter, toLower)
 import Data.ByteString (ByteString)
 import qualified Data.ByteString.Char8 as B
 import qualified Data.ByteString.Lazy as L
@@ -88,7 +87,7 @@ runTest test = do
   case skipReason test of
     Just reason -> doSkip reason
     Nothing ->
-      case parseStyle (\_ -> Nothing) (decodeUtf8 $ csl test) of
+      case parseStyle (const Nothing) (decodeUtf8 $ csl test) of
         Nothing -> doError $ CiteprocParseError
                       "Could not fetch independent parent"
         Just (Left err) -> doError err
@@ -259,7 +258,7 @@ main = do
         takeExtension x == ".txt" &&
         case args of
           [] -> True
-          _  -> any (\arg -> map toLower arg `isInfixOf` (map toLower x)) args
+          _  -> any (\arg -> map toLower arg `isInfixOf` map toLower x) args
   overrides <- if any ('/' `elem`) args
                   then return []
                   else filter matchesPattern <$>
@@ -318,10 +317,10 @@ main = do
                (length (errored counts))
                (length (skipped counts))
   case length (failed counts) + length (errored counts) of
-    0 -> exitWith ExitSuccess
+    0 -> exitSuccess
     n | n <= 63 -> do
          putStrLn "We have passed all the CSL tests we expect to..."
-         exitWith ExitSuccess
+         exitSuccess
       | otherwise -> exitWith $ ExitFailure n
 
 data Counts  =
