@@ -1,5 +1,13 @@
 # citeproc changelog
 
+## 0.3.0.2
+
+  * Don't use cite-group delimiter if ANY citation in group has
+    locator (#38).  This seems to be citeproc.js's behavior and it gives
+    better results for chicago-author-date:  we want both
+    `[@foo20; @foo21, p. 3]` and `[@foo20, p. 3; @foo21]` to produce
+    a semicolon separator, rather than a comma.
+
 ## 0.3.0.1
 
   * Better handle `initialize-with` that ends in a nonbreaking space.
