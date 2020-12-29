@@ -1040,7 +1040,7 @@ evalLayout isBibliography layout (citationGroupNumber, citation) = do
                                                   (citationItemId item)) x)
         . formatted mempty
         . (if citationItemType item == AuthorOnly
-              then map getAuthors
+              then (:[]) . getAuthors . formatted mempty
               else id)
         . (case citationItemPrefix item of
              Just t | isNote
