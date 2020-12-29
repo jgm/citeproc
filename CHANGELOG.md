@@ -1,5 +1,10 @@
 # citeproc changelog
 
+## 0.3.0.3
+
+  * Fix author-only citations (#43).  We got bad results with some
+    styles when a reference had both an author and a translator.
+
 ## 0.3.0.2
 
   * Don't use cite-group delimiter if ANY citation in group has
