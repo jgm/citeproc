@@ -1,7 +1,7 @@
 VERSION?=$(shell grep '^[Vv]ersion:' citeproc.cabal | awk '{print $$2;}')
 LOCALE_DATA=$(patsubst locales-upstream/locales-%.xml,locales/%.xml, $(wildcard locales-upstream/*.xml)) locales/locales.json
 
-.PHONY: test-suite locales test bench ghcid repl clean update-locales update-test-suite update-locales-upstream test-diff
+.PHONY: locales test bench ghcid repl clean update-locales update-test-suite update-locales-upstream test-diff
 
 test:
 	cabal test --jobs=1 --test-show-details=streaming --test-options="$(PATTERN)" | tee spec.log
