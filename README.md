@@ -89,7 +89,7 @@ the [man page](man/citeproc.1.md) for more information.
 
 Although this library is much more accurate in implementing the
 CSL spec than pandoc-citeproc was, it still fails some of the
-tests from the CSL test suite (63/845).  However, most of the
+tests from the CSL test suite (68/862).  However, most of the
 failures are on minor corner cases, and in many cases the
 expected behavior goes beyond what is required by the CSL spec.
 (For example, we intentionally refrain from capitalizing

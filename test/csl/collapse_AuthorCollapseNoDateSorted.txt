@@ -2,11 +2,17 @@
 citation
 <<===== MODE =====<<
 
+>>===== DESCRIPTION =====>>
+If warnings for empty cites in a multiple-cite citation are printed,
+they should be printed only if the first cite in the series renders
+nothing, and the layout suffix should be preserved.
+<<===== DESCRIPTION =====<<
+
 
 
 
 >>===== RESULT =====>>
-(Smith 325AD, 2000, [CSL STYLE ERROR: reference with no printed form.])
+(Smith 325AD, 2000)
 <<===== RESULT =====<<
 
 >>===== CITATION-ITEMS =====>>
