@@ -395,12 +395,14 @@ disambiguateCitations :: forall a . CiteprocOutput a
 disambiguateCitations style bibSortKeyMap citations = do
   refs <- unReferenceMap <$> gets stateRefMap
   let refIds = M.keys refs
-  let citeIds = Set.fromList $
-                   concatMap (map citationItemId . citationItems) citations
-  let ghostItems = [CitationItem ident Nothing Nothing NormalCite Nothing Nothing
-                       | ident <- refIds
-                       , not (ident `Set.member` citeIds)]
-  let allItems = concatMap citationItems citations ++ ghostItems
+  let citeIds = concatMap (map citationItemId . citationItems) citations
+  let citeIdsSet = Set.fromList citeIds
+  let ghostItems = [ ident
+                   | ident <- refIds
+                   , not (ident `Set.member` citeIdsSet)]
+  -- note that citations must go first, and order must be preserved:
+  -- we use a "basic item" that strips off prefixes, suffixes, locators
+  let allItems = map basicItem $ citeIds ++ ghostItems
   allCites <- renderItems allItems
 
   mblang <- asks (localeLanguage . contextLocale)
