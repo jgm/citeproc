@@ -375,6 +375,10 @@ replaceMatch rule replacement (names, raw) (z:zs) =
     | otherwise = 0
   numberOfMatches _ _ = 0
 
+--
+-- Disambiguation
+--
+
 data DisambData =
   DisambData
   { ddItem       :: ItemId
@@ -457,7 +461,7 @@ disambiguateCitations style bibSortKeyMap citations = do
 
   case getAmbiguities allCites' of
     []          -> return ()
-    ambiguities -> analyzeAmbiguities mblang bibSortKeyMap strategy ambiguities
+    ambiguities -> analyzeAmbiguities mblang strategy ambiguities
   withRWST (\ctx st -> (ctx,
                         st { stateLastCitedMap = mempty
                            , stateNoteMap = mempty })) $
@@ -478,11 +482,10 @@ disambiguateCitations style bibSortKeyMap citations = do
                             mapM (renderItems . map (basicItem . ddItem))
 
   analyzeAmbiguities :: Maybe Lang
-                     -> M.Map ItemId [SortKeyValue]
                      -> DisambiguationStrategy
                      -> [[DisambData]]
                      -> Eval a ()
-  analyzeAmbiguities mblang bibSortKeyMap' strategy ambiguities = do
+  analyzeAmbiguities mblang strategy ambiguities = do
     -- add names to et al.
     return ambiguities
       >>= (\as ->
@@ -501,221 +504,226 @@ disambiguateCitations style bibSortKeyMap citations = do
       >>= (\as ->
            (if disambiguateAddYearSuffix strategy
                then do
-                 addYearSuffixes bibSortKeyMap' as
+                 addYearSuffixes bibSortKeyMap as
                  refreshAmbiguities as
                else return as))
       >>= mapM_ tryDisambiguateCondition
 
-  basicItem :: ItemId -> CitationItem a
-  basicItem iid = CitationItem
-    { citationItemId      = iid
-    , citationItemLabel   = Nothing
-    , citationItemLocator = Nothing
-    , citationItemType    = NormalCite
-    , citationItemPrefix  = Nothing
-    , citationItemSuffix  = Nothing
-    }
+basicItem :: ItemId -> CitationItem a
+basicItem iid = CitationItem
+  { citationItemId      = iid
+  , citationItemLabel   = Nothing
+  , citationItemLocator = Nothing
+  , citationItemType    = NormalCite
+  , citationItemPrefix  = Nothing
+  , citationItemSuffix  = Nothing
+  }
 
-  isDisambiguated :: Maybe Lang
-                  -> Maybe GivenNameDisambiguationRule
-                  -> Int -- et al min
-                  -> [DisambData]
-                  -> DisambData
-                  -> Bool
-  isDisambiguated mblang mbrule etAlMin xs x =
-    all (\y -> x == y || disambiguatedName y /= disambiguatedName x) xs
-   where
-    disambiguatedName = nameParts . take etAlMin . ddNames
-    nameParts =
-      case mbrule of
-        Just AllNames -> id
-        Just AllNamesWithInitials ->
-             map (\name -> name{ nameGiven = initialize mblang True False ""
-                                              <$> nameGiven name })
-        Just PrimaryName ->
-          \case
-            [] -> []
-            (z:zs) -> z : map (\name -> name{ nameGiven = Nothing }) zs
-        Just PrimaryNameWithInitials ->
-          \case
-            [] -> []
-            (z:zs) -> z{ nameGiven =
-                       initialize mblang True False "" <$> nameGiven z } :
-                       map (\name -> name{ nameGiven = Nothing }) zs
-        Just ByCite -> id -- hints will be added later
-        _ -> map (\name -> name{ nameGiven = Nothing })
+isDisambiguated :: Maybe Lang
+                -> Maybe GivenNameDisambiguationRule
+                -> Int -- et al min
+                -> [DisambData]
+                -> DisambData
+                -> Bool
+isDisambiguated mblang mbrule etAlMin xs x =
+  all (\y -> x == y || disambiguatedName y /= disambiguatedName x) xs
+ where
+  disambiguatedName = nameParts . take etAlMin . ddNames
+  nameParts =
+    case mbrule of
+      Just AllNames -> id
+      Just AllNamesWithInitials ->
+           map (\name -> name{ nameGiven = initialize mblang True False ""
+                                            <$> nameGiven name })
+      Just PrimaryName ->
+        \case
+          [] -> []
+          (z:zs) -> z : map (\name -> name{ nameGiven = Nothing }) zs
+      Just PrimaryNameWithInitials ->
+        \case
+          [] -> []
+          (z:zs) -> z{ nameGiven =
+                     initialize mblang True False "" <$> nameGiven z } :
+                     map (\name -> name{ nameGiven = Nothing }) zs
+      Just ByCite -> id -- hints will be added later
+      _ -> map (\name -> name{ nameGiven = Nothing })
 
-  tryAddNames :: Maybe Lang
-              -> Maybe GivenNameDisambiguationRule
-              -> [DisambData]
-              -> Eval a ()
-  tryAddNames mblang mbrule bs =
-                       (case mbrule of
-                            Just ByCite -> bs <$ tryAddGivenNames mblang bs
-                            _ -> return bs) >>= go 1
-                          -- if ByCite, we want to make sure that
-                          -- tryAddGivenNames is still applied, as
-                          -- calculation of "add names" assumes this.
-   where
-     maxnames = fromMaybe 0 . maximumMay . map (length . ddNames)
-     go n as
-       | n > maxnames as = return ()
-       | otherwise = do
-           let ds = filter (isDisambiguated mblang mbrule n as) as
-           if null ds
-              then go (n + 1) as
-              else do
-                modify $ \st ->
-                  st{ stateRefMap = ReferenceMap
-                        $ foldr (setEtAlNames (Just n) . ddItem)
-                          (unReferenceMap $ stateRefMap st) as }
-                go (n + 1) (as \\ ds)
+tryAddNames :: Maybe Lang
+            -> Maybe GivenNameDisambiguationRule
+            -> [DisambData]
+            -> Eval a ()
+tryAddNames mblang mbrule bs =
+                     (case mbrule of
+                          Just ByCite -> bs <$ tryAddGivenNames mblang bs
+                          _ -> return bs) >>= go 1
+                        -- if ByCite, we want to make sure that
+                        -- tryAddGivenNames is still applied, as
+                        -- calculation of "add names" assumes this.
+ where
+   maxnames = fromMaybe 0 . maximumMay . map (length . ddNames)
+   go n as
+     | n > maxnames as = return ()
+     | otherwise = do
+         let ds = filter (isDisambiguated mblang mbrule n as) as
+         if null ds
+            then go (n + 1) as
+            else do
+              modify $ \st ->
+                st{ stateRefMap = ReferenceMap
+                      $ foldr (setEtAlNames (Just n) . ddItem)
+                        (unReferenceMap $ stateRefMap st) as }
+              go (n + 1) (as \\ ds)
 
-  tryAddGivenNames :: Maybe Lang
-                   -> [DisambData]
-                   -> Eval a ()
-  tryAddGivenNames mblang as = do
-    let correspondingNames =
-           map (zip (map ddItem as)) $ transpose $ map ddNames as
-        go [] _ = return []
-        go (as' :: [DisambData]) (ns :: [(ItemId, Name)]) = do
-          hintedIds <- Set.fromList . catMaybes <$>
-                          mapM (addNameHint mblang (map snd ns)) ns
-          return $ filter (\x -> ddItem x `Set.notMember` hintedIds) as'
-    _ <- foldM go as correspondingNames
-    return ()
+tryAddGivenNames :: Maybe Lang
+                 -> [DisambData]
+                 -> Eval a ()
+tryAddGivenNames mblang as = do
+  let correspondingNames =
+         map (zip (map ddItem as)) $ transpose $ map ddNames as
+      go [] _ = return []
+      go (as' :: [DisambData]) (ns :: [(ItemId, Name)]) = do
+        hintedIds <- Set.fromList . catMaybes <$>
+                        mapM (addNameHint mblang (map snd ns)) ns
+        return $ filter (\x -> ddItem x `Set.notMember` hintedIds) as'
+  _ <- foldM go as correspondingNames
+  return ()
 
-  addYearSuffixes :: M.Map ItemId [SortKeyValue]
-                  -> [[DisambData]]
-                  -> Eval a ()
-  addYearSuffixes bibSortKeyMap' as = do
-    let allitems = concat as
-    let companions a =
-          sortOn
-          (\it -> M.lookup (ddItem it) bibSortKeyMap')
-          (concat [ x | x <- as, a `elem` x ])
-    let groups = Set.map companions $ Set.fromList allitems
-    let addYearSuffix item suff =
-          modify $ \st ->
-            st{ stateRefMap = ReferenceMap
-                 $ setYearSuffix suff item
-                 $ unReferenceMap
-                 $ stateRefMap st }
-    mapM_ (\xs -> zipWithM addYearSuffix (map ddItem xs) [1..]) groups
-
-  tryDisambiguateCondition :: [DisambData] -> Eval a ()
-  tryDisambiguateCondition as =
-    case as of
-      [] -> return ()
-      xs -> modify $ \st ->
-              st{ stateRefMap = ReferenceMap
-                  $ foldr (setDisambCondition True . ddItem)
-                    (unReferenceMap (stateRefMap st))
-                    xs }
-
-  alterReferenceDisambiguation :: (DisambiguationData -> DisambiguationData)
-                               -> Reference a
-                               -> Reference a
-  alterReferenceDisambiguation f r =
-        r{ referenceDisambiguation = f <$>
-             case referenceDisambiguation r of
-               Nothing -> Just
-                 DisambiguationData
-                   { disambYearSuffix  = Nothing
-                   , disambNameMap     = mempty
-                   , disambEtAlNames   = Nothing
-                   , disambCondition   = False
-                 }
-               Just x  -> Just x }
-
-  initialsMatch :: Maybe Lang -> Name -> Name -> Bool
-  initialsMatch mblang x y =
-    case (nameGiven x, nameGiven y) of
-      (Just x', Just y') ->
-        initialize mblang True False "" x' ==
-          initialize mblang True False "" y'
-      _ -> False
-
-  addNameHint :: Maybe Lang -> [Name] -> (ItemId, Name) -> Eval a (Maybe ItemId)
-  addNameHint mblang names (item, name) = do
-    let familyMatches = [n | n <- names
-                           , n /= name
-                           , nameFamily n == nameFamily name]
-    case familyMatches of
-      [] -> return Nothing
-      _  -> do
-        let hint = if any (initialsMatch mblang name) familyMatches
-                      then AddGivenName
-                      else AddInitials
+addYearSuffixes :: M.Map ItemId [SortKeyValue]
+                -> [[DisambData]]
+                -> Eval a ()
+addYearSuffixes bibSortKeyMap' as = do
+  let allitems = concat as
+  let companions a =
+        sortOn
+        (\it -> M.lookup (ddItem it) bibSortKeyMap')
+        (concat [ x | x <- as, a `elem` x ])
+  let groups = Set.map companions $ Set.fromList allitems
+  let addYearSuffix item suff =
         modify $ \st ->
           st{ stateRefMap = ReferenceMap
-              $ setNameHint hint name item
-              $ unReferenceMap (stateRefMap st) }
-        return $ Just item
+               $ setYearSuffix suff item
+               $ unReferenceMap
+               $ stateRefMap st }
+  mapM_ (\xs -> zipWithM addYearSuffix (map ddItem xs) [1..]) groups
 
-  setNameHint :: NameHints -> Name -> ItemId
+tryDisambiguateCondition :: [DisambData] -> Eval a ()
+tryDisambiguateCondition as =
+  case as of
+    [] -> return ()
+    xs -> modify $ \st ->
+            st{ stateRefMap = ReferenceMap
+                $ foldr (setDisambCondition True . ddItem)
+                  (unReferenceMap (stateRefMap st))
+                  xs }
+
+alterReferenceDisambiguation :: (DisambiguationData -> DisambiguationData)
+                             -> Reference a
+                             -> Reference a
+alterReferenceDisambiguation f r =
+      r{ referenceDisambiguation = f <$>
+           case referenceDisambiguation r of
+             Nothing -> Just
+               DisambiguationData
+                 { disambYearSuffix  = Nothing
+                 , disambNameMap     = mempty
+                 , disambEtAlNames   = Nothing
+                 , disambCondition   = False
+               }
+             Just x  -> Just x }
+
+initialsMatch :: Maybe Lang -> Name -> Name -> Bool
+initialsMatch mblang x y =
+  case (nameGiven x, nameGiven y) of
+    (Just x', Just y') ->
+      initialize mblang True False "" x' ==
+        initialize mblang True False "" y'
+    _ -> False
+
+addNameHint :: Maybe Lang -> [Name] -> (ItemId, Name) -> Eval a (Maybe ItemId)
+addNameHint mblang names (item, name) = do
+  let familyMatches = [n | n <- names
+                         , n /= name
+                         , nameFamily n == nameFamily name]
+  case familyMatches of
+    [] -> return Nothing
+    _  -> do
+      let hint = if any (initialsMatch mblang name) familyMatches
+                    then AddGivenName
+                    else AddInitials
+      modify $ \st ->
+        st{ stateRefMap = ReferenceMap
+            $ setNameHint hint name item
+            $ unReferenceMap (stateRefMap st) }
+      return $ Just item
+
+setNameHint :: NameHints -> Name -> ItemId
+            -> M.Map ItemId (Reference a) -> M.Map ItemId (Reference a)
+setNameHint hint name = M.adjust
+       (alterReferenceDisambiguation
+         (\d -> d{ disambNameMap =
+                     M.insert name hint
+                     (disambNameMap d) }))
+
+setEtAlNames :: Maybe Int -> ItemId
+             -> M.Map ItemId (Reference a) -> M.Map ItemId (Reference a)
+setEtAlNames x = M.adjust
+       (alterReferenceDisambiguation
+         (\d -> d{ disambEtAlNames = x }))
+
+setYearSuffix :: Int -> ItemId
               -> M.Map ItemId (Reference a) -> M.Map ItemId (Reference a)
-  setNameHint hint name = M.adjust
-         (alterReferenceDisambiguation
-           (\d -> d{ disambNameMap =
-                       M.insert name hint
-                       (disambNameMap d) }))
+setYearSuffix x = M.adjust
+       (alterReferenceDisambiguation
+         (\d -> d{ disambYearSuffix = Just x }))
 
-  setEtAlNames :: Maybe Int -> ItemId
-               -> M.Map ItemId (Reference a) -> M.Map ItemId (Reference a)
-  setEtAlNames x = M.adjust
-         (alterReferenceDisambiguation
-           (\d -> d{ disambEtAlNames = x }))
+setDisambCondition :: Bool -> ItemId
+                   -> M.Map ItemId (Reference a) -> M.Map ItemId (Reference a)
+setDisambCondition x = M.adjust
+       (alterReferenceDisambiguation
+         (\d -> d{ disambCondition = x }))
 
-  setYearSuffix :: Int -> ItemId
-                -> M.Map ItemId (Reference a) -> M.Map ItemId (Reference a)
-  setYearSuffix x = M.adjust
-         (alterReferenceDisambiguation
-           (\d -> d{ disambYearSuffix = Just x }))
+getAmbiguities :: CiteprocOutput a => [Output a] -> [[DisambData]]
+getAmbiguities =
+        mapMaybe
+           (\zs ->
+               case zs of
+                 []     -> Nothing
+                 [_]    -> Nothing
+                 (z:_) ->
+                   case ddRendered z of
+                     "" -> Nothing
+                     _  -> case nubOrdOn ddItem zs of
+                             ys@(_:_:_) -> Just ys -- > 1 ambiguous entry
+                             _          -> Nothing)
+      . groupBy (\x y -> ddRendered x == ddRendered y)
+      . sortOn ddRendered
+      . map toDisambData
 
-  setDisambCondition :: Bool -> ItemId
-                     -> M.Map ItemId (Reference a) -> M.Map ItemId (Reference a)
-  setDisambCondition x = M.adjust
-         (alterReferenceDisambiguation
-           (\d -> d{ disambCondition = x }))
-
-  getAmbiguities :: [Output a] -> [[DisambData]]
-  getAmbiguities =
-          mapMaybe
-             (\zs ->
-                 case zs of
-                   []     -> Nothing
-                   [_]    -> Nothing
-                   (z:_) ->
-                     case ddRendered z of
-                       "" -> Nothing
-                       _  -> case nubOrdOn ddItem zs of
-                               ys@(_:_:_) -> Just ys -- > 1 ambiguous entry
-                               _          -> Nothing)
-        . groupBy (\x y -> ddRendered x == ddRendered y)
-        . sortOn ddRendered
-        . map toDisambData
-
-  toDisambData :: Output a -> DisambData
-  toDisambData (Tagged (TagItem NormalCite iid) x) =
-    let xs = universe x
-        ns' = getNames xs
-        ds' = getDates xs
-        t   = outputToText x
-     in DisambData iid ns' ds' t
-  toDisambData _ = error "toDisambData called without tagged item"
-
+toDisambData :: CiteprocOutput a => Output a -> DisambData
+toDisambData (Tagged (TagItem NormalCite iid) x) =
+  let xs = universe x
+      ns' = getNames xs
+      ds' = getDates xs
+      t   = outputToText x
+   in DisambData iid ns' ds' t
+ where
   getNames :: [Output a] -> [Name]
   getNames (Tagged (TagNames _ _ ns) _ : xs)
-                      = ns ++ getNames xs
+                  = ns ++ getNames xs
   getNames (_ : xs)   = getNames xs
   getNames []         = []
 
   getDates :: [Output a] -> [Date]
   getDates (Tagged (TagDate d) _ : xs)
-                      = d : getDates xs
+                  = d : getDates xs
   getDates (_ : xs)   = getDates xs
   getDates []         = []
+toDisambData _ = error "toDisambData called without tagged item"
+
+
+--
+-- end disambiguation
+--
 
 groupAndCollapseCitations :: CiteprocOutput a
                           => Text
