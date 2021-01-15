@@ -472,11 +472,9 @@ disambiguateCitations style bibSortKeyMap citations = do
                           Tagged (TagItem NormalCite (citationItemId item)) . grouped <$>
                                    evalItem (styleCitation style) ([], item))
 
-  analyzeAmbiguities :: Maybe Lang
-                     -> M.Map ItemId [SortKeyValue]
-                     -> DisambiguationStrategy
-                     -> [[DisambData]]
-                     -> Eval a ()
+  recalculateAmbiguities = fmap (concatMap getAmbiguities) .
+                            mapM (renderItems . map (basicItem . ddItem))
+
   analyzeAmbiguities mblang bibSortKeyMap' strategy ambiguities = do
     -- add names to et al.
     as1 <- if disambiguateAddNames strategy
@@ -492,7 +490,19 @@ disambiguateCitations style bibSortKeyMap citations = do
                 addYearSuffixes bibSortKeyMap' as2
                 return []
               else return as2
-    mapM_ tryDisambiguateCondition as3
+    as4 <- recalculateAmbiguities as3
+    mapM_ tryDisambiguateCondition as4
+
+
+  basicItem iid = CitationItem
+    { citationItemId      = iid
+    , citationItemLabel   = Nothing
+    , citationItemLocator = Nothing
+    , citationItemType    = NormalCite
+    , citationItemPrefix  = Nothing
+    , citationItemSuffix  = Nothing
+    }
+
 
   isDisambiguated :: Maybe Lang
                   -> Maybe GivenNameDisambiguationRule
