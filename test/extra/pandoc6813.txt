@@ -3,9 +3,9 @@ citation
 <<===== MODE =====<<
 
 >>===== RESULT =====>>
-Doe, <i>Title A</i>, n.d.
-Doe, <i>Title B</i>, n.d.
-Doe, <i>Title B</i>, n.d.
+Doe, <i>Title A</i>.
+Doe, <i>Title B</i>.
+Doe, <i>Title B</i>.
 <<===== RESULT =====<<
 
 >>===== CSL =====>>
