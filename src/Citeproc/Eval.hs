@@ -914,10 +914,12 @@ evalLayout isBibliography layout (citationGroupNumber, citation) = do
   -- correctly in a citation starting with an author-only:
   -- the combination AuthorOnly [SuppressAuthor] should not
   -- count against a later Ibid citation.
-  let positions = case citationItems citation of
-                    (c:_) | citationItemType c == AuthorOnly -> [0..]
-                    _ -> [1..]
-  items <- mapM evalItem (zip positions (citationItems citation))
+  let positionsInCitation =
+        case citationItems citation of
+          (c:_) | citationItemType c == AuthorOnly -> [0..]
+          _ -> [1..]
+
+  items <- mapM evalItem' (zip positionsInCitation (citationItems citation))
 
   -- see display_SecondFieldAlignMigratePunctuation.txt
   let moveSuffixInsideDisplay zs =
@@ -941,93 +943,22 @@ evalLayout isBibliography layout (citationGroupNumber, citation) = do
  where
   formatting = layoutFormatting layout
 
-  mbNoteNumber = citationNoteNumber citation
   secondFieldAlign (x:xs) =
     formatted mempty{ formatDisplay = Just DisplayLeftMargin } [x]
     : [formatted mempty{ formatDisplay = Just DisplayRightInline } xs]
   secondFieldAlign [] = []
 
-  evalItem (positionInCitation :: Int, item) = do
-    refmap <- gets stateRefMap
-    position <- if isBibliography
-                   then return []
-                   else getPosition item
-                         citationGroupNumber
-                         mbNoteNumber
-                         positionInCitation
-
-    let addLangToFormatting lang (Formatted f xs) =
-          Formatted f{ formatLang = Just lang } xs
-        addLangToFormatting _ x = x
-
-    xs <- case lookupReference (citationItemId item) refmap of
-            Just ref -> withRWST
-              (\ctx st ->
-               (ctx{ contextLocator = citationItemLocator item
-                   , contextLabel = citationItemLabel item
-                   , contextPosition = position
-                   },
-                st{ stateReference = ref
-                  , stateUsedYearSuffix = False }))
-                $ do xs <- mconcat <$> mapM eElement (layoutElements layout)
-                     let mblang = parseLang <$>
-                                  (lookupVariable "language" ref
-                                    >>= valToText)
-                     return $
-                       case mblang of
-                         Nothing   -> xs
-                         Just lang -> map
-                             (transform (addLangToFormatting lang)) xs
-            Nothing -> do
-              warn $ "citation " <> unItemId (citationItemId item) <>
-                     " not found"
-              return [Literal $ addFontWeight BoldWeight
-                 $ fromText $ unItemId (citationItemId item) <> "?"]
-
+  evalItem' (positionInCitation :: Int, item) = do
     styleOpts <- asks contextStyleOptions
     let isNote = styleIsNoteStyle styleOpts
+    position <- getPosition citationGroupNumber (citationNoteNumber citation)
+                     item positionInCitation
 
+    xs <- evalItem layout (position, item)
     -- we only update the map in the citations section
     unless isBibliography $ do
-      lastCitedMap <- gets stateLastCitedMap
-      let notenum = NumVal $ fromMaybe citationGroupNumber mbNoteNumber
-      -- keep track of how many citations in each note.
-      -- two citations from the same note don't count as "alone"
-      -- for ibid purposes. See citation-style-language/documentation#121
-      case mbNoteNumber of
-        Nothing -> return ()
-        Just n  -> modify $ \st ->
-                       st{ stateNoteMap = M.alter
-                            (maybe
-                              (Just (Set.singleton (citationItemId item)))
-                              (Just . Set.insert (citationItemId item)))
-                            n
-                            (stateNoteMap st) }
-      case M.lookup (citationItemId item) lastCitedMap of
-        Nothing | isNote -> -- first citation
-          modify $ \st ->
-            st{ stateRefMap = ReferenceMap $
-                    M.adjust (\ref -> ref{ referenceVariables =
-                      M.insert "first-reference-note-number" notenum
-                                 (referenceVariables ref)})
-                      (citationItemId item)
-                   (unReferenceMap $ stateRefMap st) }
-        _  -> return ()
-
-      unless (citationItemType item == AuthorOnly) $
-        modify $ \st ->
-          st{ stateLastCitedMap =
-            M.insert (citationItemId item)
-              (citationGroupNumber, mbNoteNumber, positionInCitation,
-               (case citationItems citation of
-                  [_]   -> True
-                  [x,y] -> citationItemId x == citationItemId y
-                          && citationItemType x == AuthorOnly
-                          && citationItemType y == SuppressAuthor
-                  _     -> False),
-               citationItemLabel item,
-               citationItemLocator item)
-            lastCitedMap }
+      updateRefMap citationGroupNumber citation item
+      updateLastCitedMap citationGroupNumber positionInCitation citation item
 
     return $
           maybe id (\pref x -> grouped [Literal pref, x])
@@ -1057,6 +988,87 @@ evalLayout isBibliography layout (citationGroupNumber, citation) = do
               else id)
         $ xs
 
+evalItem :: CiteprocOutput a
+         => Layout a -> ([Position], CitationItem a) -> Eval a [Output a]
+evalItem layout (position, item) = do
+  refmap <- gets stateRefMap
+
+  let addLangToFormatting lang (Formatted f xs) =
+        Formatted f{ formatLang = Just lang } xs
+      addLangToFormatting _ x = x
+
+  case lookupReference (citationItemId item) refmap of
+    Just ref -> withRWST
+      (\ctx st ->
+       (ctx{ contextLocator = citationItemLocator item
+           , contextLabel = citationItemLabel item
+           , contextPosition = position
+           },
+        st{ stateReference = ref
+          , stateUsedYearSuffix = False }))
+        $ do xs <- mconcat <$> mapM eElement (layoutElements layout)
+             let mblang = parseLang <$>
+                          (lookupVariable "language" ref
+                            >>= valToText)
+             return $
+               case mblang of
+                 Nothing   -> xs
+                 Just lang -> map
+                     (transform (addLangToFormatting lang)) xs
+    Nothing -> do
+      warn $ "citation " <> unItemId (citationItemId item) <>
+             " not found"
+      return [Literal $ addFontWeight BoldWeight
+         $ fromText $ unItemId (citationItemId item) <> "?"]
+
+
+
+updateRefMap :: Int -> Citation a -> CitationItem a -> Eval a ()
+updateRefMap citationGroupNumber citation item = do
+  isNote <- asks (styleIsNoteStyle . contextStyleOptions)
+  lastCitedMap <- gets stateLastCitedMap
+  let notenum = NumVal $ fromMaybe citationGroupNumber (citationNoteNumber citation)
+  -- keep track of how many citations in each note.
+  -- two citations from the same note don't count as "alone"
+  -- for ibid purposes. See citation-style-language/documentation#121
+  case citationNoteNumber citation of
+    Nothing -> return ()
+    Just n  -> modify $ \st ->
+                   st{ stateNoteMap = M.alter
+                        (maybe
+                          (Just (Set.singleton (citationItemId item)))
+                          (Just . Set.insert (citationItemId item)))
+                        n
+                        (stateNoteMap st) }
+  case M.lookup (citationItemId item) lastCitedMap of
+    Nothing | isNote -> -- first citation
+      modify $ \st ->
+        st{ stateRefMap = ReferenceMap $
+                M.adjust (\ref -> ref{ referenceVariables =
+                  M.insert "first-reference-note-number" notenum
+                             (referenceVariables ref)})
+                  (citationItemId item)
+               (unReferenceMap $ stateRefMap st) }
+    _  -> return ()
+
+updateLastCitedMap :: Int -> Int -> Citation a -> CitationItem a -> Eval a ()
+updateLastCitedMap citationGroupNumber positionInCitation citation item = do
+  unless (citationItemType item == AuthorOnly) $
+    modify $ \st ->
+      st{ stateLastCitedMap =
+        M.insert (citationItemId item)
+          (citationGroupNumber, citationNoteNumber citation,
+           positionInCitation,
+           (case citationItems citation of
+              [_]   -> True
+              [x,y] -> citationItemId x == citationItemId y
+                      && citationItemType x == AuthorOnly
+                      && citationItemType y == SuppressAuthor
+              _     -> False),
+           citationItemLabel item,
+           citationItemLocator item)
+        $ stateLastCitedMap st }
+
 
 -- | The first-occurring element tagged as Names will be
 -- treated as the "author"; generally that is the author
@@ -1080,8 +1092,8 @@ capitalizeInitialTerm (z:zs) = go z : zs
   go (Tagged tg x) = Tagged tg (go x)
   go x = x
 
-getPosition :: CitationItem a -> Int -> Maybe Int -> Int -> Eval a [Position]
-getPosition item groupNum mbNoteNum posInGroup = do
+getPosition :: Int -> Maybe Int -> CitationItem a -> Int -> Eval a [Position]
+getPosition groupNum mbNoteNum item posInGroup = do
   lastCitedMap <- gets stateLastCitedMap
   noteMap <- gets stateNoteMap
   case M.lookup (citationItemId item) lastCitedMap of
