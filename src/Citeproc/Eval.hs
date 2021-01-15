@@ -14,7 +14,7 @@ import Control.Monad.Trans.RWS.CPS
 import Data.Containers.ListUtils (nubOrdOn, nubOrd)
 import Safe (headMay, headDef, lastMay, initSafe, tailSafe, maximumMay)
 import Data.Maybe
-import Control.Monad (foldM, zipWithM, when, unless)
+import Control.Monad (foldM, foldM_, zipWithM, when, unless)
 import qualified Data.Map as M
 import qualified Data.Set as Set
 import Data.Coerce (coerce)
@@ -585,8 +585,7 @@ tryAddGivenNames mblang as = do
         hintedIds <- Set.fromList . catMaybes <$>
                         mapM (addNameHint mblang (map snd ns)) ns
         return $ filter (\x -> ddItem x `Set.notMember` hintedIds) as'
-  _ <- foldM go as correspondingNames
-  return ()
+  foldM_ go as correspondingNames
 
 addYearSuffixes :: M.Map ItemId [SortKeyValue]
                 -> [[DisambData]]
