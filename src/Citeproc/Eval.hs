@@ -470,8 +470,7 @@ disambiguateCitations style bibSortKeyMap citations = do
 
   case getAmbiguities allCites' of
     []          -> return ()
-    ambiguities -> analyzeAmbiguities mblang bibSortKeyMap strategy
-                     (map snd ambiguities)
+    ambiguities -> analyzeAmbiguities mblang bibSortKeyMap strategy ambiguities
   withRWST (\ctx st -> (ctx,
                         st { stateLastCitedMap = mempty
                            , stateNoteMap = mempty })) $
@@ -641,22 +640,29 @@ disambiguateCitations style bibSortKeyMap citations = do
          (alterReferenceDisambiguation
            (\d -> d{ disambCondition = x }))
 
-  getAmbiguities cs =
-        filter ((> 1) . length . snd)
-        $ mapMaybe
+  getAmbiguities =
+          mapMaybe
              (\zs ->
                  case zs of
-                   ("",_):_ -> Nothing  -- no printed form of citation
-                   (t, _):_ -> Just (t, map (toDisambData t) $
-                                         nubOrdOn fst $ map snd zs)
-                   []       -> Nothing)
-        $ groupBy (\(x,_) (y,_) -> x == y)
-        $ sortOn fst
-        [let xs = universe x in
-             (outputToText x, (iid, (getNames xs, getDates xs)))
-        | (Tagged (TagItem NormalCite iid) x) <- concatMap universe cs]
+                   []     -> Nothing
+                   [_]    -> Nothing
+                   (z:_) ->
+                     case ddRendered z of
+                       "" -> Nothing
+                       _  -> case nubOrdOn ddItem zs of
+                               ys@(_:_:_) -> Just ys -- > 1 ambiguous entry
+                               _          -> Nothing)
+        . groupBy (\x y -> ddRendered x == ddRendered y)
+        . sortOn ddRendered
+        . map toDisambData
 
-  toDisambData t (id', (ns', ds')) = DisambData id' ns' ds' t
+  toDisambData (Tagged (TagItem NormalCite iid) x) =
+    let xs = universe x
+        ns' = getNames xs
+        ds' = getDates xs
+        t   = outputToText x
+     in DisambData iid ns' ds' t
+  toDisambData _ = error "toDisambData called without tagged item"
 
   getNames :: [Output a] -> [Name]
   getNames (Tagged (TagNames _ _ ns) _ : xs)
