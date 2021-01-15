@@ -722,10 +722,10 @@ toDisambData _ = error "toDisambData called without tagged item"
 
 
 --
--- end disambiguation
+-- Grouping and collapsing
 --
 
-groupAndCollapseCitations :: CiteprocOutput a
+groupAndCollapseCitations :: forall a . CiteprocOutput a
                           => Text
                           -> Maybe Text
                           -> Maybe Text
@@ -749,10 +749,13 @@ groupAndCollapseCitations citeGroupDelim yearSuffixDelim afterCollapseDelim
  where
   --   Note that we cannot assume we've sorted by name,
   --   so we can't just use Data.ListgroupBy
+  groupWith :: (b -> b -> Bool) -> [b] -> [[b]]
   groupWith _ [] = []
   groupWith isMatched (z:zs) =
     (z : filter (isMatched z) zs) :
          groupWith isMatched (filter (not . isMatched z) zs)
+
+  collapseRange :: [Output a] -> [Output a] -> [Output a]
   collapseRange ys zs
     | length ys >= 3
     , Just yhead <- headMay ys
@@ -767,6 +770,8 @@ groupAndCollapseCitations citeGroupDelim yearSuffixDelim afterCollapseDelim
       if null zs
          then []
          else maybe NullOutput literal (formatDelimiter f) : zs
+
+  collapseGroup :: Collapsing -> [Output a] -> [Output a] -> [Output a]
   collapseGroup _ [] zs = zs
   collapseGroup collapseType (y:ys) zs =
     let ys' = y : map (transform removeNames) ys
@@ -802,6 +807,8 @@ groupAndCollapseCitations citeGroupDelim yearSuffixDelim afterCollapseDelim
             [d | Tagged (TagYearSuffix d) _ <- universe y]) of
         ([c],[d]) -> d == c + 1
         _   -> False
+
+  rangifyGroup :: [Output a] -> Output a
   rangifyGroup zs
     | length zs >= 3
     , Just zhead <- headMay zs
@@ -811,10 +818,14 @@ groupAndCollapseCitations citeGroupDelim yearSuffixDelim afterCollapseDelim
   rangifyGroup [z] = z
   rangifyGroup zs = Formatted mempty{ formatDelimiter = yearSuffixDelim
                                     } zs
+
+  yearSuffixGroup :: Bool -> [Output a] -> Output a
   yearSuffixGroup _ [x] = x
   yearSuffixGroup useRanges zs  =
     Formatted mempty{ formatDelimiter = yearSuffixDelim }
       $ if useRanges then collapseRanges zs else zs
+
+  collapseYearSuffix :: Collapsing -> [Output a] -> [Output a]
   collapseYearSuffix CollapseYearSuffix zs =
     reverse $ yearSuffixGroup False cur : items
    where
@@ -824,12 +835,19 @@ groupAndCollapseCitations citeGroupDelim yearSuffixDelim afterCollapseDelim
    where
      (cur, items) = foldl' (goYearSuffix True) ([], []) zs
   collapseYearSuffix _ zs = zs
+
+  getDates :: Output a -> [Date]
   getDates x = [d | Tagged (TagDate d) _ <- universe x]
+
+  getYears :: Output a -> [[Maybe Int]]
   getYears x = [map (\case
                         DateParts (y:_) -> Just y
                         _               -> Nothing) (dateParts d)
                 | d <- getDates x
                 , isNothing (dateLiteral d)]
+
+  goYearSuffix :: Bool -> ([Output a], [Output a]) -> Output a
+               -> ([Output a], [Output a])
   goYearSuffix useRanges (cur, items) item =
     case cur of
       []     -> ([item], items)
@@ -839,6 +857,7 @@ groupAndCollapseCitations citeGroupDelim yearSuffixDelim afterCollapseDelim
               items)
         | otherwise -> ([item], yearSuffixGroup useRanges (z:zs) : items)
 
+  isAdjacentCitationNumber :: Output a -> Output a -> Bool
   isAdjacentCitationNumber
      (Tagged (TagItem _ _)
        (Formatted _f1 [Tagged (TagCitationNumber n1) _xs1]))
@@ -850,8 +869,10 @@ groupAndCollapseCitations citeGroupDelim yearSuffixDelim afterCollapseDelim
      (Tagged (TagItem _ _) (Tagged (TagCitationNumber n2) _xs2))
     = n2 == n1 + 1
   isAdjacentCitationNumber _ _ = False
+
+  sameNames :: Output a -> Output a -> Bool
   sameNames x y =
-    case (extractTags x, extractTags y) of
+    case (extractTagged x, extractTagged y) of
       (Just (Tagged (TagNames t1 _nf1 ns1) ws1),
        Just (Tagged (TagNames t2 _nf2 ns2) ws2))
         -> t1 == t2 && (if ns1 == ns2
@@ -863,7 +884,9 @@ groupAndCollapseCitations citeGroupDelim yearSuffixDelim afterCollapseDelim
         -> True
           -- case where title is substituted
       _ -> False
-  extractTags x =
+
+  extractTagged :: Output a -> Maybe (Output a)
+  extractTagged x =
     let items = [y | y@(Tagged (TagItem ty _) _) <- universe x
                    , ty /= AuthorOnly]
         names = [y | y@(Tagged TagNames{} _) <- concatMap universe items]
@@ -871,6 +894,7 @@ groupAndCollapseCitations citeGroupDelim yearSuffixDelim afterCollapseDelim
     in  if null items
            then Nothing
            else listToMaybe names <|> listToMaybe dates
+
 groupAndCollapseCitations _ _ _ _ x = x
 
 takeSeq :: Show a => (a -> a -> Bool) -> [a] -> ([a], [a])
@@ -886,6 +910,9 @@ groupSuccessive isAdjacent zs =
     ([],_)  -> []
     (xs,ys) -> xs : groupSuccessive isAdjacent ys
 
+--
+-- Sorting
+--
 
 evalSortKeys :: CiteprocOutput a
              => Layout a
