@@ -652,33 +652,23 @@ disambiguateCitations style bibSortKeyMap citations = do
                    []       -> Nothing)
         $ groupBy (\(x,_) (y,_) -> x == y)
         $ sortOn fst
-        [let tags = takeNamesOrDate (universe x) in
-             (outputToText x, (iid, (getNames tags, getDates tags)))
+        [let xs = universe x in
+             (outputToText x, (iid, (getNames xs, getDates xs)))
         | (Tagged (TagItem NormalCite iid) x) <- concatMap universe cs]
 
-  toDisambData t (id', (ns', ds')) = DisambData id' ns' ds' t -- TODO mempty
+  toDisambData t (id', (ns', ds')) = DisambData id' ns' ds' t
 
-  -- take names, date, or citation-label (which also gets year suffix).
-  takeNamesOrDate :: CiteprocOutput a => [Output a] -> [Tag]
-  takeNamesOrDate (Tagged t@TagNames{} _ : xs) =
-    t : takeNamesOrDate xs
-  takeNamesOrDate (Tagged t@TagDate{} _ : xs) =
-    t : takeNamesOrDate xs
-  takeNamesOrDate (Tagged t@TagCitationLabel _ : xs) =
-    t : takeNamesOrDate xs
-  takeNamesOrDate (_ : xs) =
-    takeNamesOrDate xs
-  takeNamesOrDate [] = []
+  getNames :: [Output a] -> [Name]
+  getNames (Tagged (TagNames _ _ ns) _ : xs)
+                      = ns ++ getNames xs
+  getNames (_ : xs)   = getNames xs
+  getNames []         = []
 
-  getNames :: [Tag] -> [Name]
-  getNames (TagNames _ _ ns : xs) = ns ++ getNames xs
-  getNames (_ : xs)               = getNames xs
-  getNames []                     = []
-
-  getDates :: [Tag] -> [Date]
-  getDates (TagDate d : xs)     = d : getDates xs
-  getDates (_ : xs)             = getDates xs
-  getDates []                   = []
+  getDates :: [Output a] -> [Date]
+  getDates (Tagged (TagDate d) _ : xs)
+                      = d : getDates xs
+  getDates (_ : xs)   = getDates xs
+  getDates []         = []
 
 
 
