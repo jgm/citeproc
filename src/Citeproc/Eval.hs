@@ -393,17 +393,11 @@ disambiguateCitations style bibSortKeyMap citations = do
   let refIds = M.keys refs
   let citeIds = Set.fromList $
                    concatMap (map citationItemId . citationItems) citations
-  let ghostCitations = [CitationItem ident Nothing Nothing
-                            NormalCite Nothing Nothing
+  let ghostItems = [CitationItem ident Nothing Nothing NormalCite Nothing Nothing
                        | ident <- refIds
                        , not (ident `Set.member` citeIds)]
-  allCites <- withRWST (\ctx st -> (ctx,
-                                    st { stateLastCitedMap = mempty
-                                       , stateNoteMap = mempty })) $
-                mapM (\item ->
-                        Tagged (TagItem NormalCite (citationItemId item)) . grouped <$>
-                                 evalItem (styleCitation style) ([], item))
-                       (concatMap citationItems citations ++ ghostCitations)
+  let allItems = concatMap citationItems citations ++ ghostItems
+  allCites <- renderItems allItems
 
   mblang <- asks (localeLanguage . contextLocale)
   styleOpts <- asks contextStyleOptions
@@ -459,14 +453,7 @@ disambiguateCitations style bibSortKeyMap citations = do
                      (unReferenceMap $ stateRefMap st)
                      refIds }
            -- redo citations
-           withRWST (\ctx st -> (ctx,
-                                 st { stateLastCitedMap = mempty
-                                    , stateNoteMap = mempty })) $
-
-             mapM (\item ->
-               Tagged (TagItem NormalCite (citationItemId item)) . grouped <$>
-                          evalItem (styleCitation style) ([], item))
-                    (concatMap citationItems citations ++ ghostCitations)
+           renderItems allItems
 
   case getAmbiguities allCites' of
     []          -> return ()
@@ -477,6 +464,14 @@ disambiguateCitations style bibSortKeyMap citations = do
      mapM (evalLayout False (styleCitation style)) (zip [1..] citations)
 
  where
+
+  renderItems = withRWST (\ctx st -> (ctx,
+                                      st { stateLastCitedMap = mempty
+                                         , stateNoteMap = mempty })) .
+                  mapM (\item ->
+                          Tagged (TagItem NormalCite (citationItemId item)) . grouped <$>
+                                   evalItem (styleCitation style) ([], item))
+
   analyzeAmbiguities :: Maybe Lang
                      -> M.Map ItemId [SortKeyValue]
                      -> DisambiguationStrategy
