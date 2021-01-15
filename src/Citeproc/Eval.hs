@@ -489,7 +489,7 @@ disambiguateCitations style bibSortKeyMap citations = do
     -- add names to et al.
     return ambiguities
       >>= (\as ->
-           (if disambiguateAddNames strategy
+           (if not (null as) && disambiguateAddNames strategy
                then do
                  mapM_ (tryAddNames mblang (disambiguateAddGivenNames strategy)) as
                  refreshAmbiguities as
@@ -497,12 +497,12 @@ disambiguateCitations style bibSortKeyMap citations = do
                  return as))
       >>= (\as ->
            (case disambiguateAddGivenNames strategy of
-                  Just ByCite -> do
+                  Just ByCite | not (null as) -> do
                      mapM_ (tryAddGivenNames mblang) as
                      refreshAmbiguities as
                   _           -> return as))
       >>= (\as ->
-           (if disambiguateAddYearSuffix strategy
+           (if not (null as) && disambiguateAddYearSuffix strategy
                then do
                  addYearSuffixes bibSortKeyMap as
                  refreshAmbiguities as
