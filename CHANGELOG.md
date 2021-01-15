@@ -1,5 +1,19 @@
 # citeproc changelog
 
+## 0.3.0.4
+
+  * Improve disambiguation code.  Add type signatures,
+    move some functions to the top-level, and make the
+    logic clearer and more efficient.
+  * Re-render after each stage of ambiguity resolution
+    instead of relying on analysis of names and dates.
+    This is necessary especially for styles like
+    chicago-note-bibliography which use titles in
+    citations.  Closes #44.  No measurable
+    performance impact.
+  * Update test suite from upstream.
+  * Update `it-IT` locale.
+
 ## 0.3.0.3
 
   * Fix author-only citations (#43).  We got bad results with some
