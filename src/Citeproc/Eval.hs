@@ -380,6 +380,7 @@ data DisambData =
   { ddItem       :: ItemId
   , ddNames      :: [Name]
   , ddDates      :: [Date]
+  , ddRendered   :: Text
   } deriving (Eq, Ord, Show)
 
 disambiguateCitations :: CiteprocOutput a
@@ -392,16 +393,18 @@ disambiguateCitations style bibSortKeyMap citations = do
   let refIds = M.keys refs
   let citeIds = Set.fromList $
                    concatMap (map citationItemId . citationItems) citations
-  let ghostCitations = [Citation Nothing Nothing
-                          [CitationItem ident Nothing Nothing
-                            NormalCite Nothing Nothing]
+  let ghostCitations = [CitationItem ident Nothing Nothing
+                            NormalCite Nothing Nothing
                        | ident <- refIds
                        , not (ident `Set.member` citeIds)]
   allCites <- withRWST (\ctx st -> (ctx,
                                     st { stateLastCitedMap = mempty
                                        , stateNoteMap = mempty })) $
-               mapM (evalLayout False (styleCitation style))
-                            (zip [1..] (citations ++ ghostCitations))
+                mapM (\item ->
+                        Tagged (TagItem NormalCite (citationItemId item)) . grouped <$>
+                                 evalItem (styleCitation style) ([], item))
+                       (concatMap citationItems citations ++ ghostCitations)
+
   mblang <- asks (localeLanguage . contextLocale)
   styleOpts <- asks contextStyleOptions
   let strategy = styleDisambiguation styleOpts
@@ -459,17 +462,20 @@ disambiguateCitations style bibSortKeyMap citations = do
            withRWST (\ctx st -> (ctx,
                                  st { stateLastCitedMap = mempty
                                     , stateNoteMap = mempty })) $
-             mapM (evalLayout False (styleCitation style))
-                   (zip [1..] (citations ++ ghostCitations))
+
+             mapM (\item ->
+               Tagged (TagItem NormalCite (citationItemId item)) . grouped <$>
+                          evalItem (styleCitation style) ([], item))
+                    (concatMap citationItems citations ++ ghostCitations)
 
   case getAmbiguities allCites' of
-    []          -> return $ take (length citations) allCites'
-    ambiguities -> do
-      analyzeAmbiguities mblang bibSortKeyMap strategy (map snd ambiguities)
-      withRWST (\ctx st -> (ctx,
-                            st { stateLastCitedMap = mempty
-                               , stateNoteMap = mempty })) $
-        mapM (evalLayout False (styleCitation style)) (zip [1..] citations)
+    []          -> return ()
+    ambiguities -> analyzeAmbiguities mblang bibSortKeyMap strategy
+                     (map snd ambiguities)
+  withRWST (\ctx st -> (ctx,
+                        st { stateLastCitedMap = mempty
+                           , stateNoteMap = mempty })) $
+     mapM (evalLayout False (styleCitation style)) (zip [1..] citations)
 
  where
   analyzeAmbiguities :: Maybe Lang
@@ -648,10 +654,9 @@ disambiguateCitations style bibSortKeyMap citations = do
         $ sortOn fst
         [let (tags, texts) = unzip $ takeNamesOrDate (universe x) in
              (T.unwords texts, (iid, (getNames tags, getDates tags)))
-        | (Tagged (TagItem ty iid) x) <- concatMap universe cs,
-                  ty /= AuthorOnly]
+        | (Tagged (TagItem NormalCite iid) x) <- concatMap universe cs]
 
-  toDisambData (id', (ns', ds')) = DisambData id' ns' ds'
+  toDisambData (id', (ns', ds')) = DisambData id' ns' ds' mempty -- TODO mempty
 
   -- take names, date, or citation-label (which also gets year suffix).
   takeNamesOrDate :: CiteprocOutput a => [Output a] -> [(Tag, Text)]
