@@ -383,7 +383,7 @@ data DisambData =
   , ddRendered   :: Text
   } deriving (Eq, Ord, Show)
 
-disambiguateCitations :: CiteprocOutput a
+disambiguateCitations :: forall a . CiteprocOutput a
                       => Style a
                       -> M.Map ItemId [SortKeyValue]
                       -> [Citation a]
@@ -465,6 +465,7 @@ disambiguateCitations style bibSortKeyMap citations = do
 
  where
 
+  renderItems :: [CitationItem a] -> Eval a [Output a]
   renderItems = withRWST (\ctx st -> (ctx,
                                       st { stateLastCitedMap = mempty
                                          , stateNoteMap = mempty })) .
@@ -472,9 +473,15 @@ disambiguateCitations style bibSortKeyMap citations = do
                           Tagged (TagItem NormalCite (citationItemId item)) . grouped <$>
                                    evalItem (styleCitation style) ([], item))
 
+  refreshAmbiguities :: [[DisambData]] -> Eval a [[DisambData]]
   refreshAmbiguities = fmap (concatMap getAmbiguities) .
                             mapM (renderItems . map (basicItem . ddItem))
 
+  analyzeAmbiguities :: Maybe Lang
+                     -> M.Map ItemId [SortKeyValue]
+                     -> DisambiguationStrategy
+                     -> [[DisambData]]
+                     -> Eval a ()
   analyzeAmbiguities mblang bibSortKeyMap' strategy ambiguities = do
     -- add names to et al.
     return ambiguities
@@ -499,7 +506,7 @@ disambiguateCitations style bibSortKeyMap citations = do
                else return as))
       >>= mapM_ tryDisambiguateCondition
 
-
+  basicItem :: ItemId -> CitationItem a
   basicItem iid = CitationItem
     { citationItemId      = iid
     , citationItemLabel   = Nothing
@@ -508,7 +515,6 @@ disambiguateCitations style bibSortKeyMap citations = do
     , citationItemPrefix  = Nothing
     , citationItemSuffix  = Nothing
     }
-
 
   isDisambiguated :: Maybe Lang
                   -> Maybe GivenNameDisambiguationRule
@@ -539,6 +545,10 @@ disambiguateCitations style bibSortKeyMap citations = do
         Just ByCite -> id -- hints will be added later
         _ -> map (\name -> name{ nameGiven = Nothing })
 
+  tryAddNames :: Maybe Lang
+              -> Maybe GivenNameDisambiguationRule
+              -> [DisambData]
+              -> Eval a ()
   tryAddNames mblang mbrule bs =
                        (case mbrule of
                             Just ByCite -> bs <$ tryAddGivenNames mblang bs
@@ -575,6 +585,9 @@ disambiguateCitations style bibSortKeyMap citations = do
     _ <- foldM go as correspondingNames
     return ()
 
+  addYearSuffixes :: M.Map ItemId [SortKeyValue]
+                  -> [[DisambData]]
+                  -> Eval a ()
   addYearSuffixes bibSortKeyMap' as = do
     let allitems = concat as
     let companions a =
@@ -590,6 +603,7 @@ disambiguateCitations style bibSortKeyMap citations = do
                  $ stateRefMap st }
     mapM_ (\xs -> zipWithM addYearSuffix (map ddItem xs) [1..]) groups
 
+  tryDisambiguateCondition :: [DisambData] -> Eval a ()
   tryDisambiguateCondition as =
     case as of
       [] -> return ()
@@ -599,6 +613,9 @@ disambiguateCitations style bibSortKeyMap citations = do
                     (unReferenceMap (stateRefMap st))
                     xs }
 
+  alterReferenceDisambiguation :: (DisambiguationData -> DisambiguationData)
+                               -> Reference a
+                               -> Reference a
   alterReferenceDisambiguation f r =
         r{ referenceDisambiguation = f <$>
              case referenceDisambiguation r of
@@ -611,6 +628,7 @@ disambiguateCitations style bibSortKeyMap citations = do
                  }
                Just x  -> Just x }
 
+  initialsMatch :: Maybe Lang -> Name -> Name -> Bool
   initialsMatch mblang x y =
     case (nameGiven x, nameGiven y) of
       (Just x', Just y') ->
@@ -618,6 +636,7 @@ disambiguateCitations style bibSortKeyMap citations = do
           initialize mblang True False "" y'
       _ -> False
 
+  addNameHint :: Maybe Lang -> [Name] -> (ItemId, Name) -> Eval a (Maybe ItemId)
   addNameHint mblang names (item, name) = do
     let familyMatches = [n | n <- names
                            , n /= name
@@ -634,24 +653,33 @@ disambiguateCitations style bibSortKeyMap citations = do
               $ unReferenceMap (stateRefMap st) }
         return $ Just item
 
+  setNameHint :: NameHints -> Name -> ItemId
+              -> M.Map ItemId (Reference a) -> M.Map ItemId (Reference a)
   setNameHint hint name = M.adjust
          (alterReferenceDisambiguation
            (\d -> d{ disambNameMap =
                        M.insert name hint
                        (disambNameMap d) }))
 
+  setEtAlNames :: Maybe Int -> ItemId
+               -> M.Map ItemId (Reference a) -> M.Map ItemId (Reference a)
   setEtAlNames x = M.adjust
          (alterReferenceDisambiguation
            (\d -> d{ disambEtAlNames = x }))
 
+  setYearSuffix :: Int -> ItemId
+                -> M.Map ItemId (Reference a) -> M.Map ItemId (Reference a)
   setYearSuffix x = M.adjust
          (alterReferenceDisambiguation
            (\d -> d{ disambYearSuffix = Just x }))
 
+  setDisambCondition :: Bool -> ItemId
+                     -> M.Map ItemId (Reference a) -> M.Map ItemId (Reference a)
   setDisambCondition x = M.adjust
          (alterReferenceDisambiguation
            (\d -> d{ disambCondition = x }))
 
+  getAmbiguities :: [Output a] -> [[DisambData]]
   getAmbiguities =
           mapMaybe
              (\zs ->
@@ -668,6 +696,7 @@ disambiguateCitations style bibSortKeyMap citations = do
         . sortOn ddRendered
         . map toDisambData
 
+  toDisambData :: Output a -> DisambData
   toDisambData (Tagged (TagItem NormalCite iid) x) =
     let xs = universe x
         ns' = getNames xs
@@ -687,8 +716,6 @@ disambiguateCitations style bibSortKeyMap citations = do
                       = d : getDates xs
   getDates (_ : xs)   = getDates xs
   getDates []         = []
-
-
 
 groupAndCollapseCitations :: CiteprocOutput a
                           => Text
