@@ -472,26 +472,32 @@ disambiguateCitations style bibSortKeyMap citations = do
                           Tagged (TagItem NormalCite (citationItemId item)) . grouped <$>
                                    evalItem (styleCitation style) ([], item))
 
-  recalculateAmbiguities = fmap (concatMap getAmbiguities) .
+  refreshAmbiguities = fmap (concatMap getAmbiguities) .
                             mapM (renderItems . map (basicItem . ddItem))
 
   analyzeAmbiguities mblang bibSortKeyMap' strategy ambiguities = do
     -- add names to et al.
-    as1 <- if disambiguateAddNames strategy
-              then mapM (tryAddNames mblang
-                       (disambiguateAddGivenNames strategy))
-                       ambiguities
-              else return ambiguities
-    as2 <- case disambiguateAddGivenNames strategy of
-             Just ByCite -> mapM (tryAddGivenNames mblang) as1
-             _           -> return as1
-    as3 <- if disambiguateAddYearSuffix strategy
-              then do
-                addYearSuffixes bibSortKeyMap' as2
-                return []
-              else return as2
-    as4 <- recalculateAmbiguities as3
-    mapM_ tryDisambiguateCondition as4
+    return ambiguities
+      >>= (\as ->
+           (if disambiguateAddNames strategy
+               then do
+                 mapM_ (tryAddNames mblang (disambiguateAddGivenNames strategy)) as
+                 refreshAmbiguities as
+               else
+                 return as))
+      >>= (\as ->
+           (case disambiguateAddGivenNames strategy of
+                  Just ByCite -> do
+                     mapM_ (tryAddGivenNames mblang) as
+                     refreshAmbiguities as
+                  _           -> return as))
+      >>= (\as ->
+           (if disambiguateAddYearSuffix strategy
+               then do
+                 addYearSuffixes bibSortKeyMap' as
+                 refreshAmbiguities as
+               else return as))
+      >>= mapM_ tryDisambiguateCondition
 
 
   basicItem iid = CitationItem
@@ -543,7 +549,7 @@ disambiguateCitations style bibSortKeyMap citations = do
    where
      maxnames = fromMaybe 0 . maximumMay . map (length . ddNames)
      go n as
-       | n > maxnames as = return as
+       | n > maxnames as = return ()
        | otherwise = do
            let ds = filter (isDisambiguated mblang mbrule n as) as
            if null ds
@@ -557,7 +563,7 @@ disambiguateCitations style bibSortKeyMap citations = do
 
   tryAddGivenNames :: Maybe Lang
                    -> [DisambData]
-                   -> Eval a [DisambData]
+                   -> Eval a ()
   tryAddGivenNames mblang as = do
     let correspondingNames =
            map (zip (map ddItem as)) $ transpose $ map ddNames as
@@ -566,7 +572,8 @@ disambiguateCitations style bibSortKeyMap citations = do
           hintedIds <- Set.fromList . catMaybes <$>
                           mapM (addNameHint mblang (map snd ns)) ns
           return $ filter (\x -> ddItem x `Set.notMember` hintedIds) as'
-    foldM go as correspondingNames
+    _ <- foldM go as correspondingNames
+    return ()
 
   addYearSuffixes bibSortKeyMap' as = do
     let allitems = concat as
