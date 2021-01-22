@@ -1475,7 +1475,10 @@ eText (TextTerm term) = do
               mbsuff <- getYearSuffix
               case mbsuff of
                 Nothing  -> return t'
-                Just suff -> return $ grouped [t', suff]
+                Just suff
+                  | termForm term == Long
+                    -> return $ grouped [t', Literal (fromText " "), suff]
+                  | otherwise -> return $ grouped [t', suff]
             else return t'
   return $ Tagged TagTerm t''
 
