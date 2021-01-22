@@ -1,5 +1,10 @@
 # citeproc changelog
 
+## 0.3.0.5
+
+  * Add a space between "no date" term and disambiguator
+    if the long form is used (#47).
+
 ## 0.3.0.4
 
   * Improve disambiguation code.  Add type signatures,
