@@ -1,5 +1,10 @@
 # citeproc changelog
 
+## 0.3.0.6
+
+  * Fix infinite loop in `fixPunct` (#49).  In a few rare cases
+    `fixPunct` would hang.
+
 ## 0.3.0.5
 
   * Add a space between "no date" term and disambiguator
