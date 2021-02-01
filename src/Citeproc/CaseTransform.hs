@@ -17,7 +17,7 @@ module Citeproc.CaseTransform
 where
 
 import Data.Ord ()
-import Data.Char (isUpper, isLower, isAscii)
+import Data.Char (isUpper, isLower)
 import Data.Text (Text)
 import qualified Data.Text as T
 import Citeproc.Types (Lang(..))
@@ -94,7 +94,6 @@ withTitleCase = CaseTransformer go
      | isMixedCase chunk = chunk
      | T.all isUpper chunk = chunk  -- spec doesn't say this but tests do
                                     -- textcase_TitleCapitalization.txt
-     | T.any (not . isAscii) chunk = chunk
      | st == StartSentence || st == Start =
        capitalizeText mblang $ Unicode.toLower mblang chunk
      | st == AfterWordEnd
