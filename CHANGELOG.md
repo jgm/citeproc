@@ -1,5 +1,11 @@
 # citeproc changelog
 
+## 0.3.0.7
+
+  * Remove check for ASCII in case transform code.
+    Previously we weren't doing case transform on words
+    containing non-ASCII characters.
+
 ## 0.3.0.6
 
   * Fix infinite loop in `fixPunct` (#49).  In a few rare cases
