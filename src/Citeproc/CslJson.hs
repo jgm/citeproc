@@ -545,11 +545,7 @@ caseTransform' f lev el =
   hasWordBreak = any (T.any isWordBreak)
   splitUp = T.groupBy sameType
   sameType c d =
-    -- note that non-English characters get treated differently
-    -- by titlecase transformation
-    (isAscii c && isAlphaNum c && isAscii d && isAlphaNum d) ||
-    (not (isAscii c) && isAlphaNum c && not (isAscii d) && isAlphaNum d) ||
-    (isSpace c && isSpace d)
+    (isAlphaNum c && isAlphaNum d) || (isSpace c && isSpace d)
 
 caseTransform :: Maybe Lang
               -> CaseTransformer
