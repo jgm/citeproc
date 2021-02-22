@@ -1608,12 +1608,8 @@ newtype Abbreviations =
   deriving (Show, Eq, Ord)
 
 instance FromJSON Abbreviations where
-  parseJSON (Object v)   =
-    Abbreviations <$>
-      (parseJSON (Object v) >>= maybe
-         (fail "abbreviations lacks a default key")
-         return . M.lookup ("default" :: Text))
-  parseJSON _            = fail "Could not read abbreviations"
+  parseJSON = withObject "Abbreviations" $ \v ->
+    Abbreviations <$> v .: "default"
 
 instance ToJSON Abbreviations where
   toJSON (Abbreviations m) =
