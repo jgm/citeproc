@@ -1,5 +1,11 @@
 # citeproc changelog
 
+## 0.3.0.8
+
+ * In parsing abbreviations JSON, ignore top-level fields
+   besides "default" (#57), e.g. "info" which is used in Zotero's
+   default abbreviations file.
+
 ## 0.3.0.7
 
   * Remove check for ASCII in case transform code.
