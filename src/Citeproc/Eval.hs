@@ -43,6 +43,7 @@ data Context a =
   , contextPosition            :: [Position]
   , contextInSubstitute        :: Bool
   , contextInSortKey           :: Bool
+  , contextInBibliography      :: Bool
   , contextSubstituteNamesForm :: Maybe NamesFormat
   }
   deriving (Show)
@@ -101,6 +102,7 @@ evalStyle style mblang refs' citations =
       , contextPosition            = []
       , contextInSubstitute        = False
       , contextInSortKey           = False
+      , contextInBibliography      = False
       , contextSubstituteNamesForm = Nothing
       }
       EvalState
@@ -277,7 +279,9 @@ evalStyle style mblang refs' citations =
       -- of year suffixes added in disambiguation)
       bs <- case styleBibliography style of
                Just biblayout
-                 -> mapM (evalLayout True biblayout) (zip [1..] bibCitations)
+                 -> local (\context ->
+                             context{ contextInBibliography = True }) $
+                    mapM (evalLayout biblayout) (zip [1..] bibCitations)
                     >>= \bs ->
                       case styleSubsequentAuthorSubstitute
                             (styleOptions style) of
@@ -467,7 +471,7 @@ disambiguateCitations style bibSortKeyMap citations = do
   withRWST (\ctx st -> (ctx,
                         st { stateLastCitedMap = mempty
                            , stateNoteMap = mempty })) $
-     mapM (evalLayout False (styleCitation style)) (zip [1..] citations)
+     mapM (evalLayout (styleCitation style)) (zip [1..] citations)
 
  where
 
@@ -981,11 +985,10 @@ dateToText = mconcat . map (T.pack . go . coerce) . dateParts
 
 
 evalLayout :: CiteprocOutput a
-            => Bool
-            -> Layout a
+            => Layout a
             -> (Int, Citation a)
             -> Eval a (Output a)
-evalLayout isBibliography layout (citationGroupNumber, citation) = do
+evalLayout layout (citationGroupNumber, citation) = do
   -- this is a hack to ensure that "ibid" detection will work
   -- correctly in a citation starting with an author-only:
   -- the combination AuthorOnly [SuppressAuthor] should not
@@ -1025,6 +1028,8 @@ evalLayout isBibliography layout (citationGroupNumber, citation) = do
   secondFieldAlign [] = []
 
   evalItem' (positionInCitation :: Int, item) = do
+    isBibliography  <- asks contextInBibliography
+
     styleOpts <- asks contextStyleOptions
     let isNote = styleIsNoteStyle styleOpts
     position <- getPosition citationGroupNumber (citationNoteNumber citation)
@@ -1889,6 +1894,14 @@ formatNames :: CiteprocOutput a
             -> Eval a (Output a)
 formatNames namesFormat nameFormat formatting (var, Just (NamesVal names)) =
   do
+  isSubsequent <- (Subsequent `elem`) <$> asks contextPosition
+  isInBibliography <- asks contextInBibliography
+  let (etAlMin, etAlUseFirst) =
+        if not isInBibliography && isSubsequent
+           then (nameEtAlSubsequentMin nameFormat <|> nameEtAlMin nameFormat,
+                 nameEtAlSubsequentUseFirst nameFormat <|>
+                    nameEtAlUseFirst nameFormat)
+           else (nameEtAlMin nameFormat, nameEtAlUseFirst nameFormat)
   inSortKey <- asks contextInSortKey
   disamb <- gets (referenceDisambiguation . stateReference)
   names' <- zipWithM (formatName nameFormat formatting) [1..] names
@@ -1917,10 +1930,9 @@ formatNames namesFormat nameFormat formatting (var, Just (NamesVal names)) =
                                                    , termForm = Long }
                   Nothing -> return Nothing
   let etAlUseLast = nameEtAlUseLast nameFormat
-  let etAlThreshold = case nameEtAlMin nameFormat of
+  let etAlThreshold = case etAlMin of
                         Just x | numnames >= x
-                          -> case (disamb >>= disambEtAlNames,
-                                    nameEtAlUseFirst nameFormat) of
+                          -> case (disamb >>= disambEtAlNames, etAlUseFirst) of
                                (Just n, Just m) -> Just (max m n)
                                (_, y) -> y
                         _ -> Nothing
