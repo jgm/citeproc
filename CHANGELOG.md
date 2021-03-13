@@ -1,5 +1,9 @@
 # citeproc changelog
 
+## 0.3.0.9
+
+ * Implement `et-al-subsequent-min` and `et-al-subsequent-use-first` (#60).
+
 ## 0.3.0.8
 
  * In parsing abbreviations JSON, ignore top-level fields
