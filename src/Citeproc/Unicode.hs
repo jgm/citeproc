@@ -12,7 +12,7 @@ where
 #ifdef MIN_VERSION_text_icu
 import qualified Data.Text.ICU as ICU
 #else
-import qualified Data.RFC5051 as RFC5051
+import qualified UnicodeCollation as U
 #endif
 import Data.Text (Text)
 import qualified Data.Text as T
@@ -79,6 +79,11 @@ comp :: Maybe Lang -> Text -> Text -> Ordering
 #ifdef MIN_VERSION_text_icu
 comp mblang = ICU.collate (ICU.collator (toICULocale mblang))
 #else
-comp _mblang = RFC5051.compareUnicode
+comp mblang = U.collate collator
+ where
+  collator = U.mkCollator U.collationOptions{
+                          U.optCollation = maybe U.rootCollation
+                               (U.localizedCollation . renderLang) mblang,
+                          U.optVariableWeighting = U.Shifted }
 #endif
 

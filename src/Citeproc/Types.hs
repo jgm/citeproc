@@ -67,6 +67,7 @@ module Citeproc.Types
   , SortDirection(..)
   , SortKey(..)
   , SortKeyValue(..)
+  , compSortKeyValues
   , LayoutOptions(..)
   , Collapsing(..)
   , Layout(..)
@@ -127,9 +128,13 @@ import qualified Data.Attoparsec.Text as P
 import Safe (readMay)
 import Data.String (IsString)
 import Citeproc.Unicode (Lang(..), parseLang, renderLang)
-import qualified Citeproc.Unicode as Unicode
 
 -- import Debug.Trace
+--
+-- traceShowIdLabeled :: Show a => String -> a -> a
+-- traceShowIdLabeled label x =
+--   trace (label ++ ": " ++ show x) x
+
 -- import Text.Show.Pretty (ppShow)
 --
 -- ppTrace :: Show a => a -> a
@@ -576,38 +581,48 @@ data SortKey a =
   deriving (Show, Eq)
 
 data SortKeyValue =
-  SortKeyValue SortDirection (Maybe Lang) (Maybe [Text])
+  SortKeyValue SortDirection (Maybe [Text])
   deriving (Show, Eq)
 
 -- absence should sort AFTER all values
 -- see sort_StatusFieldAscending.txt, sort_StatusFieldDescending.txt
-instance Ord SortKeyValue where
-  SortKeyValue Ascending _ _ <= SortKeyValue Ascending _ Nothing
-    = True
-  SortKeyValue Ascending _ Nothing <= SortKeyValue Ascending _ (Just _)
-    = False
-  SortKeyValue Ascending mblang (Just t1) <=
-    SortKeyValue Ascending _ (Just t2) =
-    keyLEQ mblang t1 t2
-  SortKeyValue Descending _ _ <= SortKeyValue Descending _ Nothing
-    = True
-  SortKeyValue Descending _ Nothing <= SortKeyValue Descending _ (Just _)
-    = False
-  SortKeyValue Descending mblang (Just t1) <=
-    SortKeyValue Descending _ (Just t2) =
-    keyLEQ mblang t2 t1
-  SortKeyValue{} <= SortKeyValue{} = False
+compSortKeyValue :: (Text -> Text -> Ordering)
+                 -> SortKeyValue
+                 -> SortKeyValue
+                 -> Ordering
+compSortKeyValue collate sk1 sk2 =
+  case (sk1, sk2) of
+    (SortKeyValue _ Nothing, SortKeyValue _ Nothing) -> EQ
+    (SortKeyValue _ Nothing, SortKeyValue _ (Just _)) -> GT
+    (SortKeyValue _ (Just _), SortKeyValue _ Nothing) -> LT
+    (SortKeyValue Ascending (Just t1), SortKeyValue Ascending (Just t2)) ->
+      collateKey t1 t2
+    (SortKeyValue Descending (Just t1), SortKeyValue Descending (Just t2))->
+      collateKey t2 t1
+    _ -> EQ
+ where
+  collateKey :: [Text] -> [Text] -> Ordering
+  collateKey [] [] = EQ
+  collateKey [] (_:_) = LT
+  collateKey (_:_) [] = GT
+  collateKey (x:xs) (y:ys) =
+    case collate x y of
+      EQ -> collateKey xs ys
+      GT -> GT
+      LT -> LT
 
--- We need special comparison operators to ensure that
--- á sorts before b, for example.
-keyLEQ :: Maybe Lang -> [Text] -> [Text] -> Bool
-keyLEQ _ _  [] = False
-keyLEQ _ [] _  = True
-keyLEQ mblang (x:xs) (y:ys) =
-  case Unicode.comp mblang x y of
-    EQ -> keyLEQ mblang xs ys
-    GT -> False
-    LT -> True
+compSortKeyValues :: (Text -> Text -> Ordering)
+                  -> [SortKeyValue]
+                  -> [SortKeyValue]
+                  -> Ordering
+compSortKeyValues _ [] [] = EQ
+compSortKeyValues _ [] (_:_) = LT
+compSortKeyValues _ (_:_) [] = GT
+compSortKeyValues collate (x:xs) (y:ys) =
+  case compSortKeyValue collate x y of
+    EQ -> compSortKeyValues collate xs ys
+    GT -> GT
+    LT -> LT
 
 data Layout a =
   Layout
