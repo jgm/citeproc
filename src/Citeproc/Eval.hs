@@ -968,15 +968,17 @@ normalizeSortKey =
                   else c) .
   T.filter (/= '-')
 
--- Note!  This prints negative (BC) dates as -(999,999,999 + y)
--- so they sort properly. Do not use out of context of sort keys.
+-- Note!  This prints negative (BC) dates as N(999,999,999 + y)
+-- and positive (AD) dates as Py so they sort properly.  (Note that
+-- our unicode sorting ignores punctuation, so we use a letter
+-- rather than -.) Do not use out of context of sort keys.
 dateToText :: Date -> Text
 dateToText = mconcat . map (T.pack . go . coerce) . dateParts
  where
   go :: [Int] -> String
   go [] = ""
-  go [y] = toYear y
-  go [y,m] = toYear y <> printf "%02d" m
+  go [y] = toYear y <> "0000"
+  go [y,m] = toYear y <> printf "%02d" m <> "00"
   go (y:m:d:_) = toYear y <> printf "%02d" m <> printf "%02d" d
   toYear :: Int -> String
   toYear y
