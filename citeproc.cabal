@@ -79,9 +79,9 @@ library
                      , pandoc-types >= 1.22 && < 1.23
                      -- , pretty-show
   if flag(icu)
-     build-depends:  text-icu
+     build-depends:    text-icu
   else
-     build-depends:  rfc5051 >= 0.2 && < 0.3
+     build-depends:    unicode-collation >= 0.1 && < 0.2
 
   ghc-options:         -Wall
                        -Wincomplete-record-updates

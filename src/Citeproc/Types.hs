@@ -127,9 +127,13 @@ import qualified Data.Attoparsec.Text as P
 import Safe (readMay)
 import Data.String (IsString)
 import Citeproc.Unicode (Lang(..), parseLang, renderLang)
-import qualified Citeproc.Unicode as Unicode
 
 -- import Debug.Trace
+--
+-- traceShowIdLabeled :: Show a => String -> a -> a
+-- traceShowIdLabeled label x =
+--   trace (label ++ ": " ++ show x) x
+
 -- import Text.Show.Pretty (ppShow)
 --
 -- ppTrace :: Show a => a -> a
@@ -576,38 +580,8 @@ data SortKey a =
   deriving (Show, Eq)
 
 data SortKeyValue =
-  SortKeyValue SortDirection (Maybe Lang) (Maybe [Text])
+  SortKeyValue SortDirection (Maybe [Text])
   deriving (Show, Eq)
-
--- absence should sort AFTER all values
--- see sort_StatusFieldAscending.txt, sort_StatusFieldDescending.txt
-instance Ord SortKeyValue where
-  SortKeyValue Ascending _ _ <= SortKeyValue Ascending _ Nothing
-    = True
-  SortKeyValue Ascending _ Nothing <= SortKeyValue Ascending _ (Just _)
-    = False
-  SortKeyValue Ascending mblang (Just t1) <=
-    SortKeyValue Ascending _ (Just t2) =
-    keyLEQ mblang t1 t2
-  SortKeyValue Descending _ _ <= SortKeyValue Descending _ Nothing
-    = True
-  SortKeyValue Descending _ Nothing <= SortKeyValue Descending _ (Just _)
-    = False
-  SortKeyValue Descending mblang (Just t1) <=
-    SortKeyValue Descending _ (Just t2) =
-    keyLEQ mblang t2 t1
-  SortKeyValue{} <= SortKeyValue{} = False
-
--- We need special comparison operators to ensure that
--- á sorts before b, for example.
-keyLEQ :: Maybe Lang -> [Text] -> [Text] -> Bool
-keyLEQ _ _  [] = False
-keyLEQ _ [] _  = True
-keyLEQ mblang (x:xs) (y:ys) =
-  case Unicode.comp mblang x y of
-    EQ -> keyLEQ mblang xs ys
-    GT -> False
-    LT -> True
 
 data Layout a =
   Layout
@@ -1671,7 +1645,7 @@ instance ToJSON a => ToJSON (Inputs a) where
     , ("references",    toJSON $ inputsReferences inp)
     , ("style",         toJSON $ inputsStyle inp)
     , ("abbreviations", toJSON $ inputsAbbreviations inp)
-    , ("lang",          toJSON $ inputsLang inp)
+    , ("lang",          toJSON $ renderLang <$> inputsLang inp)
     ]
 
 instance (FromJSON a, Eq a) => FromJSON (Inputs a) where
@@ -1680,5 +1654,11 @@ instance (FromJSON a, Eq a) => FromJSON (Inputs a) where
            <*> v .:? "references"
            <*> v .:? "style"
            <*> v .:? "abbreviations"
-           <*> v .:? "lang"
+           <*> (do mbl <- v .:? "lang"
+                   case mbl of
+                     Nothing -> return Nothing
+                     Just l  ->
+                       case parseLang l of
+                         Left _     -> return Nothing
+                         Right lang -> return $ Just lang)
 

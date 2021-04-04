@@ -3,6 +3,7 @@ flags:
     executable: true
     icu: false
 resolver: lts-17.5
-extra-deps: []
+extra-deps:
+- unicode-collation-0.1
 ghc-options:
   "$locals": -fhide-source-paths

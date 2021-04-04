@@ -18,17 +18,22 @@ import Control.Monad (foldM, foldM_, zipWithM, when, unless)
 import qualified Data.Map as M
 import qualified Data.Set as Set
 import Data.Coerce (coerce)
-import Data.List (find, intersperse, sortOn, groupBy, foldl', transpose,
+import Data.List (find, intersperse, sortBy, sortOn, groupBy, foldl', transpose,
                   sort, (\\))
 import Data.Text (Text)
 import qualified Data.Text as T
-import Data.Char (isSpace, isPunctuation, isDigit, isUpper, isLower, isLetter,
+import Data.Char (isSpace, isDigit, isUpper, isLower, isLetter,
                   ord, chr)
 import Text.Printf (printf)
 import Control.Applicative
 import Data.Generics.Uniplate.Operations (universe, transform)
 
--- import Debug.Trace (traceShowId)
+-- import Debug.Trace (trace)
+
+-- traceShowIdLabeled :: Show a => String -> a -> a
+-- traceShowIdLabeled label x =
+--   trace (label ++ ": " ++ show x) x
+
 -- import Text.Show.Pretty (ppShow)
 -- ppTrace :: Show a => a -> a
 -- ppTrace x = trace (ppShow x) x
@@ -36,6 +41,7 @@ import Data.Generics.Uniplate.Operations (universe, transform)
 data Context a =
   Context
   { contextLocale              :: Locale
+  , contextCollate             :: [SortKeyValue] -> [SortKeyValue] -> Ordering
   , contextAbbreviations       :: Maybe Abbreviations
   , contextStyleOptions        :: StyleOptions
   , contextLocator             :: Maybe Text
@@ -46,7 +52,6 @@ data Context a =
   , contextInBibliography      :: Bool
   , contextSubstituteNamesForm :: Maybe NamesFormat
   }
-  deriving (Show)
 
 -- used internally for group elements, which
 -- are skipped if (a) the group calls a variable
@@ -95,6 +100,9 @@ evalStyle style mblang refs' citations =
   ((citationOs, bibliographyOs), warnings) = evalRWS go
      Context
       { contextLocale              = mergeLocales mblang style
+      , contextCollate             = \xs ys ->
+                                       compSortKeyValues (Unicode.comp mblang)
+                                       xs ys
       , contextAbbreviations       = styleAbbreviations style
       , contextStyleOptions        = styleOptions style
       , contextLocator             = Nothing
@@ -143,6 +151,8 @@ evalStyle style mblang refs' citations =
               (map referenceId refs)
       assignCitationNumbers sortedCiteIds
       -- sorting of bibliography, insertion of citation-number
+      collate <- asks contextCollate
+
       (bibCitations, bibSortKeyMap) <-
         case styleBibliography style of
           Nothing -> return ([], mempty)
@@ -156,7 +166,10 @@ evalStyle style mblang refs' citations =
             let sortedIds =
                   if null (layoutSortKeys biblayout)
                      then sortedCiteIds
-                     else sortOn (`M.lookup` bibSortKeyMap)
+                     else sortBy
+                       (\x y -> collate
+                                  (fromMaybe [] $ M.lookup x bibSortKeyMap)
+                                  (fromMaybe [] $ M.lookup y bibSortKeyMap))
                             (map referenceId refs)
             assignCitationNumbers $
               case layoutSortKeys biblayout of
@@ -193,10 +206,13 @@ evalStyle style mblang refs' citations =
       let sortCitationItems citation' =
             citation'{ citationItems =
                           concatMap
-                           (sortOn
-                             (\citeItem ->
-                              M.lookup (citationItemId citeItem)
-                                       sortKeyMap))
+                           (sortBy
+                             (\item1 item2 ->
+                               collate
+                                (fromMaybe [] $ M.lookup
+                                   (citationItemId item1) sortKeyMap)
+                                (fromMaybe [] $ M.lookup
+                                   (citationItemId item2) sortKeyMap)))
                         $ groupBy canGroup
                         $ citationItems citation' }
       let citCitations = map sortCitationItems citations
@@ -598,9 +614,13 @@ addYearSuffixes :: M.Map ItemId [SortKeyValue]
                 -> Eval a ()
 addYearSuffixes bibSortKeyMap' as = do
   let allitems = concat as
+  collate <- asks contextCollate
   let companions a =
-        sortOn
-        (\it -> M.lookup (ddItem it) bibSortKeyMap')
+        sortBy
+        (\item1 item2 ->
+          collate
+            (fromMaybe [] $ M.lookup (ddItem item1) bibSortKeyMap')
+            (fromMaybe [] $ M.lookup (ddItem item2) bibSortKeyMap'))
         (concat [ x | x <- as, a `elem` x ])
   let groups = Set.map companions $ Set.fromList allitems
   let addYearSuffix item suff =
@@ -932,22 +952,20 @@ evalSortKey :: CiteprocOutput a
             -> SortKey a
             -> Eval a SortKeyValue
 evalSortKey citeId (SortKeyMacro sortdir elts) = do
-  mblang <- asks (localeLanguage . contextLocale)
   refmap <- gets stateRefMap
   case lookupReference citeId refmap of
-    Nothing  -> return $ SortKeyValue sortdir mblang Nothing
+    Nothing  -> return $ SortKeyValue sortdir Nothing
     Just ref -> do
         k <- normalizeSortKey . toText .
               renderOutput defaultCiteprocOptions . grouped
               <$> withRWS newContext (mconcat <$> mapM eElement elts)
-        return $ SortKeyValue sortdir mblang (Just k)
+        return $ SortKeyValue sortdir (Just k)
      where
       newContext oldContext s =
         (oldContext, s{ stateReference = ref })
 evalSortKey citeId (SortKeyVariable sortdir var) = do
-  mblang <- asks (localeLanguage . contextLocale)
   refmap <- gets stateRefMap
-  SortKeyValue sortdir mblang <$>
+  SortKeyValue sortdir <$>
     case lookupReference citeId refmap >>= lookupVariable var of
       Nothing           -> return Nothing
       Just (TextVal t)  -> return $ Just $ normalizeSortKey t
@@ -961,9 +979,48 @@ evalSortKey citeId (SortKeyVariable sortdir var) = do
 normalizeSortKey :: Text -> [Text]
 normalizeSortKey = filter (not . T.null) . T.split isWordSep
  where
-  isWordSep c = isSpace c || c == ',' ||
-                c == '’' || c == '‘' || c == '\'' ||
+  isWordSep c = isSpace c || c == '\'' || c == '’' || c == ',' ||
                 c == 'ʾ' || c == 'ʿ' -- ayn/hamza in transliterated arabic
+
+-- absence should sort AFTER all values
+-- see sort_StatusFieldAscending.txt, sort_StatusFieldDescending.txt
+compSortKeyValue :: (Text -> Text -> Ordering)
+                 -> SortKeyValue
+                 -> SortKeyValue
+                 -> Ordering
+compSortKeyValue collate sk1 sk2 =
+  case (sk1, sk2) of
+    (SortKeyValue _ Nothing, SortKeyValue _ Nothing) -> EQ
+    (SortKeyValue _ Nothing, SortKeyValue _ (Just _)) -> GT
+    (SortKeyValue _ (Just _), SortKeyValue _ Nothing) -> LT
+    (SortKeyValue Ascending (Just t1), SortKeyValue Ascending (Just t2)) ->
+      collateKey t1 t2
+    (SortKeyValue Descending (Just t1), SortKeyValue Descending (Just t2))->
+      collateKey t2 t1
+    _ -> EQ
+ where
+  collateKey :: [Text] -> [Text] -> Ordering
+  collateKey [] [] = EQ
+  collateKey [] (_:_) = LT
+  collateKey (_:_) [] = GT
+  collateKey (x:xs) (y:ys) =
+    case collate x y of
+      EQ -> collateKey xs ys
+      GT -> GT
+      LT -> LT
+
+compSortKeyValues :: (Text -> Text -> Ordering)
+                  -> [SortKeyValue]
+                  -> [SortKeyValue]
+                  -> Ordering
+compSortKeyValues _ [] [] = EQ
+compSortKeyValues _ [] (_:_) = LT
+compSortKeyValues _ (_:_) [] = GT
+compSortKeyValues collate (x:xs) (y:ys) =
+  case compSortKeyValue collate x y of
+    EQ -> compSortKeyValues collate xs ys
+    GT -> GT
+    LT -> LT
 
 -- Note!  This prints negative (BC) dates as N(999,999,999 + y)
 -- and positive (AD) dates as Py so they sort properly.  (Note that
@@ -979,8 +1036,8 @@ dateToText = mconcat . map (T.pack . go . coerce) . dateParts
   go (y:m:d:_) = toYear y <> printf "%02d" m <> printf "%02d" d
   toYear :: Int -> String
   toYear y
-    | y < 0     = printf "-%09d" (999999999 + y)
-    | otherwise = printf "0%09d" y
+    | y < 0     = printf "N%09d" (999999999 + y)
+    | otherwise = printf "P%09d" y
 
 
 evalLayout :: CiteprocOutput a
@@ -1087,9 +1144,9 @@ evalItem layout (position, item) = do
         st{ stateReference = ref
           , stateUsedYearSuffix = False }))
         $ do xs <- mconcat <$> mapM eElement (layoutElements layout)
-             let mblang = parseLang <$>
-                          (lookupVariable "language" ref
-                            >>= valToText)
+             let mblang = lookupVariable "language" ref
+                          >>= valToText
+                          >>= either (const Nothing) Just . parseLang
              return $
                case mblang of
                  Nothing   -> xs
@@ -1239,8 +1296,10 @@ withFormatting formatting p = do
   lang <- asks (localeLanguage . contextLocale)
   ref <- gets stateReference
   let reflang = case M.lookup "language" (referenceVariables ref) of
-                  Just (TextVal t)  -> Just $ parseLang t
-                  Just (FancyVal x) -> Just $ parseLang $ toText x
+                  Just (TextVal t)  ->
+                    either (const Nothing) Just $ parseLang t
+                  Just (FancyVal x) ->
+                    either (const Nothing) Just $ parseLang $ toText x
                   _                 -> Nothing
   let mainLangIsEn Nothing = False
       mainLangIsEn (Just l) = langLanguage l == "en"

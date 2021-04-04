@@ -4,42 +4,21 @@ module Citeproc.Unicode
   ( Lang(..),
     parseLang,
     renderLang,
+    lookupLang,
     toUpper,
     toLower,
     comp
   )
 where
+import Text.Collate.Lang (Lang(..), parseLang, renderLang, lookupLang)
 #ifdef MIN_VERSION_text_icu
 import qualified Data.Text.ICU as ICU
 #else
-import qualified Data.RFC5051 as RFC5051
+import qualified Text.Collate as U
 #endif
 import Data.Text (Text)
 import qualified Data.Text as T
-import Data.Aeson (FromJSON (..), ToJSON (..))
-
--- | A parsed IETF language tag, with language and optional variant.
--- For example, @Lang "en" (Just "US")@ corresponds to @en-US@.
-data Lang = Lang{ langLanguage :: Text
-                , langVariant  :: Maybe Text }
-  deriving (Show, Eq, Ord)
-
-instance ToJSON Lang where
-  toJSON = toJSON . renderLang
-
-instance FromJSON Lang where
-  parseJSON = fmap parseLang . parseJSON
-
--- | Render a 'Lang' an an IETF language tag.
-renderLang :: Lang -> Text
-renderLang (Lang l Nothing)  = l
-renderLang (Lang l (Just v)) = l <> "-" <> v
-
--- | Parse an IETF language tag.
-parseLang :: Text -> Lang
-parseLang t = Lang l (snd <$> T.uncons v)
-  where
-   (l,v) = T.break (\c -> c == '-' || c == '_') t
+import Data.Maybe (fromMaybe)
 
 #ifdef MIN_VERSION_text_icu
 toICULocale :: Maybe Lang -> ICU.LocaleName
@@ -53,12 +32,12 @@ toUpper mblang =
    ICU.toUpper (toICULocale mblang)
 #else
 toUpper mblang = T.toUpper .
-  case mblang of
-    Just (Lang "tr" _) -> T.map (\c -> case c of
-                                        'i' -> 'İ'
-                                        'ı' -> 'I'
-                                        _   -> c)
-    _                  -> id
+  case langLanguage <$> mblang of
+    Just "tr" -> T.map (\c -> case c of
+                                'i' -> 'İ'
+                                'ı' -> 'I'
+                                _   -> c)
+    _         -> id
 #endif
 
 toLower :: Maybe Lang -> Text -> Text
@@ -67,18 +46,24 @@ toLower mblang =
    ICU.toLower (toICULocale mblang)
 #else
 toLower mblang = T.toLower .
-  case mblang of
-    Just (Lang "tr" _) -> T.map (\c -> case c of
-                                        'İ' -> 'i'
-                                        'I' -> 'ı'
-                                        _   -> c)
-    _                  -> id
+  case langLanguage <$> mblang of
+    Just "tr" -> T.map (\c -> case c of
+                                'İ' -> 'i'
+                                'I' -> 'ı'
+                                _   -> c)
+    _         -> id
 #endif
 
 comp :: Maybe Lang -> Text -> Text -> Ordering
 #ifdef MIN_VERSION_text_icu
 comp mblang = ICU.collate (ICU.collator (toICULocale mblang))
 #else
-comp _mblang = RFC5051.compareUnicode
+comp mblang =
+  let lang = fromMaybe (Lang "" Nothing Nothing [] [] []) mblang
+      coll = case lookup "u" (langExtensions lang) >>= lookup "ka" of
+                -- default to Shifted variable weighting, unless a variable
+                -- weighting is explicitly specified with the ka keyword:
+                Nothing -> U.setVariableWeighting U.Shifted $ U.collatorFor lang
+                Just _  -> U.collatorFor lang
+   in U.collate coll
 #endif
-

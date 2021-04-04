@@ -124,7 +124,9 @@ getTextContent e = mconcat [t | X.NodeContent t <- X.elementNodes e]
 pLocale :: X.Element -> ElementParser Locale
 pLocale node = do
   let attr = getAttributes node
-  let lang = parseLang <$> lookupAttribute "lang" attr
+  lang <- case lookupAttribute "lang" attr of
+            Nothing -> return Nothing
+            Just l  -> either parseFailure (return . Just) $ parseLang l
   let styleOpts = mconcat . map getAttributes $
                       getChildren "style-options" node
   let addDateElt e m =

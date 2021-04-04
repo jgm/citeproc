@@ -28,67 +28,70 @@ parseLocale t =
        Left e -> Left $ CiteprocXMLError (T.pack (show e))
        Right n -> runElementParser $ pLocale $ X.documentRoot n
 
-primaryDialectMap :: M.Map Text Text
+primaryDialectMap :: M.Map Text (Maybe Text)
 primaryDialectMap = M.fromList
-  [ ("af", "af-ZA"),
-    ("ar", "ar"),
-    ("bg", "bg-BG"),
-    ("ca", "ca-AD"),
-    ("cs", "cs-CZ"),
-    ("cy", "cy-GB"),
-    ("da", "da-DK"),
-    ("de", "de-DE"),
-    ("el", "el-GR"),
-    ("en", "en-US"),
-    ("es", "es-ES"),
-    ("et", "et-EE"),
-    ("eu", "eu"),
-    ("fa", "fa-IR"),
-    ("fi", "fi-FI"),
-    ("fr", "fr-FR"),
-    ("he", "he-IL"),
-    ("hr", "hr-HR"),
-    ("hu", "hu-HU"),
-    ("id", "id-ID"),
-    ("is", "is-IS"),
-    ("it", "it-IT"),
-    ("ja", "ja-JP"),
-    ("km", "km-KH"),
-    ("ko", "ko-KR"),
-    ("la", "la"),
-    ("lt", "lt-LT"),
-    ("lv", "lv-LV"),
-    ("mn", "mn-MN"),
-    ("nb", "nb-NO"),
-    ("nl", "nl-NL"),
-    ("nn", "nn-NO"),
-    ("pl", "pl-PL"),
-    ("pt", "pt-PT"),
-    ("ro", "ro-RO"),
-    ("ru", "ru-RU"),
-    ("sk", "sk-SK"),
-    ("sl", "sl-SI"),
-    ("sr", "sr-RS"),
-    ("sv", "sv-SE"),
-    ("th", "th-TH"),
-    ("tr", "tr-TR"),
-    ("uk", "uk-UA"),
-    ("vi", "vi-VN"),
-    ("zh", "zh-CN")
+  [ ("af", Just "ZA"),
+    ("ar", Nothing),
+    ("bg", Just "BG"),
+    ("ca", Just "AD"),
+    ("cs", Just "CZ"),
+    ("cy", Just "GB"),
+    ("da", Just "DK"),
+    ("de", Just "DE"),
+    ("el", Just "GR"),
+    ("en", Just "US"),
+    ("es", Just "ES"),
+    ("et", Just "EE"),
+    ("eu", Nothing),
+    ("fa", Just "IR"),
+    ("fi", Just "FI"),
+    ("fr", Just "FR"),
+    ("he", Just "IL"),
+    ("hr", Just "HR"),
+    ("hu", Just "HU"),
+    ("id", Just "ID"),
+    ("is", Just "IS"),
+    ("it", Just "IT"),
+    ("ja", Just "JP"),
+    ("km", Just "KH"),
+    ("ko", Just "KR"),
+    ("la", Nothing),
+    ("lt", Just "LT"),
+    ("lv", Just "LV"),
+    ("mn", Just "MN"),
+    ("nb", Just "NO"),
+    ("nl", Just "NL"),
+    ("nn", Just "NO"),
+    ("pl", Just "PL"),
+    ("pt", Just "PT"),
+    ("ro", Just "RO"),
+    ("ru", Just "RU"),
+    ("sk", Just "SK"),
+    ("sl", Just "SI"),
+    ("sr", Just "RS"),
+    ("sv", Just "SE"),
+    ("th", Just "TH"),
+    ("tr", Just "TR"),
+    ("uk", Just "UA"),
+    ("vi", Just "VN"),
+    ("zh", Just "CN")
     ]
 
 -- | Retrieves the "primary dialect" corresponding to a langage,
 -- e.g. "lt-LT" for "lt".
 getPrimaryDialect :: Lang -> Maybe Lang
-getPrimaryDialect l =
-  parseLang <$> M.lookup (langLanguage l) primaryDialectMap
+getPrimaryDialect lang =
+  case M.lookup (langLanguage lang) primaryDialectMap of
+    Nothing       -> Nothing
+    Just mbregion -> Just $ lang{ langRegion = mbregion }
 
-locales :: M.Map Lang (Either CiteprocError Locale)
+
+locales :: M.Map Text (Either CiteprocError Locale)
 locales = foldr go mempty localeFiles
   where
    go (fp, bs) m
      | takeExtension fp == ".xml"
-     = let lang = parseLang $ T.pack $ dropExtension fp
+     = let lang = T.pack $ dropExtension fp
        in M.insert lang (parseLocale $ decodeUtf8 bs) m
      | otherwise = m
 
@@ -96,9 +99,10 @@ locales = foldr go mempty localeFiles
 -- Implements the locale fallback algorithm described in the CSL 1.0.1 spec.
 getLocale :: Lang -> Either CiteprocError Locale
 getLocale lang =
-  case M.lookup lang locales
-        <|>
-        (getPrimaryDialect lang >>= \lang' -> M.lookup lang' locales) of
-    Just loc -> loc
-    Nothing -> Left $ CiteprocLocaleNotFound $ renderLang lang
+  let toCode l = langLanguage l <> maybe "" ("-"<>) (langRegion l)
+   in case M.lookup (toCode lang) locales
+          <|> (getPrimaryDialect lang >>=
+               (\l -> M.lookup (toCode l) locales)) of
+        Just loc -> loc
+        Nothing  -> Left $ CiteprocLocaleNotFound $ renderLang lang
 
