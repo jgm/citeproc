@@ -979,7 +979,8 @@ evalSortKey citeId (SortKeyVariable sortdir var) = do
 normalizeSortKey :: Text -> [Text]
 normalizeSortKey = filter (not . T.null) . T.split isWordSep
  where
-  isWordSep c = isSpace c || c == '\'' || c == '’' || c == ',' ||
+  isWordSep c = isSpace c || c == ',' ||
+                c == '’' || c == '‘' || c == '\'' ||
                 c == 'ʾ' || c == 'ʿ' -- ayn/hamza in transliterated arabic
 
 -- Note!  This prints negative (BC) dates as N(999,999,999 + y)
