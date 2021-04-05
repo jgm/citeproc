@@ -959,14 +959,11 @@ evalSortKey citeId (SortKeyVariable sortdir var) = do
       Just (DateVal d)  -> return $ Just [T.toLower $ dateToText d]
 
 normalizeSortKey :: Text -> [Text]
-normalizeSortKey =
-  filter (not . T.null) .
-  T.words .
-  T.map (\c -> if isPunctuation c ||
-                  c == 'ʾ' || c == 'ʿ' -- ayn/hamza in transliterated arabic
-                  then ' '
-                  else c) .
-  T.filter (/= '-')
+normalizeSortKey = filter (not . T.null) . T.split isWordSep
+ where
+  isWordSep c = isSpace c || c == ',' ||
+                c == '’' || c == '‘' || c == '\'' ||
+                c == 'ʾ' || c == 'ʿ' -- ayn/hamza in transliterated arabic
 
 -- Note!  This prints negative (BC) dates as N(999,999,999 + y)
 -- and positive (AD) dates as Py so they sort properly.  (Note that
