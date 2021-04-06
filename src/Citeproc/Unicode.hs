@@ -84,6 +84,10 @@ comp mblang = U.collate collator
   collator = U.mkCollator U.collationOptions{
                           U.optCollation = maybe U.rootCollation
                                (U.localizedCollation . renderLang) mblang,
-                          U.optVariableWeighting = U.Shifted }
+                          U.optVariableWeighting = U.Shifted,
+                          U.optFrenchAccents =
+                            case mblang of
+                              Just (Lang "fr" _) -> True
+                              _                  -> False }
 #endif
 
