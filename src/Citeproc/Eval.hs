@@ -983,6 +983,46 @@ normalizeSortKey = filter (not . T.null) . T.split isWordSep
                 c == '’' || c == '‘' || c == '\'' ||
                 c == 'ʾ' || c == 'ʿ' -- ayn/hamza in transliterated arabic
 
+-- absence should sort AFTER all values
+-- see sort_StatusFieldAscending.txt, sort_StatusFieldDescending.txt
+compSortKeyValue :: (Text -> Text -> Ordering)
+                 -> SortKeyValue
+                 -> SortKeyValue
+                 -> Ordering
+compSortKeyValue collate sk1 sk2 =
+  case (sk1, sk2) of
+    (SortKeyValue _ Nothing, SortKeyValue _ Nothing) -> EQ
+    (SortKeyValue _ Nothing, SortKeyValue _ (Just _)) -> GT
+    (SortKeyValue _ (Just _), SortKeyValue _ Nothing) -> LT
+    (SortKeyValue Ascending (Just t1), SortKeyValue Ascending (Just t2)) ->
+      collateKey t1 t2
+    (SortKeyValue Descending (Just t1), SortKeyValue Descending (Just t2))->
+      collateKey t2 t1
+    _ -> EQ
+ where
+  collateKey :: [Text] -> [Text] -> Ordering
+  collateKey [] [] = EQ
+  collateKey [] (_:_) = LT
+  collateKey (_:_) [] = GT
+  collateKey (x:xs) (y:ys) =
+    case collate x y of
+      EQ -> collateKey xs ys
+      GT -> GT
+      LT -> LT
+
+compSortKeyValues :: (Text -> Text -> Ordering)
+                  -> [SortKeyValue]
+                  -> [SortKeyValue]
+                  -> Ordering
+compSortKeyValues _ [] [] = EQ
+compSortKeyValues _ [] (_:_) = LT
+compSortKeyValues _ (_:_) [] = GT
+compSortKeyValues collate (x:xs) (y:ys) =
+  case compSortKeyValue collate x y of
+    EQ -> compSortKeyValues collate xs ys
+    GT -> GT
+    LT -> LT
+
 -- Note!  This prints negative (BC) dates as N(999,999,999 + y)
 -- and positive (AD) dates as Py so they sort properly.  (Note that
 -- our unicode sorting ignores punctuation, so we use a letter
