@@ -1994,9 +1994,16 @@ formatNames namesFormat nameFormat formatting (var, Just (NamesVal names)) =
                   | otherwise   ->
                       Formatted mempty{ formatPrefix = Just beforeEtAl }
                       . (:[]) <$> lookupTerm' emptyTerm{ termName = "et-al" }
+  let finalNameIsOthers = (lastMay names >>= nameLiteral) == Just "others"
+        -- bibtex conversions often have this, and we want to render it "et al"
   let addNameAndDelim name idx
        | etAlThreshold == Just 0 = NullOutput
        | idx == 1    = name
+       | idx == numnames
+       , finalNameIsOthers =
+         if inSortKey
+            then NullOutput
+            else etAl
        | idx == numnames
        , etAlUseLast
        , maybe False (idx - 1 >=) etAlThreshold
