@@ -5,6 +5,6 @@ flags:
 resolver: lts-17.5
 extra-deps:
   - git: https://github.com/jgm/unicode-collation.git
-    commit: c5b53e5e7d0e38780d20206caca8377736873765
+    commit: c2ba3bc6d13ee77f1c1c1b87930ed77cf7173ac1
 ghc-options:
   "$locals": -fhide-source-paths

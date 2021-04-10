@@ -6,4 +6,4 @@ package citeproc
 source-repository-package
  type: git
  location: https://github.com/jgm/unicode-collation
- tag: c5b53e5e7d0e38780d20206caca8377736873765
+ tag: c2ba3bc6d13ee77f1c1c1b87930ed77cf7173ac1

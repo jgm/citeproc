@@ -60,6 +60,6 @@ comp mblang = ICU.collate (ICU.collator (toICULocale mblang))
 #else
 comp mblang =
   let coll = U.collatorFor
-               (fromMaybe (Lang "en" Nothing (Just "US") [] [] []) mblang)
+               (fromMaybe (Lang "" Nothing Nothing [] [] []) mblang)
    in U.collate coll
 #endif
