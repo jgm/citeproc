@@ -36,10 +36,7 @@ mergeLocales mblang style =
   deflocale = case getLocale lang of
                  Right l -> l
                  Left _  -> getUSLocale
-  primlang = case T.split (== '-') (fromMaybe "" $ getPrimaryDialect lang) of
-               []      -> Nothing
-               [x]     -> Just $ Lang x Nothing Nothing [] [] []
-               (x:y:_) -> Just $ Lang x Nothing (Just y) [] [] []
+  primlang = getPrimaryDialect lang
   stylelocales =  -- exact match to lang gets precedence
                  [l | l <- styleLocales style
                     , localeLanguage l == Just lang] ++
