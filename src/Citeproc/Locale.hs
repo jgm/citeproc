@@ -79,16 +79,15 @@ primaryDialectMap = M.fromList
 
 -- | Retrieves the "primary dialect" corresponding to a langage,
 -- e.g. "lt-LT" for "lt".
-getPrimaryDialect :: Lang -> Maybe Lang
-getPrimaryDialect l =
-  parseLang <$> M.lookup (langLanguage l) primaryDialectMap
+getPrimaryDialect :: Lang -> Maybe Text
+getPrimaryDialect l = M.lookup (langLanguage l) primaryDialectMap
 
-locales :: M.Map Lang (Either CiteprocError Locale)
+locales :: M.Map Text (Either CiteprocError Locale)
 locales = foldr go mempty localeFiles
   where
    go (fp, bs) m
      | takeExtension fp == ".xml"
-     = let lang = parseLang $ T.pack $ dropExtension fp
+     = let lang = T.pack $ dropExtension fp
        in M.insert lang (parseLocale $ decodeUtf8 bs) m
      | otherwise = m
 
@@ -96,9 +95,9 @@ locales = foldr go mempty localeFiles
 -- Implements the locale fallback algorithm described in the CSL 1.0.1 spec.
 getLocale :: Lang -> Either CiteprocError Locale
 getLocale lang =
-  case M.lookup lang locales
-        <|>
-        (getPrimaryDialect lang >>= \lang' -> M.lookup lang' locales) of
-    Just loc -> loc
-    Nothing -> Left $ CiteprocLocaleNotFound $ renderLang lang
+  let l = langLanguage lang <> maybe "" ("-"<>) (langRegion lang)
+   in case M.lookup l locales
+          <|> (getPrimaryDialect lang >>= \l' -> M.lookup l' locales) of
+        Just loc -> loc
+        Nothing  -> Left $ CiteprocLocaleNotFound $ renderLang lang
 

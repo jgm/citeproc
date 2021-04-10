@@ -1145,9 +1145,9 @@ evalItem layout (position, item) = do
         st{ stateReference = ref
           , stateUsedYearSuffix = False }))
         $ do xs <- mconcat <$> mapM eElement (layoutElements layout)
-             let mblang = parseLang <$>
-                          (lookupVariable "language" ref
-                            >>= valToText)
+             let mblang = lookupVariable "language" ref
+                          >>= valToText
+                          >>= either (const Nothing) Just . parseLang
              return $
                case mblang of
                  Nothing   -> xs
@@ -1297,8 +1297,10 @@ withFormatting formatting p = do
   lang <- asks (localeLanguage . contextLocale)
   ref <- gets stateReference
   let reflang = case M.lookup "language" (referenceVariables ref) of
-                  Just (TextVal t)  -> Just $ parseLang t
-                  Just (FancyVal x) -> Just $ parseLang $ toText x
+                  Just (TextVal t)  ->
+                    either (const Nothing) Just $ parseLang t
+                  Just (FancyVal x) ->
+                    either (const Nothing) Just $ parseLang $ toText x
                   _                 -> Nothing
   let mainLangIsEn Nothing = False
       mainLangIsEn (Just l) = langLanguage l == "en"

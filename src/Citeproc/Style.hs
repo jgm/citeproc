@@ -28,15 +28,18 @@ mergeLocales :: Maybe Lang -> Style a -> Locale
 mergeLocales mblang style =
   mconcat stylelocales <> deflocale -- left-biased union
  where
-  getUSLocale = case getLocale (Lang "en" (Just"US")) of
+  getUSLocale = case getLocale (Lang "en" Nothing (Just"US") [] [] []) of
                   Right l -> l
                   Left _  -> mempty
-  lang = fromMaybe (Lang "en" (Just "US")) $
+  lang = fromMaybe (Lang "en" Nothing (Just"US") [] [] []) $
               mblang <|> styleDefaultLocale (styleOptions style)
   deflocale = case getLocale lang of
                  Right l -> l
                  Left _  -> getUSLocale
-  primlang = getPrimaryDialect lang
+  primlang = case T.split (== '-') (fromMaybe "" $ getPrimaryDialect lang) of
+               []      -> Nothing
+               [x]     -> Just $ Lang x Nothing Nothing [] [] []
+               (x:y:_) -> Just $ Lang x Nothing (Just y) [] [] []
   stylelocales =  -- exact match to lang gets precedence
                  [l | l <- styleLocales style
                     , localeLanguage l == Just lang] ++
@@ -46,7 +49,7 @@ mergeLocales mblang style =
                     , localeLanguage l == primlang] ++
                  -- then match to the two letter language
                  [l | l <- styleLocales style
-                    , (langVariant <$> localeLanguage l) == Just Nothing
+                    , (langRegion <$> localeLanguage l) == Just Nothing
                     , (langLanguage <$> localeLanguage l) ==
                       Just (langLanguage lang)] ++
                  -- then locale with no lang
@@ -71,7 +74,10 @@ parseStyle getIndependentParent t =
     Left e  -> return $ Left $ CiteprocXMLError (T.pack (show e))
     Right n -> do
       let attr = getAttributes $ X.documentRoot n
-      let defaultLocale = parseLang <$> lookupAttribute "default-locale" attr
+      let defaultLocale =
+            case lookupAttribute "default-locale" attr of
+              Nothing  -> Nothing
+              Just l   -> either (const Nothing) Just $ parseLang l
       let links = concatMap (getChildren "link") $ getChildren "info"
                     (X.documentRoot n)
       case [getAttributes l

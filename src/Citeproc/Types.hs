@@ -1645,7 +1645,7 @@ instance ToJSON a => ToJSON (Inputs a) where
     , ("references",    toJSON $ inputsReferences inp)
     , ("style",         toJSON $ inputsStyle inp)
     , ("abbreviations", toJSON $ inputsAbbreviations inp)
-    , ("lang",          toJSON $ inputsLang inp)
+    , ("lang",          toJSON $ renderLang <$> inputsLang inp)
     ]
 
 instance (FromJSON a, Eq a) => FromJSON (Inputs a) where
@@ -1654,5 +1654,11 @@ instance (FromJSON a, Eq a) => FromJSON (Inputs a) where
            <*> v .:? "references"
            <*> v .:? "style"
            <*> v .:? "abbreviations"
-           <*> v .:? "lang"
+           <*> (do mbl <- v .:? "lang"
+                   case mbl of
+                     Nothing -> return Nothing
+                     Just l  ->
+                       case parseLang l of
+                         Left _     -> return Nothing
+                         Right lang -> return $ Just lang)
 
