@@ -59,7 +59,11 @@ comp :: Maybe Lang -> Text -> Text -> Ordering
 comp mblang = ICU.collate (ICU.collator (toICULocale mblang))
 #else
 comp mblang =
-  let coll = U.collatorFor
-               (fromMaybe (Lang "" Nothing Nothing [] [] []) mblang)
+  let lang = fromMaybe (Lang "" Nothing Nothing [] [] []) mblang
+      coll = case lookup "u" (langExtensions lang) >>= lookup "ka" of
+                -- default to Shifted variable weighting, unless a variable
+                -- weighting is explicitly specified with the ka keyword:
+                Nothing -> U.setVariableWeighting U.Shifted $ U.collatorFor lang
+                Just _  -> U.collatorFor lang
    in U.collate coll
 #endif
