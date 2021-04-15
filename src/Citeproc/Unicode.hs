@@ -10,11 +10,11 @@ module Citeproc.Unicode
     comp
   )
 where
-import UnicodeCollation (Lang(..), parseLang, renderLang, lookupLang)
+import Text.Collate.Lang (Lang(..), parseLang, renderLang, lookupLang)
 #ifdef MIN_VERSION_text_icu
 import qualified Data.Text.ICU as ICU
 #else
-import qualified UnicodeCollation as U
+import qualified Text.Collate as U
 #endif
 import Data.Text (Text)
 import qualified Data.Text as T
