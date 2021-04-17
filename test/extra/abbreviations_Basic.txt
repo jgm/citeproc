@@ -40,7 +40,7 @@ JoClSt/Journal of Classical Studies
 >>===== ABBREVIATIONS =====>>
 { "default": {
     "title": {
-            "Journal of Classical Studies": "JoClSt"
+            "Journal of classical studies": "JoClSt"
     }
   }
 }

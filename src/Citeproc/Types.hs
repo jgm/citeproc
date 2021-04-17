@@ -1578,8 +1578,11 @@ readAsInt t =
 -- Abbreviations are substituted in the output when the variable
 -- and its content are matched by something in the abbreviations map.
 newtype Abbreviations =
-  Abbreviations (M.Map Variable (M.Map Text Text))
+  Abbreviations (M.Map Variable (M.Map Variable Text))
   deriving (Show, Eq, Ord)
+-- NOTE: We use 'Variable' in the second map for the contents of the
+-- variable, because we want it to be treated case-insensitively,
+-- and we need a wrapper around 'CI' that has To/FromJSON instances.
 
 instance FromJSON Abbreviations where
   parseJSON = withObject "Abbreviations" $ \v ->
@@ -1598,10 +1601,12 @@ lookupAbbreviation var val (Abbreviations abbrevmap) = do
                          then "number"
                          else var) abbrevmap
   case val of
-    TextVal t  -> maybe mzero (return . TextVal) $ M.lookup t abbrvs
-    FancyVal x -> maybe mzero (return . TextVal) $ M.lookup (toText x) abbrvs
+    TextVal t  -> maybe mzero (return . TextVal)
+                         $ M.lookup (toVariable t) abbrvs
+    FancyVal x -> maybe mzero (return . TextVal)
+                         $ M.lookup (toVariable (toText x)) abbrvs
     NumVal n   -> maybe mzero (return . TextVal)
-                         $ M.lookup (T.pack (show n)) abbrvs
+                         $ M.lookup (toVariable (T.pack (show n))) abbrvs
     _          -> mzero
 
 -- | Result of citation processing.
