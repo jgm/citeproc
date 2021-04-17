@@ -4,7 +4,7 @@
 module Main where
 import Citeproc
 import Citeproc.CslJson
-import Control.Monad (when, unless)
+import Control.Monad (when, unless, foldM)
 import Control.Applicative ((<|>))
 import Data.Bifunctor (second)
 import Data.Maybe (fromMaybe)
@@ -27,7 +27,7 @@ main = do
   unless (null errs) $ do
     mapM_ err errs
     exitWith $ ExitFailure 1
-  let opt = foldr ($) defaultOpt opts
+  opt <- foldM (flip ($)) defaultOpt opts
   when (optHelp opt) $ do
     putStr $ usageInfo "citeproc [OPTIONS] [FILE]" options
     exitSuccess
@@ -128,29 +128,32 @@ defaultOpt =
       , optVersion = False
       }
 
-options :: [OptDescr (Opt -> Opt)]
+options :: [OptDescr (Opt -> IO Opt)]
 options =
   [ Option ['s'] ["style"]
-     (ReqArg (\fp opt -> opt{ optStyle = Just fp }) "FILE")
+     (ReqArg (\fp opt -> return opt{ optStyle = Just fp }) "FILE")
      "CSL style file"
   , Option ['r'] ["references"]
-     (ReqArg (\fp opt -> opt{ optReferences = Just fp }) "FILE")
+     (ReqArg (\fp opt -> return opt{ optReferences = Just fp }) "FILE")
      "CSL JSON bibliography"
   , Option ['a'] ["abbreviations"]
-     (ReqArg (\fp opt -> opt{ optAbbreviations = Just fp }) "FILE")
+     (ReqArg (\fp opt -> return opt{ optAbbreviations = Just fp }) "FILE")
      "CSL abbreviations table"
   , Option ['l'] ["lang"]
-     (ReqArg (\lang opt -> opt{ optLang = Just $ parseLang $ T.pack lang })
-        "IETF language")
+     (ReqArg (\lang opt ->
+                 case parseLang (T.pack lang) of
+                   Right l  -> return opt{ optLang = Just l }
+                   Left msg -> err $ "Could not parse language tag:\n" ++ msg)
+        "BCP 47 language tag")
      "Override locale"
   , Option ['f'] ["format"]
-     (ReqArg (\format opt -> opt{ optFormat = Just format }) "html|json")
+     (ReqArg (\format opt -> return opt{ optFormat = Just format }) "html|json")
      "Controls formatting of entries in result"
   , Option ['h'] ["help"]
-     (NoArg (\opt -> opt{ optHelp = True }))
+     (NoArg (\opt -> return opt{ optHelp = True }))
      "Print usage information"
   , Option ['V'] ["version"]
-     (NoArg (\opt -> opt{ optVersion = True }))
+     (NoArg (\opt -> return opt{ optVersion = True }))
      "Print version number"
   ]
 
