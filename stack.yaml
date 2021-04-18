@@ -4,6 +4,6 @@ flags:
     icu: false
 resolver: lts-17.5
 extra-deps:
-- unicode-collation-0.1
+- unicode-collation-0.1.1
 ghc-options:
   "$locals": -fhide-source-paths
