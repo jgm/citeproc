@@ -27,8 +27,25 @@ Specify a CSL JSON bibliography to be used as a source for references.
 Specify a CSL abbreviations file.
 .TP
 \f[B]\f[CB]l\f[B]\f[R] \f[I]LANG\f[R], \f[B]\f[CB]--lang=\f[B]\f[R]\f[I]LANG\f[R]
-Specify a locale to override the style\[cq]s default (IETF language
-code).
+Specify a locale to override the style\[cq]s default.
+A BCP 47 language tag is expected: for example, \f[C]en\f[R],
+\f[C]de\f[R], \f[C]en-US\f[R], \f[C]fr-CA\f[R], \f[C]ug-Cyrl\f[R].
+The unicode extension syntax (after \f[C]-u-\f[R]) may be used to
+specify options for collation.
+Here are some examples:
+.RS
+.IP \[bu] 2
+\f[C]zh-u-co-pinyin\f[R] \[en] Chinese with the Pinyin collation.
+.IP \[bu] 2
+\f[C]es-u-co-trad\f[R] \[en] Spanish with the traditional collation
+(with \f[C]Ch\f[R] sorting after \f[C]C\f[R]).
+.IP \[bu] 2
+\f[C]fr-u-kb\f[R] \[en] French with \[lq]backwards\[rq] accent sorting
+(with \f[C]cot\['e]\f[R] sorting after \f[C]c\[^o]te\f[R]).
+.IP \[bu] 2
+\f[C]en-US-u-kf-upper\f[R] \[en] English with uppercase letters sorting
+before lower (default is lower before upper).
+.RE
 .TP
 \f[B]\f[CB]f\f[B]\f[R] \f[I]html|json\f[R], \f[B]\f[CB]--format=\f[B]\f[R]\f[I]html|json\f[R]
 Specify the format to be used for the entries.

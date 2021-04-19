@@ -31,8 +31,19 @@ citation processing to non-Haskell projects.
 :   Specify a CSL abbreviations file.
 
 `l` *LANG*, `--lang=`*LANG*
-:   Specify a locale to override the style's default (IETF
-    language code).
+:   Specify a locale to override the style's default.
+    A BCP 47 language tag is expected:  for example, `en`,
+    `de`, `en-US`, `fr-CA`, `ug-Cyrl`.  The unicode extension
+    syntax (after `-u-`) may be used to specify options for
+    collation. Here are some examples:
+
+    - `zh-u-co-pinyin` -- Chinese with the Pinyin collation.
+    - `es-u-co-trad` -- Spanish with the traditional collation
+      (with `Ch` sorting after `C`).
+    - `fr-u-kb` -- French with "backwards" accent sorting
+      (with `coté` sorting after `côte`).
+    - `en-US-u-kf-upper` -- English with uppercase letters sorting
+       before lower (default is lower before upper).
 
 `f` *html|json*, `--format=`*html|json*
 :   Specify the format to be used for the entries.  `html` (the
