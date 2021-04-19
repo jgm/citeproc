@@ -1,5 +1,26 @@
 # citeproc changelog
 
+## 0.4
+
+  * We now use Lang from unicode-collation rather than defining our own.
+    The type constructor has changed, as has the signature of
+    parseLang.
+  * Use unicode-collation by default for more accurate sorting.
+    - text-icu will still be used if the icu flag is set.  This may
+      give better performance, at the cost of depending on a large
+      C library.
+    - Change type of SortKeyValue so it doesn't embed Lang. [API change]
+      Instead, we now store a language-specific collator in the Eval Context.
+    - Move compSortKeyValues from Types to Eval.
+  * Add curly open quote to word splitters in normalizeSortKey.
+  * Improve date sorting: use the format YYYY0000 if no month, day,
+    and YYYYMM00 if no day when generating sort keys.
+  * Special treatment of literal "others" as last name in a list (#61).
+    When we convert bibtex/biblatex bibliographies, the form "and others"
+    yields a last name with nameLiteral = "others".  We detect this and
+    generate a localized "and others" (et al).
+  * Make abbreviations case-insensitive (#45).
+
 ## 0.3.0.9
 
  * Implement `et-al-subsequent-min` and `et-al-subsequent-use-first` (#60).
