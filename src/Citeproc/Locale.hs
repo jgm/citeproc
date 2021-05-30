@@ -77,7 +77,7 @@ primaryDialectMap = M.fromList
     ("zh", Just "CN")
     ]
 
--- | Retrieves the "primary dialect" corresponding to a langage,
+-- | Retrieves the "primary dialect" corresponding to a language,
 -- e.g. "lt-LT" for "lt".
 getPrimaryDialect :: Lang -> Maybe Lang
 getPrimaryDialect lang =
