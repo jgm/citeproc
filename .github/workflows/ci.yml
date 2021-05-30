@@ -86,6 +86,7 @@ jobs:
       matrix:
         stack: ["2.3.1"]
         ghc: ["8.8.3"]
+        stackopts: ["--flag +icu", ""]
 
     steps:
     - uses: actions/checkout@v2
@@ -103,10 +104,14 @@ jobs:
         path: ~/.stack
         key: ${{ runner.os }}-${{ matrix.ghc }}-stack
 
+    - name: Install icu
+      run: |
+        sudo apt-get install libicu-dev
+
     - name: Build
       run: |
-        stack build --system-ghc --fast --test --bench --no-run-tests --no-run-benchmarks
+        stack build ${{ matrix.stackopts }} --system-ghc --fast --test --bench --no-run-tests --no-run-benchmarks
 
     - name: Test
       run: |
-        stack test --system-ghc
+        stack test ${{ matrix.stackopts }} --system-ghc
