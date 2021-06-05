@@ -1,0 +1,111 @@
+Special treatment for literal "others" when it occurs as
+the last name in the list, using localized et al.
+
+>>===== MODE =====>>
+bibliography
+<<===== MODE =====<<
+
+
+>>===== RESULT =====>>
+<div class="csl-bib-body">
+  <div class="csl-entry">S Gosling, H Müller Schmied, R Betts, J Chang, P Ciais, et al.</div>
+</div>
+<<===== RESULT =====<<
+
+
+>>===== CSL =====>>
+<style 
+      xmlns="http://purl.org/net/xbiblio/csl"
+      class="note"
+      version="1.0">
+  <info>
+    <id />
+    <title />
+    <updated>2009-08-10T04:49:00+09:00</updated>
+  </info>
+  <citation>
+    <layout>
+      <text value="Oops"/>
+    </layout>
+  </citation>
+  <bibliography>
+    <layout>
+      <group delimiter=", ">
+        <names variable="author">
+          <name et-al-min="5" et-al-use-first="5"/>
+        </names>
+      </group>
+    </layout>
+  </bibliography>
+</style>
+<<===== CSL =====<<
+
+
+>>===== INPUT =====>>
+[
+  {
+    "author": [
+      {
+        "family": "Gosling",
+        "given": "S"
+      },
+      {
+        "family": "Müller Schmied",
+        "given": "H"
+      },
+      {
+        "family": "Betts",
+        "given": "R"
+      },
+      {
+        "family": "Chang",
+        "given": "J"
+      },
+      {
+        "family": "Ciais",
+        "given": "P"
+      },
+      {
+        "family": "Dankers",
+        "given": "R"
+      },
+      {
+        "family": "Döll",
+        "given": "P"
+      },
+      {
+        "family": "Eisner",
+        "given": "S"
+      },
+      {
+        "family": "Flörke",
+        "given": "M"
+      },
+      {
+        "family": "Gerten",
+        "given": "D"
+      },
+      {
+        "literal": "others"
+      }
+    ],
+    "container-title": "GFZ Data Services",
+    "id": "gosling2017isimip2a",
+    "issued": {
+      "date-parts": [
+        [
+          2017
+        ]
+      ]
+    },
+    "title": "ISIMIP2a simulation data from water (global) sector",
+    "type": "article-journal"
+  }
+]
+<<===== INPUT =====<<
+
+
+>>===== VERSION =====>>
+1.0
+<<===== VERSION =====<<
+

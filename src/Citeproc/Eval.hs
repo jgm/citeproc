@@ -1987,12 +1987,16 @@ formatNames namesFormat nameFormat formatting (var, Just (NamesVal names)) =
                               lookupTerm emptyTerm { termName = "and"
                                                    , termForm = Long }
                   Nothing -> return Nothing
+  let finalNameIsOthers = (lastMay names >>= nameLiteral) == Just "others"
+        -- bibtex conversions often have this, and we want to render it "et al"
   let etAlUseLast = nameEtAlUseLast nameFormat
   let etAlThreshold = case etAlMin of
                         Just x | numnames >= x
                           -> case (disamb >>= disambEtAlNames, etAlUseFirst) of
                                (Just n, Just m) -> Just (max m n)
                                (_, y) -> y
+                               | numnames < x
+                               , finalNameIsOthers -> Just (numnames - 1)
                         _ -> Nothing
   let beforeLastDelim =
         case mbAndTerm of
@@ -2052,16 +2056,9 @@ formatNames namesFormat nameFormat formatting (var, Just (NamesVal names)) =
                   | otherwise   ->
                       Formatted mempty{ formatPrefix = Just beforeEtAl }
                       . (:[]) <$> lookupTerm' emptyTerm{ termName = "et-al" }
-  let finalNameIsOthers = (lastMay names >>= nameLiteral) == Just "others"
-        -- bibtex conversions often have this, and we want to render it "et al"
   let addNameAndDelim name idx
        | etAlThreshold == Just 0 = NullOutput
        | idx == 1    = name
-       | idx == numnames
-       , finalNameIsOthers =
-         if inSortKey
-            then NullOutput
-            else etAl
        | idx == numnames
        , etAlUseLast
        , maybe False (idx - 1 >=) etAlThreshold
