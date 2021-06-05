@@ -1,5 +1,13 @@
 # citeproc changelog
 
+## 0.4.0.1
+
+  * Fix bug introduced by the fix to #61 (#74).
+    In certain circumstances, we could get doubled "et al.".
+  * Depend on unicode-collation unconditionally (#71).  It is necessary
+    even when text-icu is used, because of Text.Collate.Lang.
+  * Rename tests in extra/ so they fall into categories.
+
 ## 0.4
 
   * We now use Lang from unicode-collation rather than defining our own.
