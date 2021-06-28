@@ -559,7 +559,7 @@ punctuationInsideQuotes = go
  where
   startsWithMovable t =
     case T.uncons t of
-      Just (c,_) -> c == '.' || c == ',' || c == '!' || c == '?'
+      Just (c,_) -> c == '.' || c == ','
       Nothing    -> False
   go el =
     case el of

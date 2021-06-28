@@ -104,7 +104,7 @@ punctuationInsideQuotes = B.fromList . go . walk go . B.toList
  where
   startsWithMovable t =
     case T.uncons t of
-      Just (c,_) -> c == '.' || c == ',' || c == '!' || c == '?'
+      Just (c,_) -> c == '.' || c == ','
       Nothing    -> False
   go [] = []
   go (Quoted qt xs : Str t : rest)
