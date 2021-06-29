@@ -1469,8 +1469,9 @@ outputToText (InNote x)   = outputToText x
 renderOutput :: CiteprocOutput a => CiteprocOptions -> Output a -> a
 renderOutput _ NullOutput = mempty
 renderOutput _ (Literal x) = x
-renderOutput opts (Tagged (TagItem _ ident) x)
+renderOutput opts (Tagged (TagItem itemtype ident) x)
   | linkCitations opts
+  , itemtype /= AuthorOnly
   = addHyperlink ("#ref-" <> unItemId ident) $ renderOutput opts x
 renderOutput opts (Tagged _ x) = renderOutput opts x
 renderOutput opts (Formatted formatting xs) =
