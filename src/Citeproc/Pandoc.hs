@@ -69,7 +69,7 @@ instance CiteprocOutput Inlines where
       DisplayRightInline -> B.spanWith ("",["csl-right-inline"],[])
       DisplayIndent      -> B.spanWith ("",["csl-indent"],[])
   addQuotes             = B.doubleQuoted . flipFlopQuotes DoubleQuote
-  inNote                = B.note . B.para
+  inNote                = B.spanWith ("",["csl-note"],[])
   movePunctuationInsideQuotes
                         = punctuationInsideQuotes
   mapText f             = walk go
