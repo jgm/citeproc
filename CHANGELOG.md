@@ -1,5 +1,15 @@
 # citeproc changelog
 
+## 0.4.1
+
+  * Change Pandoc `inNote` so it creates a `Span` with class `csl-note`
+    rather than a `Note`.  This should make it easier to integrate
+    citations with ordinary notes in pandoc.
+  * Do not hyperlink author-only citations (#77).  If we do this we get
+    two consecutive hyperlinks for author-in-text forms.
+  * `movePunctuationInsideQuotes`: only move `,` and `.`, not `?` and `!`,
+    as per the CSL spec.
+
 ## 0.4.0.1
 
   * Fix bug introduced by the fix to #61 (#74).
