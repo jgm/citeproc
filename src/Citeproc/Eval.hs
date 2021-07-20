@@ -2543,11 +2543,9 @@ citationLabel :: Reference a -> Val a
 citationLabel ref = TextVal trigraph
  where
   trigraph = namepart <> datepart
-  datepart = case datevars of
-               [] -> ""
-               (var:_) -> case M.lookup var varmap of
-                            Just (DateVal d) -> getYear d
-                            _ -> ""
+  datepart = case M.lookup "issued" varmap of
+               Just (DateVal d) -> getYear d
+               _ -> ""
   namepart = if "author" `elem` namevars
                 then getNames "author"
                 else case namevars of
@@ -2556,7 +2554,6 @@ citationLabel ref = TextVal trigraph
   varmap = referenceVariables ref
   vars = M.keys varmap
   namevars = [v | v <- vars, variableType v == NameVariable]
-  datevars = [v | v <- vars, variableType v == DateVariable]
   getNames var = case M.lookup var varmap of
                    Just (NamesVal ns) ->
                      let x = case length ns of
@@ -2568,8 +2565,8 @@ citationLabel ref = TextVal trigraph
                         (take 4 ns)
                    _ -> ""
   getYear d = case dateParts d of
-                (DateParts (x:_):_) -> T.pack $ printf "%02d"
-                                              $ x `mod` 100
+                (DateParts (x:_):_) ->
+                  T.pack (printf "%02d" $ x `mod` 100)
                 _ -> ""
 
 removeDoubleSpaces :: Text -> Text
