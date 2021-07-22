@@ -81,7 +81,7 @@ library
                      , unicode-collation >= 0.1.3 && < 0.2
                      -- , pretty-show
   if flag(icu)
-     build-depends:    text-icu
+     build-depends:    text-icu >= 0.7.1.0
 
   ghc-options:         -Wall
                        -Wincomplete-record-updates
