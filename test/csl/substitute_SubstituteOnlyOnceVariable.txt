@@ -1,0 +1,45 @@
+>>===== MODE =====>>
+citation
+<<===== MODE =====<<
+
+
+
+>>===== RESULT =====>>
+Title
+<<===== RESULT =====<<
+
+
+>>===== CSL =====>>
+<style 
+      xmlns="http://purl.org/net/xbiblio/csl"
+      class="note"
+      version="1.0">
+  <info>
+    <id />
+    <title />
+    <updated>2019-08-11T16:56:00+02:00</updated>
+  </info>
+  <citation>
+    <layout>
+      <names>
+        <substitute>
+          <text variable="title"/>
+          <text variable="container-title"/>
+        </substitute>
+      </names>
+    </layout>
+  </citation>
+</style>
+<<===== CSL =====<<
+
+
+>>===== INPUT =====>>
+[
+    {
+        "id": "ITEM-1",
+        "type": "book",
+        "title": "Title",
+        "container-title": "ContainerTitle"
+    }
+]
+<<===== INPUT =====<<
