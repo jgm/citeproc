@@ -111,7 +111,5 @@ jobs:
 
     - name: Build
       run: |
-        stack build ${{ matrix.stackopts }} --system-ghc --fast --test --bench --no-run-tests --no-run-benchmarks
+        stack build ${{ matrix.stackopts }} --system-ghc --fast --test --bench --no-run-benchmarks
 
-    # We don't run tests because of some slight discrepancies in test
-    # results with icu; right now we just want to make sure it builds.
