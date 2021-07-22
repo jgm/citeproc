@@ -13,6 +13,7 @@ where
 import Text.Collate.Lang (Lang(..), parseLang, renderLang, lookupLang)
 #ifdef MIN_VERSION_text_icu
 import qualified Data.Text.ICU as ICU
+import qualified Data.Text.ICU.Collate as ICUC
 #else
 import qualified Text.Collate as U
 #endif
@@ -56,14 +57,19 @@ toLower mblang = T.toLower .
 
 comp :: Maybe Lang -> Text -> Text -> Ordering
 #ifdef MIN_VERSION_text_icu
-comp mblang = ICU.collate (ICU.collator (toICULocale mblang))
+comp mblang = ICU.collate collator
+ where
+  collator = ICU.collatorWith (toICULocale mblang) [ICUC.AlternateHandling alt]
+  alt = case mblang >>= lookup "u" . langExtensions >>= lookup "ka" of
+          Just "noignore" -> ICUC.NonIgnorable
+          _ -> ICUC.Shifted
 #else
-comp mblang =
-  let lang = fromMaybe (Lang "" Nothing Nothing [] [] []) mblang
-      coll = case lookup "u" (langExtensions lang) >>= lookup "ka" of
-                -- default to Shifted variable weighting, unless a variable
-                -- weighting is explicitly specified with the ka keyword:
-                Nothing -> U.setVariableWeighting U.Shifted $ U.collatorFor lang
-                Just _  -> U.collatorFor lang
-   in U.collate coll
+comp mblang = U.collate coll
+ where
+  lang = fromMaybe (Lang "" Nothing Nothing [] [] []) mblang
+  coll = case lookup "u" (langExtensions lang) >>= lookup "ka" of
+           -- default to Shifted variable weighting, unless a variable
+           -- weighting is explicitly specified with the ka keyword:
+           Nothing -> U.setVariableWeighting U.Shifted $ U.collatorFor lang
+           Just _  -> U.collatorFor lang
 #endif
