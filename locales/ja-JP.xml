@@ -250,8 +250,8 @@
       <multiple>ills.</multiple>
     </term>
     <term name="translator" form="short">
-      <single>翻訳者</single>
-      <multiple>翻訳者</multiple>
+      <single>訳</single>
+      <multiple>訳</multiple>
     </term>
     <term name="editortranslator" form="short">
       <single>ed. &amp; tran.</single>
