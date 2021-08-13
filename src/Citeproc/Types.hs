@@ -89,6 +89,7 @@ module Citeproc.Types
   , fromVariable
   , lookupVariable
   , Output(..)
+  , Identifier(..)
   , Tag(..)
   , outputToText
   , renderOutput
@@ -141,17 +142,23 @@ import Citeproc.Unicode (Lang(..), parseLang, renderLang)
 
 -- | Options affecting the output in ways that go beyond
 -- what can be specified in styles.
-newtype CiteprocOptions =
+data CiteprocOptions =
   CiteprocOptions
   { linkCitations :: Bool
     -- ^ Create hyperlinks from citations to bibliography entries
+  , linkTitles :: Bool
+    -- ^ When a bibliography entry has an identifier (doi, pmcid, pmid, url)
+    -- available, but the style does not explicitly render at least one of them,
+    -- add a hyperlink to the title instead.
   }
   deriving (Show, Eq)
 
 defaultCiteprocOptions :: CiteprocOptions
 defaultCiteprocOptions =
   CiteprocOptions
-  { linkCitations = False }
+  { linkCitations = False 
+  , linkTitles    = True
+  }
 
 data CiteprocError =
     CiteprocXMLError Text
@@ -1447,10 +1454,28 @@ instance Uniplate (Output a) where
 instance Biplate (Output a) (Output a) where
   biplate = plateSelf
 
+data Identifier =
+      IdentDOI Text
+    | IdentPMCID Text
+    | IdentPMID Text
+    | IdentURL Text
+  deriving (Show, Eq)
+
+identifierToUrl :: Identifier -> Text
+identifierToUrl ident =
+    case ident of
+      IdentDOI t   -> T.append "https://doi.org/" t
+      IdentPMCID t -> T.append "https://www.ncbi.nlm.nih.gov/pmc/articles/" t
+      IdentPMID t  -> T.append "https://www.ncbi.nlm.nih.gov/pubmed/" t
+      IdentURL t   -> t
+
 data Tag =
       TagTerm
     | TagCitationNumber Int
     | TagCitationLabel
+    | TagTitle
+    -- ^ marks the title of an entry, so it can be hyperlinked later
+    | TagLink Identifier
     | TagItem CitationItemType ItemId
     | TagName Name
     | TagNames Variable NamesFormat [Name]
@@ -1473,6 +1498,9 @@ renderOutput opts (Tagged (TagItem itemtype ident) x)
   | linkCitations opts
   , itemtype /= AuthorOnly
   = addHyperlink ("#ref-" <> unItemId ident) $ renderOutput opts x
+renderOutput opts (Tagged (TagLink ident) x)
+  | linkTitles opts
+  = addHyperlink (identifierToUrl ident) $ renderOutput opts x
 renderOutput opts (Tagged _ x) = renderOutput opts x
 renderOutput opts (Formatted formatting xs) =
   addFormatting formatting . mconcat . fixPunct .

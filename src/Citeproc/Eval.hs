@@ -73,6 +73,10 @@ data EvalState a =
   , stateRefMap         :: ReferenceMap a
   , stateReference      :: Reference a
   , stateUsedYearSuffix :: Bool
+  , stateUsedIdentifier :: Bool
+  -- ^ tracks whether an identifier (DOI,PMCID,PMID,URL) has yet been used
+  , stateUsedTitle      :: Bool
+  -- ^ tracks whether the item title has yet been used
   } deriving (Show)
 
 
@@ -120,6 +124,8 @@ evalStyle style mblang refs' citations =
       , stateRefMap = refmap
       , stateReference = Reference mempty mempty Nothing mempty
       , stateUsedYearSuffix = False
+      , stateUsedIdentifier = False
+      , stateUsedTitle = False
       }
 
   assignCitationNumbers sortedIds =
@@ -1142,16 +1148,41 @@ evalItem layout (position, item) = do
            , contextPosition = position
            },
         st{ stateReference = ref
-          , stateUsedYearSuffix = False }))
+          , stateUsedYearSuffix = False
+          , stateUsedIdentifier = False
+          , stateUsedTitle = False
+          }))
         $ do xs <- mconcat <$> mapM eElement (layoutElements layout)
+
+             -- find identifiers that can be used to hyperlink the title 
+             let mbident = 
+                    foldl (<|>) Nothing
+                      [ IdentDOI   <$> (valToText =<< lookupVariable "DOI" ref)
+                      , IdentPMCID <$> (valToText =<< lookupVariable "PMCID" ref)
+                      , IdentPMID  <$> (valToText =<< lookupVariable "PMID" ref)
+                      , IdentURL   <$> (valToText =<< lookupVariable "URL" ref)
+                      ]
+             -- hyperlink any titles in the output
+             let linkTitle target (Tagged TagTitle x) = Tagged (TagLink target) x
+                 linkTitle _ x = x
+             
+             -- when no links were rendered, hyperlink title, if it exists
+             usedLink <- gets stateUsedIdentifier
+
+             let xs' = case mbident of
+                         Nothing     -> xs
+                         Just ident  -> if usedLink
+                                           then xs
+                                           else fmap (transform (linkTitle ident)) xs
+
              let mblang = lookupVariable "language" ref
                           >>= valToText
                           >>= either (const Nothing) Just . parseLang
              return $
                case mblang of
-                 Nothing   -> xs
+                 Nothing   -> xs'
                  Just lang -> map
-                     (transform (addLangToFormatting lang)) xs
+                     (transform (addLangToFormatting lang)) xs'
     Nothing -> do
       warn $ "citation " <> unItemId (citationItemId item) <>
              " not found"
@@ -1500,6 +1531,9 @@ eText (TextVariable varForm v) = do
             return NullOutput
 
     _ -> do
+        -- remember whether we've rendered any links so far
+        when (v `elem` ["DOI", "PMCID", "PMID", "URL"]) $
+            modify (\st -> st { stateUsedIdentifier = True })
         mbv <- if varForm == ShortForm
                   then do
                     mbval <- (<|>) <$> askVariable (v <> "-short")
@@ -1526,7 +1560,12 @@ eText (TextVariable varForm v) = do
               st{ stateReference =
                   let Reference id' type' d' m' = stateReference st
                    in Reference id' type' d' (M.delete v m') }
-        return res
+        if v == "title"
+            then do
+              modify (\st -> st { stateUsedTitle = True })
+              -- tag title so we can hyperlink it later
+              return $ Tagged TagTitle res
+            else return res
 eText (TextMacro name) = do
   warn $ "encountered unexpanded macro " <> name
   return NullOutput
