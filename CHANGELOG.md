@@ -35,6 +35,8 @@
   * Require recent text-icu with icu flag.
     Older versions don't build with newer versions of icu4c.
 
+  * Update locales from upstream.
+
   * Add new CSL tests to repository.
 
 
