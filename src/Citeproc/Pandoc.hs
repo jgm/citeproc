@@ -126,6 +126,13 @@ punctuationInsideQuotes = B.fromList . go . walk go . B.toList
         if T.length t == 1
            then go rest
            else Str (T.drop 1 t) : go rest
+  go (Quoted qt xs : Str t : rest)
+    | startsWithMovable t
+      = Quoted qt
+           (xs ++ [Str (T.take 1 t) | not (endWithPunct True xs)]) :
+        if T.length t == 1
+           then go rest
+           else Str (T.drop 1 t) : go rest
   go (x:xs) = x : go xs
 
 endWithPunct :: Bool -> [Inline] -> Bool
