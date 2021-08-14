@@ -190,6 +190,7 @@ class (Semigroup a, Monoid a, Show a, Eq a, Ord a) => CiteprocOutput a where
   inNote                      :: a -> a
   mapText                     :: (Text -> Text) -> a -> a
   addHyperlink                :: Text -> a -> a
+  localizeQuotes              :: Locale -> a -> a
 
 addFormatting :: CiteprocOutput a => Formatting -> a -> a
 addFormatting f x =
