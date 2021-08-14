@@ -1,5 +1,43 @@
 # citeproc changelog
 
+## 0.5
+
+  * In generating citation labels, only use `issued` date.
+    Not, for example, `accessed` (#80).
+
+  * Citeproc.Locale: export `lookupQuotes`.  [API change]
+
+  * Citeproc.Types: Add `localizeQuotes` method to CiteprocOutput class
+    [API change].
+
+  * Citeproc.CslJson, Citeproc.Pandoc: Implement `localizeQuotes`.
+
+  * Citeproc: apply `localizeQuotes` after rendering.  This ensures
+    that quotes are properly localized and flipflopped.  Previously this
+    was done in `renderCslJson` (for CSL JSON) and in pandoc
+    (for Pandoc Inlines).  It is more consistent to do this as part
+    of the rendering pipeline, in citeproc itself.
+
+  * Citeproc.CslJson: Drop the Locale parameter from the signature of
+    `renderCslJson` [breaking API change].  It was only needed for quote
+    localization, which now occurs outside of this function.
+
+  * Citeproc.Pandoc: use a Span with class csl-quoted for quotes,
+    rather than a Quoted inline.  This way we can leave Quoted elements
+    passed in by pandoc alone, and we won't get strange effects like the
+    one described in #87 (where `"` behaves differently when in
+    a citation suffix).
+
+  * Default to Shifted with `icu` flag (#83).  This makes the library
+    behave similarly whether compiled with `icu` or with the default
+    `unicode-collation` and prevents test failures with `icu`.
+
+  * Require recent text-icu with icu flag.
+    Older versions don't build with newer versions of icu4c.
+
+  * Add new CSL tests to repository.
+
+
 ## 0.4.1
 
   * Change Pandoc `inNote` so it creates a `Span` with class `csl-note`
