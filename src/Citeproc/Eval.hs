@@ -1162,18 +1162,30 @@ evalItem layout (position, item) = do
                       , IdentPMID  <$> (valToText =<< lookupVariable "PMID" ref)
                       , IdentURL   <$> (valToText =<< lookupVariable "URL" ref)
                       ]
+             let mburl = identifierToURL <$> mbident
+            
              -- hyperlink any titles in the output
-             let linkTitle target (Tagged TagTitle x) = Tagged (TagLink target) x
+             let linkTitle target (Tagged TagTitle x) = Linked LinkTitle target [x]
                  linkTitle _ x = x
              
-             -- when no links were rendered, hyperlink title, if it exists
-             usedLink <- gets stateUsedIdentifier
+             usedLink  <- gets stateUsedIdentifier
+             usedTitle <- gets stateUsedTitle
+             inBiblio  <- asks contextInBibliography 
 
-             let xs' = case mbident of
-                         Nothing     -> xs
-                         Just ident  -> if usedLink
-                                           then xs
-                                           else fmap (transform (linkTitle ident)) xs
+             -- when no links were rendered for a bibliography item, hyperlink
+             -- the title, if it exists, otherwise hyperlink the whole item
+             let xs' =
+                   if not inBiblio
+                     then xs
+                   else case mburl of
+                         Nothing  -> xs
+                         Just url -> if usedLink
+                                        then xs
+                                     else if usedTitle
+                                        -- hyperlink the title
+                                        then fmap (transform (linkTitle url)) xs
+                                        -- hyperlink the entire bib item
+                                        else [Linked LinkBibItem url xs] 
 
              let mblang = lookupVariable "language" ref
                           >>= valToText
@@ -1530,10 +1542,12 @@ eText (TextVariable varForm v) = do
                       coerce (referenceId ref)
             return NullOutput
 
+    "DOI"   -> handleIdent IdentDOI
+    "PMCID" -> handleIdent IdentPMCID
+    "PMID"  -> handleIdent IdentPMID
+    "URL"   -> handleIdent IdentURL
+
     _ -> do
-        -- remember whether we've rendered any links so far
-        when (v `elem` ["DOI", "PMCID", "PMID", "URL"]) $
-            modify (\st -> st { stateUsedIdentifier = True })
         mbv <- if varForm == ShortForm
                   then do
                     mbval <- (<|>) <$> askVariable (v <> "-short")
@@ -1560,12 +1574,24 @@ eText (TextVariable varForm v) = do
               st{ stateReference =
                   let Reference id' type' d' m' = stateReference st
                    in Reference id' type' d' (M.delete v m') }
-        if v == "title"
+        if v == "title" && res /= NullOutput
             then do
               modify (\st -> st { stateUsedTitle = True })
               -- tag title so we can hyperlink it later
               return $ Tagged TagTitle res
             else return res
+    where
+      handleIdent :: CiteprocOutput b => (Text -> Identifier) -> Eval b (Output b)
+      handleIdent identConstr = do
+        mbv <- askVariable v
+        case valToText =<< mbv of
+          Nothing -> return NullOutput
+          Just t  -> do
+            -- create link and remember that we've done so far
+            modify (\st -> st { stateUsedIdentifier = True })
+            let url = identifierToURL (identConstr t)
+            -- make sure the url and label match exactly
+            return $ Linked LinkURL url [Literal $ fromText url]
 eText (TextMacro name) = do
   warn $ "encountered unexpanded macro " <> name
   return NullOutput
@@ -2293,6 +2319,8 @@ getDisplayName nameFormat formatting order name = do
                             case formatSuffix f of
                               Just t | endsWithSpace t -> Nothing
                               _ -> Just " " } [formatted f x, y]
+      Linked lt i x <+> y =
+        formatted mempty{ formatDelimiter = Just " " } [Linked lt i x, y]
       Tagged _ x <+> y = x <+> y
       InNote x <+> y = x <+> y
   let x <:> NullOutput = x
@@ -2301,6 +2329,8 @@ getDisplayName nameFormat formatting order name = do
         formatted mempty{ formatDelimiter = Just separator } [Literal x, y]
       Formatted f x <:> y = formatted
         (mempty{ formatDelimiter = Just separator }) [Formatted f x, y]
+      Linked lt i x <:> y = formatted
+        (mempty{ formatDelimiter = Just separator }) [Linked lt i x, y]
       Tagged _ x <:> y = x <:> y
       InNote x <:> y = x <:> y
 

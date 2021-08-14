@@ -90,6 +90,8 @@ module Citeproc.Types
   , lookupVariable
   , Output(..)
   , Identifier(..)
+  , identifierToURL
+  , LinkType(..)
   , Tag(..)
   , outputToText
   , renderOutput
@@ -146,18 +148,26 @@ data CiteprocOptions =
   CiteprocOptions
   { linkCitations :: Bool
     -- ^ Create hyperlinks from citations to bibliography entries
+  , linkURLs :: Bool
+    -- ^ Automatically linkify DOIs, PMCIDs, PMIDs, and URLs.
   , linkTitles :: Bool
-    -- ^ When a bibliography entry has an identifier (doi, pmcid, pmid, url)
-    -- available, but the style does not explicitly render at least one of them,
-    -- add a hyperlink to the title instead.
+    -- ^ When a bibliography entry has a DOI, PMCID, PMID, or URL available
+    -- (in order of priority), but the style does not explicitly render at least
+    -- one of them, add a hyperlink to the title instead.
+  , linkBibItems :: Bool
+    -- ^ When True, any bibliography item with a DOI, PMCID, PMID, or URL available
+    -- (in order of priority) will be wrapped in a hyperlink when the hyperlink
+    -- has not already been applied to one of its parts (e.g. to the title).
   }
   deriving (Show, Eq)
 
 defaultCiteprocOptions :: CiteprocOptions
 defaultCiteprocOptions =
   CiteprocOptions
-  { linkCitations = False 
-  , linkTitles    = True
+  { linkCitations = False
+  , linkURLs      = True
+  , linkTitles    = False
+  , linkBibItems  = False
   }
 
 data CiteprocError =
@@ -1438,6 +1448,7 @@ removeEmptyStrings = filter (not . isEmptyString)
 
 data Output a =
     Formatted Formatting [Output a]
+  | Linked LinkType Text [Output a]
   | InNote (Output a)
   | Literal a
   | Tagged Tag (Output a)
@@ -1446,6 +1457,7 @@ data Output a =
 
 instance Uniplate (Output a) where
   uniplate (Formatted f xs) = plate Formatted |- f ||* xs
+  uniplate (Linked t u xs)  = plate Linked |- t |- u ||* xs
   uniplate (InNote x)       = plate InNote |* x
   uniplate (Literal x)      = plate Literal |- x
   uniplate (Tagged t x)     = plate Tagged |- t |* x
@@ -1454,6 +1466,14 @@ instance Uniplate (Output a) where
 instance Biplate (Output a) (Output a) where
   biplate = plateSelf
 
+-- | Describes how a hyperlink relates to a bibitem.
+data LinkType = 
+      LinkNormal  -- ^ an unspecified hyperlink
+    | LinkURL     -- ^ a raw URL with no label
+    | LinkTitle   -- ^ hyperlinked title
+    | LinkBibItem -- ^ hyperlinked bib item
+  deriving (Show, Eq)
+
 data Identifier =
       IdentDOI Text
     | IdentPMCID Text
@@ -1461,13 +1481,20 @@ data Identifier =
     | IdentURL Text
   deriving (Show, Eq)
 
-identifierToUrl :: Identifier -> Text
-identifierToUrl ident =
+identifierToURL :: Identifier -> Text
+identifierToURL ident =
     case ident of
-      IdentDOI t   -> T.append "https://doi.org/" t
-      IdentPMCID t -> T.append "https://www.ncbi.nlm.nih.gov/pmc/articles/" t
-      IdentPMID t  -> T.append "https://www.ncbi.nlm.nih.gov/pubmed/" t
-      IdentURL t   -> t
+      IdentDOI t   -> tolink "https://doi.org/" (fixShortDOI t)
+      IdentPMCID t -> tolink "https://www.ncbi.nlm.nih.gov/pmc/articles/" t
+      IdentPMID t  -> tolink "https://www.ncbi.nlm.nih.gov/pubmed/" t
+      IdentURL t   -> tolink "https://" t
+    where
+        fixShortDOI x = if "10/" `T.isPrefixOf` x
+                           then T.drop 3 x -- see https://shortdoi.org
+                           else x
+        tolink pref x = if T.null x || ("://" `T.isInfixOf` x)
+                           then x
+                           else pref <> x
 
 data Tag =
       TagTerm
@@ -1475,7 +1502,6 @@ data Tag =
     | TagCitationLabel
     | TagTitle
     -- ^ marks the title of an entry, so it can be hyperlinked later
-    | TagLink Identifier
     | TagItem CitationItemType ItemId
     | TagName Name
     | TagNames Variable NamesFormat [Name]
@@ -1489,6 +1515,7 @@ outputToText NullOutput = mempty
 outputToText (Literal x ) = toText x
 outputToText (Tagged _ x) = outputToText x
 outputToText (Formatted _ xs) = T.unwords $ map outputToText xs
+outputToText (Linked _ _ xs) = T.unwords $ map outputToText xs
 outputToText (InNote x)   = outputToText x
 
 renderOutput :: CiteprocOutput a => CiteprocOptions -> Output a -> a
@@ -1498,15 +1525,23 @@ renderOutput opts (Tagged (TagItem itemtype ident) x)
   | linkCitations opts
   , itemtype /= AuthorOnly
   = addHyperlink ("#ref-" <> unItemId ident) $ renderOutput opts x
-renderOutput opts (Tagged (TagLink ident) x)
-  | linkTitles opts
-  = addHyperlink (identifierToUrl ident) $ renderOutput opts x
 renderOutput opts (Tagged _ x) = renderOutput opts x
 renderOutput opts (Formatted formatting xs) =
   addFormatting formatting . mconcat . fixPunct .
     (case formatDelimiter formatting of
        Just d  -> addDelimiters (fromText d)
        Nothing -> id) . filter (/= mempty) $ map (renderOutput opts) xs
+renderOutput opts (Linked lt url xs)
+  = (if shouldLink
+       then addHyperlink url
+       else id) . mconcat . fixPunct $ map (renderOutput opts) xs
+    where
+      shouldLink =
+        case lt of
+          LinkNormal  -> True
+          LinkURL     -> linkURLs opts
+          LinkTitle   -> linkTitles opts
+          LinkBibItem -> linkBibItems opts
 renderOutput opts (InNote x) = inNote $
   dropTextWhile isSpace $
   dropTextWhile (\c -> c == ',' || c == ';' || c == '.' || c == ':') $
