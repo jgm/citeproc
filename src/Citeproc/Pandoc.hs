@@ -17,6 +17,7 @@ import Citeproc.Types
 import Citeproc.CaseTransform
 import Control.Monad.Trans.State.Strict as S
 import Control.Monad (unless, when)
+import Citeproc.Locale (lookupQuotes)
 import Data.Functor.Reverse
 import Data.Char (isSpace, isPunctuation, isAlphaNum)
 
@@ -68,7 +69,7 @@ instance CiteprocOutput Inlines where
       DisplayLeftMargin  -> B.spanWith ("",["csl-left-margin"],[])
       DisplayRightInline -> B.spanWith ("",["csl-right-inline"],[])
       DisplayIndent      -> B.spanWith ("",["csl-indent"],[])
-  addQuotes             = B.doubleQuoted . flipFlopQuotes DoubleQuote
+  addQuotes             = B.doubleQuoted
   inNote                = B.spanWith ("",["csl-note"],[])
   movePunctuationInsideQuotes
                         = punctuationInsideQuotes
@@ -76,16 +77,25 @@ instance CiteprocOutput Inlines where
     where go (Str t) = Str (f t)
           go x       = x
   addHyperlink t        = B.link t ""
+  localizeQuotes        = convertQuotes
 
-flipFlopQuotes :: QuoteType -> Inlines -> Inlines
-flipFlopQuotes qt = B.fromList . map (go qt) . B.toList
+-- localized quotes
+convertQuotes :: Locale -> Inlines -> Inlines
+convertQuotes locale = B.fromList . map (go DoubleQuote) . B.toList
  where
+  ((oqOuter, cqOuter), (oqInner, cqInner)) = lookupQuotes locale
+
+  oq DoubleQuote  = oqOuter
+  oq SingleQuote  = oqInner
+  cq DoubleQuote  = cqOuter
+  cq SingleQuote  = cqInner
+
+  flipflop SingleQuote = DoubleQuote
+  flipflop DoubleQuote = SingleQuote
+
   go :: QuoteType -> Inline -> Inline
-  go q (Quoted _ zs) =
-    let q' = case q of
-               SingleQuote -> DoubleQuote
-               DoubleQuote -> SingleQuote
-    in  Quoted q' (map (go q') zs)
+  go qt (Quoted _ ils) =
+    Span ("",[],[]) (Str (oq qt) : map (go (flipflop qt)) ils ++ [Str (cq qt)])
   go q (SmallCaps zs) = SmallCaps (map (go q) zs)
   go q (Superscript zs) = Superscript (map (go q) zs)
   go q (Subscript zs) = Subscript (map (go q) zs)

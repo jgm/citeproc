@@ -30,13 +30,12 @@ where
 
 
 import Citeproc.Types
+import Citeproc.Locale (lookupQuotes)
 import Citeproc.CaseTransform
 import Data.Ord ()
 import Data.Char (isAlphaNum, isSpace, isAscii)
 import Data.Text (Text)
-import Data.Maybe (fromMaybe)
 import qualified Data.Text as T
-import qualified Data.Map as M
 import Data.Foldable (fold)
 import Data.Functor.Identity
 import Data.Attoparsec.Text as P
@@ -148,6 +147,7 @@ instance CiteprocOutput (CslJson Text) where
                         = punctuationInsideQuotes
   mapText f             = runIdentity . traverse (return . f)
   addHyperlink _        = id -- CSL JSON doesn't support links
+  localizeQuotes        = convertQuotes
 
 dropTextWhile' :: (Char -> Bool) -> CslJson Text -> CslJson Text
 dropTextWhile' f x = evalState (traverse g x) False
@@ -203,7 +203,7 @@ pCslJson locale = P.choice
   ]
  where
   ((outerOpenQuote, outerCloseQuote), (innerOpenQuote, innerCloseQuote)) =
-     fromMaybe (("\x201C","\x201D"),("\x2018","\x2019")) $ lookupQuotes locale
+     lookupQuotes locale
   isSpecialChar c = c == '<' || c == '>' || c == '\'' || c == '"' ||
        c == '’' || (not (isAscii c) && (isSuperscriptChar c || isQuoteChar c))
   isQuoteChar = P.inClass
@@ -287,21 +287,6 @@ data RenderContext =
   , useSmallCaps    :: Bool
   } deriving (Show, Eq)
 
-lookupTerm :: Locale -> Text -> Maybe Text
-lookupTerm locale termname = do
-  let terms = localeTerms locale
-  case M.lookup termname terms of
-     Just ((_,t):_) -> Just t
-     _              -> Nothing
-
-lookupQuotes :: Locale -> Maybe ((Text, Text), (Text, Text))
-lookupQuotes locale = do
-  outerQuotes <- (,) <$> lookupTerm locale "open-quote"
-                     <*> lookupTerm locale "close-quote"
-  innerQuotes <- (,) <$> lookupTerm locale "open-inner-quote"
-                     <*> lookupTerm locale "close-inner-quote"
-  return (outerQuotes, innerQuotes)
-
 -- | Render 'CslJson' as 'Text'.  Set the first parameter to True
 -- when rendering HTML output (so that entities are escaped).
 -- Set it to False when rendering for CSL JSON bibliographies.
@@ -312,8 +297,7 @@ renderCslJson :: Bool          -- ^ Escape < > & using entities
 renderCslJson useEntities locale =
   go (RenderContext True True True True)
  where
-  (outerQuotes, innerQuotes) = fromMaybe (("\"","\""),("'","'"))
-                                   $ lookupQuotes locale
+  (outerQuotes, innerQuotes) = lookupQuotes locale
   go :: RenderContext -> CslJson Text -> Text
   go ctx el =
     case el of
@@ -373,11 +357,41 @@ renderCslJson useEntities locale =
                Nothing -> t
     | otherwise = t
 
-cslJsonToJson :: Locale -> CslJson Text -> [Value]
-cslJsonToJson locale = go (RenderContext True True True True)
+-- localized quotes
+convertQuotes :: Locale -> CslJson Text -> CslJson Text
+convertQuotes locale = go True
  where
-  (outerQuotes, innerQuotes) = fromMaybe
-       (("\"","\""),("'","'")) $ lookupQuotes locale
+  (outerQuotes, innerQuotes) = lookupQuotes locale
+
+  go useOuter el =
+    case el of
+      CslConcat x y -> go useOuter x <> go useOuter y
+      CslQuoted x
+        | useOuter
+          -> CslText (fst outerQuotes) <>
+             go (not useOuter) x <>
+             CslText (snd outerQuotes)
+        | otherwise
+          -> CslText (fst innerQuotes) <>
+             go (not useOuter) x <>
+             CslText (snd innerQuotes)
+      CslNormal x -> CslNormal $ go useOuter x
+      CslItalic x -> CslItalic $ go useOuter x
+      CslBold x -> CslBold $ go useOuter x
+      CslUnderline x -> CslUnderline $ go useOuter x
+      CslNoDecoration x -> CslNoDecoration $ go useOuter x
+      CslSmallCaps x -> CslSmallCaps $ go useOuter x
+      CslSup x -> CslSup $ go useOuter x
+      CslSub x -> CslSub $ go useOuter x
+      CslBaseline x -> CslBaseline $ go useOuter x
+      CslDiv t x -> CslDiv t $ go useOuter x
+      CslNoCase x -> CslNoCase $ go useOuter x
+      x -> x
+
+
+cslJsonToJson :: CslJson Text -> [Value]
+cslJsonToJson = go (RenderContext True True True True)
+ where
   isString (String _) = True
   isString _ = False
   consolidateStrings :: [Value] -> [Value]
@@ -396,15 +410,7 @@ cslJsonToJson locale = go (RenderContext True True True True)
       CslConcat x CslEmpty -> go ctx x
       CslConcat (CslConcat x y) z -> go ctx (CslConcat x (CslConcat y z))
       CslConcat x y -> go ctx x <> go ctx y
-      CslQuoted x
-        | useOuterQuotes ctx
-          -> [String (fst outerQuotes)] <>
-             go ctx{ useOuterQuotes = False } x <>
-             [String (snd outerQuotes)]
-        | otherwise
-          -> [String (fst innerQuotes)] <>
-             go ctx{ useOuterQuotes = True } x <>
-             [String (snd innerQuotes)]
+      CslQuoted x -> go ctx x  -- should be localized already
       CslNormal x
         | useItalics ctx -> go ctx x
         | otherwise      -> [ object
