@@ -91,6 +91,7 @@ module Citeproc.Types
   , Output(..)
   , Identifier(..)
   , identifierToURL
+  , fixShortDOI
   , LinkType(..)
   , Tag(..)
   , outputToText
@@ -1489,12 +1490,15 @@ identifierToURL ident =
       IdentPMID t  -> tolink "https://www.ncbi.nlm.nih.gov/pubmed/" t
       IdentURL t   -> tolink "https://" t
     where
-        fixShortDOI x = if "10/" `T.isPrefixOf` x
-                           then T.drop 3 x -- see https://shortdoi.org
-                           else x
         tolink pref x = if T.null x || ("://" `T.isInfixOf` x)
                            then x
                            else pref <> x
+
+-- see https://shortdoi.org
+fixShortDOI :: Text -> Text
+fixShortDOI x = if "10/" `T.isPrefixOf` x
+                   then T.drop 3 x
+                   else x
 
 data Tag =
       TagTerm

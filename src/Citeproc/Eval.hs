@@ -1165,8 +1165,12 @@ evalItem layout (position, item) = do
              let mburl = identifierToURL <$> mbident
             
              -- hyperlink any titles in the output
-             let linkTitle target (Tagged TagTitle x) = Linked LinkTitle target [x]
+             let linkTitle url (Tagged TagTitle x) = Linked LinkTitle url [x]
                  linkTitle _ x = x
+             
+            -- ensure formatting (esp a link prefix/suffix) is included in the link
+             let fixLinkPrefixes (Formatted f [Linked lt u ys]) = Linked lt u [Formatted f ys]
+                 fixLinkPrefixes y = y
              
              usedLink  <- gets stateUsedIdentifier
              usedTitle <- gets stateUsedTitle
@@ -1186,15 +1190,17 @@ evalItem layout (position, item) = do
                                         then fmap (transform (linkTitle url)) xs
                                         -- hyperlink the entire bib item
                                         else [Linked LinkBibItem url xs] 
+            
+             let xs'' = fmap (transform fixLinkPrefixes) xs'
 
              let mblang = lookupVariable "language" ref
                           >>= valToText
                           >>= either (const Nothing) Just . parseLang
              return $
                case mblang of
-                 Nothing   -> xs'
+                 Nothing   -> xs''
                  Just lang -> map
-                     (transform (addLangToFormatting lang)) xs'
+                     (transform (addLangToFormatting lang)) xs''
     Nothing -> do
       warn $ "citation " <> unItemId (citationItemId item) <>
              " not found"
@@ -1468,7 +1474,6 @@ formatPageRange mbPageRangeFormat delim t =
 eText :: CiteprocOutput a => TextType -> Eval a (Output a)
 eText (TextVariable varForm v) = do
   ref <- gets stateReference
-  inSubstitute <- asks contextInSubstitute
   -- Note: we do book keeping on how many variables
   -- have been accessed and how many are nonempty,
   -- in order to properly handle the group element,
@@ -1542,10 +1547,10 @@ eText (TextVariable varForm v) = do
                       coerce (referenceId ref)
             return NullOutput
 
-    "DOI"   -> handleIdent IdentDOI
-    "PMCID" -> handleIdent IdentPMCID
-    "PMID"  -> handleIdent IdentPMID
-    "URL"   -> handleIdent IdentURL
+    "DOI"   -> handleIdent fixShortDOI IdentDOI
+    "PMCID" -> handleIdent id IdentPMCID
+    "PMID"  -> handleIdent id IdentPMID
+    "URL"   -> handleIdent id IdentURL
 
     _ -> do
         mbv <- if varForm == ShortForm
@@ -1569,11 +1574,7 @@ eText (TextVariable varForm v) = do
                  Just (NumVal x) -> return $ Literal
                                            $ fromText (T.pack (show x))
                  _ -> return NullOutput
-        when inSubstitute $
-          modify $ \st -> -- delete variable so it isn't used again...
-              st{ stateReference =
-                  let Reference id' type' d' m' = stateReference st
-                   in Reference id' type' d' (M.delete v m') }
+        handleSubst
         if v == "title" && res /= NullOutput
             then do
               modify (\st -> st { stateUsedTitle = True })
@@ -1581,17 +1582,24 @@ eText (TextVariable varForm v) = do
               return $ Tagged TagTitle res
             else return res
     where
-      handleIdent :: CiteprocOutput b => (Text -> Identifier) -> Eval b (Output b)
-      handleIdent identConstr = do
+      handleIdent :: CiteprocOutput b => (Text -> Text) -> (Text -> Identifier) -> Eval b (Output b)
+      handleIdent f identConstr = do
         mbv <- askVariable v
-        case valToText =<< mbv of
+        handleSubst
+        case f <$> (valToText =<< mbv) of
           Nothing -> return NullOutput
           Just t  -> do
             -- create link and remember that we've done so far
             modify (\st -> st { stateUsedIdentifier = True })
             let url = identifierToURL (identConstr t)
-            -- make sure the url and label match exactly
-            return $ Linked LinkURL url [Literal $ fromText url]
+            return $ Linked LinkURL url [Literal $ fromText t]
+      handleSubst :: Eval a ()
+      handleSubst = do inSubst <- asks contextInSubstitute 
+                       when inSubst $
+                         modify $ \st -> -- delete variable so it isn't used again...
+                           st{ stateReference =
+                                 let Reference id' type' d' m' = stateReference st
+                                  in Reference id' type' d' (M.delete v m') }
 eText (TextMacro name) = do
   warn $ "encountered unexpanded macro " <> name
   return NullOutput
