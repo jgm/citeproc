@@ -1156,7 +1156,7 @@ evalItem layout (position, item) = do
 
              -- find identifiers that can be used to hyperlink the title 
              let mbident = 
-                    foldl' (<|>) Nothing
+                    foldl (<|>) Nothing
                       [ IdentDOI   <$> (valToText =<< lookupVariable "DOI" ref)
                       , IdentPMCID <$> (valToText =<< lookupVariable "PMCID" ref)
                       , IdentPMID  <$> (valToText =<< lookupVariable "PMID" ref)
