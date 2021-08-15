@@ -1168,9 +1168,16 @@ evalItem layout (position, item) = do
              let linkTitle url (Tagged TagTitle x) = Linked LinkTitle url [x]
                  linkTitle _ x = x
              
-            -- ensure formatting (esp a link prefix/suffix) is included in the link
-             let fixLinkPrefixes (Formatted f [Linked lt u ys]) = Linked lt u [Formatted f ys]
+            -- ensure correct handling of link prefixes like (https://doi.org/)
+            -- when a link's prefix+anchor=target, ensure the link includes the prefix
+            -- (see pandoc#6723 and citeproc#88; also pandoc's fixLinks function)
+             let fixLinkPrefixes (Formatted f [Linked lt u ys]) 
+                                 | checkPrefix f u ys = Linked lt u [Formatted f ys]
                  fixLinkPrefixes y = y
+                 checkPrefix f url ys =
+                    let anchor = mconcat mempty (map outputToText ys)
+                        prefix = fromMaybe "" (formatPrefix f)
+                     in url == prefix <> anchor
              
              usedLink  <- gets stateUsedIdentifier
              usedTitle <- gets stateUsedTitle
