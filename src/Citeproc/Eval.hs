@@ -1156,7 +1156,7 @@ evalItem layout (position, item) = do
 
              -- find identifiers that can be used to hyperlink the title 
              let mbident = 
-                    foldl (<|>) Nothing
+                    foldl' (<|>) Nothing
                       [ IdentDOI   <$> (valToText =<< lookupVariable "DOI" ref)
                       , IdentPMCID <$> (valToText =<< lookupVariable "PMCID" ref)
                       , IdentPMID  <$> (valToText =<< lookupVariable "PMID" ref)
@@ -1179,13 +1179,11 @@ evalItem layout (position, item) = do
              -- when no links were rendered for a bibliography item, hyperlink
              -- the title, if it exists, otherwise hyperlink the whole item
              let xs' =
-                   if not inBiblio
+                   if usedLink || not inBiblio
                      then xs
                    else case mburl of
                          Nothing  -> xs
-                         Just url -> if usedLink
-                                        then xs
-                                     else if usedTitle
+                         Just url -> if usedTitle
                                         -- hyperlink the title
                                         then fmap (transform (linkTitle url)) xs
                                         -- hyperlink the entire bib item
