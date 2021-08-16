@@ -17,6 +17,7 @@ import Citeproc.Types
 import Citeproc.CaseTransform
 import Control.Monad.Trans.State.Strict as S
 import Control.Monad (unless, when)
+import Citeproc.Locale (lookupQuotes)
 import Data.Functor.Reverse
 import Data.Char (isSpace, isPunctuation, isAlphaNum)
 
@@ -68,7 +69,7 @@ instance CiteprocOutput Inlines where
       DisplayLeftMargin  -> B.spanWith ("",["csl-left-margin"],[])
       DisplayRightInline -> B.spanWith ("",["csl-right-inline"],[])
       DisplayIndent      -> B.spanWith ("",["csl-indent"],[])
-  addQuotes             = B.doubleQuoted . flipFlopQuotes DoubleQuote
+  addQuotes             = B.spanWith ("",["csl-quoted"],[])
   inNote                = B.spanWith ("",["csl-note"],[])
   movePunctuationInsideQuotes
                         = punctuationInsideQuotes
@@ -76,20 +77,31 @@ instance CiteprocOutput Inlines where
     where go (Str t) = Str (f t)
           go x       = x
   addHyperlink t        = B.link t ""
+  localizeQuotes        = convertQuotes
 
-flipFlopQuotes :: QuoteType -> Inlines -> Inlines
-flipFlopQuotes qt = B.fromList . map (go qt) . B.toList
+-- localized quotes
+convertQuotes :: Locale -> Inlines -> Inlines
+convertQuotes locale = B.fromList . map (go DoubleQuote) . B.toList
  where
+  ((oqOuter, cqOuter), (oqInner, cqInner)) = lookupQuotes locale
+
+  oq DoubleQuote  = oqOuter
+  oq SingleQuote  = oqInner
+  cq DoubleQuote  = cqOuter
+  cq SingleQuote  = cqInner
+
+  flipflop SingleQuote = DoubleQuote
+  flipflop DoubleQuote = SingleQuote
+
   go :: QuoteType -> Inline -> Inline
-  go q (Quoted _ zs) =
-    let q' = case q of
-               SingleQuote -> DoubleQuote
-               DoubleQuote -> SingleQuote
-    in  Quoted q' (map (go q') zs)
+  go q (Span ("",["csl-quoted"],[]) ils) =
+    Span ("",["csl-quoted"],[])
+      (Str (oq q) : map (go (flipflop q)) ils ++ [Str (cq q)])
+  go q (Span attr zs) = Span attr (map (go q) zs)
+  go q (Quoted qt' zs) = Quoted qt' (map (go q) zs)
   go q (SmallCaps zs) = SmallCaps (map (go q) zs)
   go q (Superscript zs) = Superscript (map (go q) zs)
   go q (Subscript zs) = Subscript (map (go q) zs)
-  go q (Span attr zs) = Span attr (map (go q) zs)
   go q (Emph zs) = Emph (map (go q) zs)
   go q (Underline zs) = Underline (map (go q) zs)
   go q (Strong zs) = Strong (map (go q) zs)
@@ -107,9 +119,17 @@ punctuationInsideQuotes = B.fromList . go . walk go . B.toList
       Just (c,_) -> c == '.' || c == ','
       Nothing    -> False
   go [] = []
+  go (Span ("",["csl-quoted"],[]) xs : Str t : rest)
+    | startsWithMovable t
+      = Span ("",["csl-quoted"],[])
+           (xs ++ [Str (T.take 1 t) | not (endWithPunct True xs)]) :
+        if T.length t == 1
+           then go rest
+           else Str (T.drop 1 t) : go rest
   go (Quoted qt xs : Str t : rest)
     | startsWithMovable t
-      = Quoted qt (xs ++ [Str (T.take 1 t) | not (endWithPunct True xs)]) :
+      = Quoted qt
+           (xs ++ [Str (T.take 1 t) | not (endWithPunct True xs)]) :
         if T.length t == 1
            then go rest
            else Str (T.drop 1 t) : go rest

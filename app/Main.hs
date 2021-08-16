@@ -88,10 +88,10 @@ main = do
                 case format of
                    Json -> Aeson.object
                           [ ("citations", Aeson.toJSON $
-                               map (cslJsonToJson locale)
+                               map cslJsonToJson
                                    (resultCitations result))
                           , ("bibliography", Aeson.toJSON $
-                               map (second $ cslJsonToJson locale)
+                               map (second cslJsonToJson)
                                    (resultBibliography result))
                           , ("warnings", Aeson.toJSON $ resultWarnings result)
                           ]
