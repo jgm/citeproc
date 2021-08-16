@@ -1170,7 +1170,7 @@ evalItem layout (position, item) = do
              
             -- ensure correct handling of link prefixes like (https://doi.org/)
             -- when a link's prefix+anchor=target, ensure the link includes the prefix
-            -- (see pandoc#6723 and citeproc#88; also pandoc's fixLinks function)
+            -- (see pandoc#6723 and citeproc#88)
              let fixLinkPrefixes (Formatted f [Linked lt u ys]) 
                                  | checkPrefix f u ys = Linked lt u [Formatted f ys]
                  fixLinkPrefixes y = y
