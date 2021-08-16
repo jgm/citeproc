@@ -92,7 +92,6 @@ module Citeproc.Types
   , Identifier(..)
   , identifierToURL
   , fixShortDOI
-  , LinkType(..)
   , Tag(..)
   , outputToText
   , renderOutput
@@ -149,26 +148,25 @@ data CiteprocOptions =
   CiteprocOptions
   { linkCitations :: Bool
     -- ^ Create hyperlinks from citations to bibliography entries
-  , linkURLs :: Bool
-    -- ^ Automatically linkify DOIs, PMCIDs, PMIDs, and URLs.
-  , linkTitles :: Bool
-    -- ^ When a bibliography entry has a DOI, PMCID, PMID, or URL available
-    -- (in order of priority), but the style does not explicitly render at least
-    -- one of them, add a hyperlink to the title instead.
-  , linkBibItems :: Bool
-    -- ^ When True, any bibliography item with a DOI, PMCID, PMID, or URL available
-    -- (in order of priority) will be wrapped in a hyperlink when the hyperlink
-    -- has not already been applied to one of its parts (e.g. to the title).
+  , linkBibliography :: Bool
+    -- ^ Enables the following options:
+    --
+    --   * Automatically linkify any DOI, PMCID, PMID, or URL
+    --     appearing in a bibliography entry.
+    --   * When a bibliography entry has a DOI, PMCID, PMID, or URL available
+    --     (in order of priority), but the style does not explicitly render at
+    --     least one of them, add a hyperlink to the title instead.
+    --   * A bibliography item with a DOI, PMCID, PMID, or URL available
+    --     (in order of priority) will be wrapped in a hyperlink when the hyperlink
+    --     has not already been applied to one of its parts (e.g. to the title).
   }
   deriving (Show, Eq)
 
 defaultCiteprocOptions :: CiteprocOptions
 defaultCiteprocOptions =
   CiteprocOptions
-  { linkCitations = False
-  , linkURLs      = True
-  , linkTitles    = False
-  , linkBibItems  = False
+  { linkCitations = False 
+  , linkBibliography = False
   }
 
 data CiteprocError =
@@ -1449,7 +1447,7 @@ removeEmptyStrings = filter (not . isEmptyString)
 
 data Output a =
     Formatted Formatting [Output a]
-  | Linked LinkType Text [Output a]
+  | Linked Text [Output a]
   | InNote (Output a)
   | Literal a
   | Tagged Tag (Output a)
@@ -1458,7 +1456,7 @@ data Output a =
 
 instance Uniplate (Output a) where
   uniplate (Formatted f xs) = plate Formatted |- f ||* xs
-  uniplate (Linked t u xs)  = plate Linked |- t |- u ||* xs
+  uniplate (Linked u xs)  = plate Linked |- u ||* xs
   uniplate (InNote x)       = plate InNote |* x
   uniplate (Literal x)      = plate Literal |- x
   uniplate (Tagged t x)     = plate Tagged |- t |* x
@@ -1466,14 +1464,6 @@ instance Uniplate (Output a) where
 
 instance Biplate (Output a) (Output a) where
   biplate = plateSelf
-
--- | Describes how a hyperlink relates to a bibitem.
-data LinkType = 
-      LinkNormal  -- ^ an unspecified hyperlink
-    | LinkURL     -- ^ a raw URL with no label
-    | LinkTitle   -- ^ hyperlinked title
-    | LinkBibItem -- ^ hyperlinked bib item
-  deriving (Show, Eq)
 
 data Identifier =
       IdentDOI Text
@@ -1519,7 +1509,7 @@ outputToText NullOutput = mempty
 outputToText (Literal x ) = toText x
 outputToText (Tagged _ x) = outputToText x
 outputToText (Formatted _ xs) = T.unwords $ map outputToText xs
-outputToText (Linked _ _ xs) = T.unwords $ map outputToText xs
+outputToText (Linked _ xs) = T.unwords $ map outputToText xs
 outputToText (InNote x)   = outputToText x
 
 renderOutput :: CiteprocOutput a => CiteprocOptions -> Output a -> a
@@ -1530,22 +1520,25 @@ renderOutput opts (Tagged (TagItem itemtype ident) x)
   , itemtype /= AuthorOnly
   = addHyperlink ("#ref-" <> unItemId ident) $ renderOutput opts x
 renderOutput opts (Tagged _ x) = renderOutput opts x
+renderOutput opts (Formatted f [Linked url xs])
+  | linkBibliography opts
+  , url == prefix <> anchor
+  -- ensure correct handling of link prefixes like (https://doi.org/)
+  -- when a link's prefix+anchor=target, ensure the link includes the prefix
+  -- (see pandoc#6723 and citeproc#88)
+  = renderOutput opts $ Linked url [Formatted f xs]
+  where
+    anchor = mconcat (map outputToText xs)
+    prefix = fromMaybe "" (formatPrefix f)
 renderOutput opts (Formatted formatting xs) =
   addFormatting formatting . mconcat . fixPunct .
     (case formatDelimiter formatting of
        Just d  -> addDelimiters (fromText d)
        Nothing -> id) . filter (/= mempty) $ map (renderOutput opts) xs
-renderOutput opts (Linked lt url xs)
-  = (if shouldLink
+renderOutput opts (Linked url xs)
+  = (if linkBibliography opts
        then addHyperlink url
        else id) . mconcat . fixPunct $ map (renderOutput opts) xs
-    where
-      shouldLink =
-        case lt of
-          LinkNormal  -> True
-          LinkURL     -> linkURLs opts
-          LinkTitle   -> linkTitles opts
-          LinkBibItem -> linkBibItems opts
 renderOutput opts (InNote x) = inNote $
   dropTextWhile isSpace $
   dropTextWhile (\c -> c == ',' || c == ';' || c == '.' || c == ':') $

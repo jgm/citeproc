@@ -1165,19 +1165,8 @@ evalItem layout (position, item) = do
              let mburl = identifierToURL <$> mbident
             
              -- hyperlink any titles in the output
-             let linkTitle url (Tagged TagTitle x) = Linked LinkTitle url [x]
+             let linkTitle url (Tagged TagTitle x) = Linked url [Tagged TagTitle x]
                  linkTitle _ x = x
-             
-            -- ensure correct handling of link prefixes like (https://doi.org/)
-            -- when a link's prefix+anchor=target, ensure the link includes the prefix
-            -- (see pandoc#6723 and citeproc#88)
-             let fixLinkPrefixes (Formatted f [Linked lt u ys]) 
-                                 | checkPrefix f u ys = Linked lt u [Formatted f ys]
-                 fixLinkPrefixes y = y
-                 checkPrefix f url ys =
-                    let anchor = mconcat (map outputToText ys)
-                        prefix = fromMaybe "" (formatPrefix f)
-                     in url == prefix <> anchor
              
              usedLink  <- gets stateUsedIdentifier
              usedTitle <- gets stateUsedTitle
@@ -1194,18 +1183,16 @@ evalItem layout (position, item) = do
                                         -- hyperlink the title
                                         then fmap (transform (linkTitle url)) xs
                                         -- hyperlink the entire bib item
-                                        else [Linked LinkBibItem url xs] 
-            
-             let xs'' = fmap (transform fixLinkPrefixes) xs'
+                                        else [Linked url xs] 
 
              let mblang = lookupVariable "language" ref
                           >>= valToText
                           >>= either (const Nothing) Just . parseLang
              return $
                case mblang of
-                 Nothing   -> xs''
+                 Nothing   -> xs'
                  Just lang -> map
-                     (transform (addLangToFormatting lang)) xs''
+                     (transform (addLangToFormatting lang)) xs'
     Nothing -> do
       warn $ "citation " <> unItemId (citationItemId item) <>
              " not found"
@@ -1597,7 +1584,7 @@ eText (TextVariable varForm v) = do
             -- create link and remember that we've done so far
             modify (\st -> st { stateUsedIdentifier = True })
             let url = identifierToURL (identConstr t)
-            return $ Linked LinkURL url [Literal $ fromText t]
+            return $ Linked url [Literal $ fromText t]
       handleSubst :: Eval a ()
       handleSubst = do inSubst <- asks contextInSubstitute 
                        when inSubst $
@@ -2332,8 +2319,8 @@ getDisplayName nameFormat formatting order name = do
                             case formatSuffix f of
                               Just t | endsWithSpace t -> Nothing
                               _ -> Just " " } [formatted f x, y]
-      Linked lt i x <+> y =
-        formatted mempty{ formatDelimiter = Just " " } [Linked lt i x, y]
+      Linked i x <+> y =
+        formatted mempty{ formatDelimiter = Just " " } [Linked i x, y]
       Tagged _ x <+> y = x <+> y
       InNote x <+> y = x <+> y
   let x <:> NullOutput = x
@@ -2342,8 +2329,8 @@ getDisplayName nameFormat formatting order name = do
         formatted mempty{ formatDelimiter = Just separator } [Literal x, y]
       Formatted f x <:> y = formatted
         (mempty{ formatDelimiter = Just separator }) [Formatted f x, y]
-      Linked lt i x <:> y = formatted
-        (mempty{ formatDelimiter = Just separator }) [Linked lt i x, y]
+      Linked i x <:> y = formatted
+        (mempty{ formatDelimiter = Just separator }) [Linked i x, y]
       Tagged _ x <:> y = x <:> y
       InNote x <:> y = x <:> y
 
