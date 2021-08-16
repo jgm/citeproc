@@ -8,6 +8,12 @@ This test checks the following properties:
 bibliography
 <<===== MODE =====<<
 
+>>===== OPTIONS =====>>
+{
+  "linkBibliography" : true
+}
+<<===== OPTIONS =====<<
+
 >>===== RESULT =====>>
 <div class="csl-bib-body">
   <div class="csl-entry">Apple. <a href="https://doi.org/10.1021/ja01577a030">AAAA</a>. 2010</div>
