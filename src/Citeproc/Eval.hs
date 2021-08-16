@@ -1175,7 +1175,7 @@ evalItem layout (position, item) = do
                                  | checkPrefix f u ys = Linked lt u [Formatted f ys]
                  fixLinkPrefixes y = y
                  checkPrefix f url ys =
-                    let anchor = mconcat mempty (map outputToText ys)
+                    let anchor = mconcat (map outputToText ys)
                         prefix = fromMaybe "" (formatPrefix f)
                      in url == prefix <> anchor
              
