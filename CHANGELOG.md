@@ -2,6 +2,14 @@
 
 ## 0.5
 
+  * Add `linkBibliography` field to `CiteprocOptions` [API change].
+    When this is set to True, we hyperlink bibliography entries according
+    to the draft of the CSL v1.02 spec (Appendix VI).  When an entry has
+    a DOI, PMCID, PMID, or URL available but none of these are rendered
+    by the style, add a link to the title (or, if no title is present,
+    the whole entry), using the URL for the DOI, PMCID, PMID, or URL
+    (in that order of priority).  (Benjamin Bray, #88.)
+
   * In generating citation labels, only use `issued` date.
     Not, for example, `accessed` (#80).
 
@@ -34,6 +42,11 @@
 
   * Require recent text-icu with icu flag.
     Older versions don't build with newer versions of icu4c.
+
+  * Support links in CslJson (Benjamin Bray). Currently they are
+    only supported in rendering, not parsing (in support of #88).
+
+  * Allow test cases to specify CiteprocOptions (Benjamin Bray).
 
   * Update locales from upstream.
 
