@@ -40,8 +40,20 @@ integrated citation support and bibliography format conversion
 The main point of entry is the function `citeproc` from the
 module `Citeproc`.  This takes as arguments:
 
-- a `CiteprocOptions` structure (which currently just allows you
-  to set whether citations are hyperlinked to the bibliography)
+- a `CiteprocOptions` structure, which includes the following options:
+
+  * `linkCitations` controls whether citations are hyperlinked 
+     to the bibliography.
+
+  * `linkBibliography` automatically linkifies any identifiers (DOI, 
+     PMCID, PMID, or URL) appearing in a bibliography entry.  When an
+     entry has a DOI, PMCID, PMID, or URL available but none of these
+     are rendered by the style, add a link to the title (or, if no title
+     is present, the whole entry), using the URL for the DOI, PMCID, 
+     PMID, or URL (in that order of priority).  See
+     [Appendix VI](https://github.com/citation-style-language/documentation/blob/master/specification.rst#appendix-vi-links)
+     of the CSL v1.0.2 spec.
+
 
 - a `Style`, which you will want to produce by parsing a CSL
   style file using `parseStyle` from `Citeproc.Style`.

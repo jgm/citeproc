@@ -25,6 +25,7 @@ import Data.ByteString (ByteString)
 import qualified Data.ByteString.Char8 as B
 import qualified Data.ByteString.Lazy as L
 import qualified Data.Aeson as A
+import Data.Aeson ((.:?), (.!=))
 import Data.Text.Encoding (decodeUtf8)
 import System.FilePath
 import Data.Maybe (fromMaybe)
@@ -45,7 +46,22 @@ data CiteprocTest a =
   , citations     :: Maybe [Citation a]
   , abbreviations :: Maybe Abbreviations
   , skipReason    :: Maybe Text
+  , options       :: Maybe TestOptions
   } deriving (Show)
+
+newtype TestOptions =
+    TestOptions { testCiteprocOpts :: CiteprocOptions }
+    deriving (Show, Eq)
+
+defaultTestOptions :: TestOptions
+defaultTestOptions = TestOptions
+    { testCiteprocOpts = defaultCiteprocOptions }
+
+instance A.FromJSON TestOptions where
+    parseJSON = A.withObject "TestOptions" $ fmap TestOptions . \v ->
+        CiteprocOptions
+        <$> v .:? "linkCitations"    .!= False
+        <*> v .:? "linkBibliography" .!= False
 
 data TestResult =
     Passed
@@ -57,6 +73,7 @@ data TestResult =
 runTest :: CiteprocTest (CslJson Text)
         -> StateT Counts IO TestResult
 runTest test = do
+  let opts = fromMaybe defaultTestOptions . options $ test
   let cites =
         case citations test of
           Just cs -> cs
@@ -94,7 +111,7 @@ runTest test = do
         Just (Right style') -> do
             let style = style'{ styleAbbreviations = abbreviations test }
             let loc = mergeLocales Nothing style
-            let actual = citeproc defaultCiteprocOptions
+            let actual = citeproc (testCiteprocOpts opts)
                            style Nothing (input test) cites
             unless (null (resultWarnings actual)) $ do
               liftIO $ do
@@ -228,6 +245,7 @@ loadTestCase fp = do
     , abbreviations = fromJSON "ABBREVIATIONS" <$>
                      lookup "abbreviations" sections
     , skipReason = reason
+    , options = fromJSON "TESTOPTIONS" <$> lookup "options" sections
     }
 
 -- for motivation see e.g. test/csl/collapse_CitationNumberRangesInsert.txt

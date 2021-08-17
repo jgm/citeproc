@@ -1,0 +1,179 @@
+This test checks the following properties:
+  - when no DOI/PMCID/PMID/URL, in order of priority, appears as plain text in 
+      an item, the title should be linkified with one of those identifiers
+  - shortDOIs should be handled correctly, meaning that every shortDOI of
+      the form 10/abcde should be converted to the DOI abcde
+
+>>===== MODE =====>>
+bibliography
+<<===== MODE =====<<
+
+>>===== OPTIONS =====>>
+{
+  "linkBibliography" : true
+}
+<<===== OPTIONS =====<<
+
+>>===== RESULT =====>>
+<div class="csl-bib-body">
+  <div class="csl-entry">Apple. <a href="https://doi.org/10.1021/ja01577a030">AAAA</a>. 2010</div>
+  <div class="csl-entry">Blueberry. <a href="https://doi.org/bbbbb">BBBB</a>. 2011</div>
+  <div class="csl-entry">Cherry. <a href="https://pandoc.org/">CCCC</a>. 2012</div>
+  <div class="csl-entry">Durian. <a href="https://www.ncbi.nlm.nih.gov/pubmed/30310042">DDDD</a>. 2013</div>
+  <div class="csl-entry">Elderberry. <a href="https://www.ncbi.nlm.nih.gov/pmc/articles/PMC3531190">EEEE</a>. 2014</div>
+  <div class="csl-entry">Fig. <a href="https://doi.org/bbbbb">FFFF</a>. 2015</div>
+  <div class="csl-entry">Grapefruit. <a href="https://www.ncbi.nlm.nih.gov/pmc/articles/PMC3531190">GGGG</a>. 2016</div>
+  <div class="csl-entry">Honeydew. <a href="https://www.ncbi.nlm.nih.gov/pubmed/30310042">HHHH</a>. 2017</div>
+</div>
+<<===== RESULT =====<<
+
+>>===== CSL =====>>
+<?xml version="1.0" encoding="utf-8"?>
+<style 
+      xmlns="http://purl.org/net/xbiblio/csl"
+      class="note"
+      version="1.0">
+  <info>
+    <id />
+    <title />
+    <updated>2009-08-10T04:49:00+09:00</updated>
+  </info>
+  <macro name="author">
+    <names variable="author">
+      <name form="short" />
+    </names>
+  </macro>
+  <citation>
+    <layout delimiter="; ">
+      <text macro="author" />
+      <date variable="issued" prefix=" ">
+        <date-part name="year"/>
+      </date>
+    </layout>
+  </citation>
+  <bibliography>
+    <sort>
+      <key macro="author" />
+    </sort>
+    <layout delimiter=". ">
+      <text macro="author" />
+      <text variable="title" text-case="title" prefix=". "/>
+      <date variable="issued" prefix=". ">
+        <date-part name="year"/>
+      </date>
+    </layout>
+  </bibliography>
+</style>
+<<===== CSL =====<<
+
+>>===== INPUT =====>>
+[
+    {
+        "author": [
+            { "family": "Apple", "given": "Andrew" }
+        ],
+        "id": "ITEM-A",
+        "type": "book",
+        "title": "AAAA",
+        "DOI": "10.1021/ja01577a030",
+        "issued": {
+          "date-parts": [ [ 2010 ] ]
+        }
+    },
+    {
+        "author": [
+            { "family": "Blueberry", "given": "Bethany" }
+        ],
+        "id": "ITEM-B",
+        "type": "book",
+        "title": "BBBB",
+        "DOI": "10/bbbbb",
+        "issued": {
+          "date-parts": [ [ 2011 ] ]
+        }
+    },
+    {
+        "author": [
+            { "family": "Cherry", "given": "Carlos" }
+        ],
+        "id": "ITEM-C",
+        "type": "book",
+        "title": "CCCC",
+        "URL": "https://pandoc.org/",
+        "issued": {
+          "date-parts": [ [ 2012 ] ]
+        }
+    },
+    {
+        "author": [
+            { "family": "Durian", "given": "Denice" }
+        ],
+        "id": "ITEM-D",
+        "type": "book",
+        "title": "DDDD",
+        "PMID": "30310042",
+        "issued": {
+          "date-parts": [ [ 2013 ] ]
+        }
+    },
+    {
+        "author": [
+            { "family": "Elderberry", "given": "Edward" }
+        ],
+        "id": "ITEM-E",
+        "type": "book",
+        "title": "EEEE",
+        "PMCID": "PMC3531190",
+        "issued": {
+          "date-parts": [ [ 2014 ] ]
+        }
+    },
+    {
+        "author": [
+            { "family": "Fig", "given": "Francella" }
+        ],
+        "id": "ITEM-F",
+        "type": "book",
+        "title": "FFFF",
+        "DOI": "10/bbbbb",
+        "PMCID": "PMC3531190",
+        "PMID": "30310042",
+        "URL": "https://pandoc.org/",
+        "issued": {
+          "date-parts": [ [ 2015 ] ]
+        }
+    },
+    {
+        "author": [
+            { "family": "Grapefruit", "given": "Gordon" }
+        ],
+        "id": "ITEM-G",
+        "type": "book",
+        "title": "GGGG",
+        "PMCID": "PMC3531190",
+        "PMID": "30310042",
+        "URL": "https://pandoc.org/",
+        "issued": {
+          "date-parts": [ [ 2016 ] ]
+        }
+    },
+    {
+        "author": [
+            { "family": "Honeydew", "given": "Helen" }
+        ],
+        "id": "ITEM-H",
+        "type": "book",
+        "title": "HHHH",
+        "PMID": "30310042",
+        "URL": "https://pandoc.org/",
+        "issued": {
+          "date-parts": [ [ 2017 ] ]
+        }
+    }
+]
+<<===== INPUT =====<<
+
+
+>>===== VERSION =====>>
+1.0
+<<===== VERSION =====<<

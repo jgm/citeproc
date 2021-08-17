@@ -61,6 +61,7 @@ data CslJson a =
    | CslSub       (CslJson a)
    | CslNoCase    (CslJson a)
    | CslDiv Text  (CslJson a)
+   | CslLink Text (CslJson a)
   deriving (Show, Eq, Ord, Functor, Foldable, Traversable)
 
 instance Semigroup (CslJson a) where
@@ -95,6 +96,7 @@ instance Uniplate (CslJson a) where
   uniplate (CslSub x)          = plate CslSub |* x
   uniplate (CslNoCase x)       = plate CslNoCase |* x
   uniplate (CslDiv t x)        = plate CslDiv |- t |* x
+  uniplate (CslLink t x)        = plate CslLink |- t |* x
 
 instance Biplate (CslJson a) (CslJson a) where
   biplate = plateSelf
@@ -146,7 +148,7 @@ instance CiteprocOutput (CslJson Text) where
   movePunctuationInsideQuotes
                         = punctuationInsideQuotes
   mapText f             = runIdentity . traverse (return . f)
-  addHyperlink _        = id -- CSL JSON doesn't support links
+  addHyperlink url x    = CslLink url x
   localizeQuotes        = convertQuotes
 
 dropTextWhile' :: (Char -> Bool) -> CslJson Text -> CslJson Text
@@ -178,6 +180,7 @@ dropTextWhileEnd' f el =
      CslSup x -> CslSup (dropTextWhileEnd' f x)
      CslNoCase x -> CslNoCase (dropTextWhileEnd' f x)
      CslDiv t x -> CslDiv t (dropTextWhileEnd' f x)
+     CslLink t x -> CslLink t (dropTextWhileEnd' f x)
 
 parseCslJson :: Locale -> Text -> CslJson Text
 parseCslJson locale t =
@@ -347,6 +350,7 @@ renderCslJson useEntities locale =
       CslSub x -> "<sub>" <> go ctx x <> "</sub>"
       CslBaseline x -> "<span style=\"baseline\">" <> go ctx x <> "</span>"
       CslDiv t x -> "<div class=\"csl-" <> t <> "\">" <> go ctx x <> "</div>"
+      CslLink t x -> "<a href=\"" <> t <> "\">" <> go ctx x <> "</a>"
       CslNoCase x -> go ctx x -- nocase is just for internal purposes
   escape t
     | useEntities
@@ -488,6 +492,12 @@ cslJsonToJson = go (RenderContext True True True True)
                                , ("contents", toJSON $ go ctx x)
                                ]
                             ]
+      CslLink t x        -> [ object
+                               [ ("format", "link")
+                               , ("target", toJSON $ t)
+                               , ("contents", toJSON $ go ctx x)
+                               ]
+                            ]
       CslNoCase x -> go ctx x -- nocase is just for internal purposes
 
 
@@ -521,6 +531,7 @@ caseTransform' f lev el =
      CslSup _          -> return' el
      CslNoCase _       -> return' el
      CslDiv _ _        -> return' el
+     CslLink _ _       -> return' el
      CslEmpty          -> return' el
  where
   -- we need to apply g to update the state:
@@ -594,6 +605,7 @@ punctuationInsideQuotes = go
       CslBaseline x               -> CslBaseline (go x)
       CslNoCase x                 -> CslNoCase (go x)
       CslDiv t x                  -> CslDiv t (go x)
+      CslLink t x                 -> CslLink t (go x)
       CslText t                   -> CslText t
       CslEmpty                    -> CslEmpty
 

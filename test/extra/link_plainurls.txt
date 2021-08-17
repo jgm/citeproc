@@ -1,0 +1,152 @@
+This test checks the following properties:
+  - plain URLs appearing in bibliography items should be linkified
+  - when a link's prefix+anchor matches its target, the
+      prefix should be included in the anchor
+  - shortDOIs should be handled correctly, meaning that every shortDOI of
+      the form 10/abcde should be converted to the DOI abcde
+
+>>===== MODE =====>>
+bibliography
+<<===== MODE =====<<
+
+>>===== OPTIONS =====>>
+{
+  "linkBibliography" : true
+}
+<<===== OPTIONS =====<<
+
+>>===== RESULT =====>>
+<div class="csl-bib-body">
+  <div class="csl-entry">Apple. AAAA. 2010. <a href="https://doi.org/10.1021/ja01577a030">https://doi.org/10.1021/ja01577a030</a></div>
+  <div class="csl-entry">Blueberry. BBBB. 2011. <a href="https://doi.org/bbbbb">https://doi.org/bbbbb</a></div>
+  <div class="csl-entry">Cherry. CCCC. 2012. <a href="https://pandoc.org/">https://pandoc.org/</a></div>
+  <div class="csl-entry">Durian. DDDD. 2013. <a href="https://www.ncbi.nlm.nih.gov/pubmed/30310042">https://www.ncbi.nlm.nih.gov/pubmed/30310042</a></div>
+  <div class="csl-entry">Elderberry. EEEE. 2014. <a href="https://www.ncbi.nlm.nih.gov/pmc/articles/PMC3531190">https://www.ncbi.nlm.nih.gov/pmc/articles/PMC3531190</a></div>
+</div>
+<<===== RESULT =====<<
+
+>>===== CSL =====>>
+<?xml version="1.0" encoding="utf-8"?>
+<style 
+      xmlns="http://purl.org/net/xbiblio/csl"
+      class="note"
+      version="1.0">
+  <info>
+    <id />
+    <title />
+    <updated>2009-08-10T04:49:00+09:00</updated>
+  </info>
+  <macro name="author">
+    <names variable="author">
+      <name form="short" />
+    </names>
+  </macro>
+  <macro name="access">
+    <choose>
+      <if variable="DOI">
+        <text variable="DOI" prefix="https://doi.org/"/>
+      </if>
+      <else-if variable="PMCID">
+        <text variable="PMCID" prefix="https://www.ncbi.nlm.nih.gov/pmc/articles/"/>
+      </else-if>
+      <else-if variable="PMID">
+        <text variable="PMID" prefix="https://www.ncbi.nlm.nih.gov/pubmed/"/>
+      </else-if>
+      <else>
+        <text variable="URL"/>
+      </else>
+    </choose>
+  </macro>
+  <citation>
+    <layout delimiter="; ">
+      <text macro="author" />
+      <date variable="issued" prefix=" ">
+        <date-part name="year"/>
+      </date>
+    </layout>
+  </citation>
+  <bibliography>
+    <sort>
+      <key macro="author" />
+    </sort>
+    <layout delimiter=". ">
+      <text macro="author" />
+      <text variable="title" text-case="title" prefix=". "/>
+      <date variable="issued" prefix=". ">
+        <date-part name="year"/>
+      </date>
+      <text macro="access" prefix=". "/>
+    </layout>
+  </bibliography>
+</style>
+<<===== CSL =====<<
+
+>>===== INPUT =====>>
+[
+    {
+        "author": [
+            { "family": "Apple", "given": "Andrew" }
+        ],
+        "id": "ITEM-A",
+        "type": "book",
+        "title": "AAAA",
+        "DOI": "10.1021/ja01577a030",
+        "issued": {
+          "date-parts": [ [ 2010 ] ]
+        }
+    },
+    {
+        "author": [
+            { "family": "Blueberry", "given": "Bethany" }
+        ],
+        "id": "ITEM-B",
+        "type": "book",
+        "title": "BBBB",
+        "DOI": "10/bbbbb",
+        "issued": {
+          "date-parts": [ [ 2011 ] ]
+        }
+    },
+    {
+        "author": [
+            { "family": "Cherry", "given": "Carlos" }
+        ],
+        "id": "ITEM-C",
+        "type": "book",
+        "title": "CCCC",
+        "URL": "https://pandoc.org/",
+        "issued": {
+          "date-parts": [ [ 2012 ] ]
+        }
+    },
+    {
+        "author": [
+            { "family": "Durian", "given": "Denice" }
+        ],
+        "id": "ITEM-D",
+        "type": "book",
+        "title": "DDDD",
+        "PMID": "30310042",
+        "issued": {
+          "date-parts": [ [ 2013 ] ]
+        }
+    },
+    {
+        "author": [
+            { "family": "Elderberry", "given": "Edward" }
+        ],
+        "id": "ITEM-E",
+        "type": "book",
+        "title": "EEEE",
+        "PMCID": "PMC3531190",
+        "issued": {
+          "date-parts": [ [ 2014 ] ]
+        }
+    }
+]
+<<===== INPUT =====<<
+
+
+>>===== VERSION =====>>
+1.0
+<<===== VERSION =====<<
