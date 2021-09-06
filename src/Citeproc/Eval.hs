@@ -782,17 +782,16 @@ groupAndCollapseCitations citeGroupDelim yearSuffixDelim afterCollapseDelim
   --   Note that we cannot assume we've sorted by name,
   --   so we can't just use Data.ListgroupBy.  We also
   --   take care not to move anything past a prefix or suffix.
-  groupWith :: CiteprocOutput a
-            => (Output a -> Output a -> Bool)
+  groupWith :: (Output a -> Output a -> Bool)
             -> [Output a]
             -> [[Output a]]
   groupWith isMatched zs =
     case span hasNoPrefixOrSuffix zs of
       ([],[]) -> []
       ([],(y:ys)) -> [y] : groupWith isMatched ys
-      ((x:xs),ys) ->
-        (x : filter (isMatched x) xs) :
-          groupWith isMatched (filter (not . isMatched x) xs ++ ys)
+      ((w:ws),ys) ->
+        (w : filter (isMatched w) ws) :
+          groupWith isMatched (filter (not . isMatched w) ws ++ ys)
 
   hasNoPrefixOrSuffix :: Output a -> Bool
   hasNoPrefixOrSuffix x =
