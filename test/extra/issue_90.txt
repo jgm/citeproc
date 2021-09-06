@@ -1,0 +1,203 @@
+>>===== MODE =====>>
+citation
+<<===== MODE =====<<
+
+
+
+
+>>===== RESULT =====>>
+<b>Alfred Koller</b>, Schweizerisches Obligationenrecht Besonderer Teil Band I, Bern, Stämpfli Verlag, 2012; <b>Alfred Koller</b>, Schweizerisches Werkvertragsrecht, Zürich/St. Gallen, Dike Verlag AG, 2015.
+<b>Koller</b>, Werkvertragsrecht.
+<b>Koller</b>, OR BT I.
+<<===== RESULT =====<<
+
+
+>>===== CSL =====>>
+<?xml version="1.0" encoding="utf-8"?>
+<style xmlns="http://purl.org/net/xbiblio/csl" class="note" version="1.0" delimiter-precedes-et-al="never" delimiter-precedes-last="always" et-al-min="5" et-al-use-first="1" page-range-format="expanded" default-locale="tr-TR">
+  <info>
+    <title xml:lang="tr-TR">temel</title>
+    <id>hakan</id>
+    <category citation-format="note"/>
+    <category field="law"/>
+    <summary xml:lang="tr-TR"></summary>
+    <updated>2021-09-06T20:43:44+03:00</updated>
+  </info>
+  <locale xml:lang="tr-TR">
+    <terms>
+      <term name="page" form="short">
+        <single>s.</single>
+        <multiple>s.</multiple></term>
+      <term name="paragraph" form="short">
+        <single>p.</single>
+        <multiple>p.</multiple></term>
+    </terms>
+  </locale>
+  <macro name="author-cit">
+    <names variable="author">
+      <name font-weight="bold" sort-separator=" " delimiter="/"/>
+    </names>
+  </macro>
+  <macro name="author-subsequent">
+    <names variable="author">
+      <name font-weight="bold" form="short" sort-separator=" " initialize-with="." delimiter="/"/>
+    </names>
+  </macro>
+  <macro name="author-bib">
+    <names variable="author">
+      <name font-weight="bold" name-as-sort-order="all" sort-separator=" " delimiter="/"/>
+    </names>
+  </macro>
+  <macro name="editor-cit">
+    <names variable="editor">
+      <name font-weight="bold" sort-separator=" " delimiter="/"/>
+    </names>
+  </macro>
+  <macro name="editor-bib">
+    <names variable="editor">
+      <name font-weight="bold" name-as-sort-order="all" sort-separator=" " delimiter="/"/>
+    </names>
+  </macro>
+  <macro name="title-bib/cit">
+   <choose>
+     <if type="article-journal chapter entry-encyclopedia" match="any">
+       <text variable="title" quotes="true"/>
+     </if>
+     <else-if type="book">
+       <text variable="title"/>
+     </else-if>
+   </choose> 
+  </macro>
+  <macro name="disambiguate">
+   <choose>
+    <if disambiguate="true">
+     <text variable="title-short"/>
+    </if>
+   </choose>
+  </macro>
+  <citation disambiguate-add-givenname="true" givenname-disambiguation-rule="primary-name-with-initials">
+    <sort>
+      <key variable="author"/>
+      <key variable="title"/>
+      <key variable="issued"/>
+    </sort>
+    <layout suffix="." delimiter="; ">
+      <choose>
+        <if position="subsequent">
+          <text macro="author-subsequent"/>
+          <text macro="disambiguate" prefix=", "/>
+  	  <label variable="locator" form="short" prefix=", " suffix=" "/>
+	  <text variable="locator"/>
+        </if>
+        <else>
+	  <text macro="author-cit" suffix=", "/>
+	  <text macro="title-bib/cit" suffix=", "/>
+          <text variable="container-title" suffix=", "/>
+          <text macro="editor-cit" prefix="ed. " suffix=", "/>
+          <number variable="edition" suffix=". bs., "/>
+	  <text variable="publisher-place" suffix=", "/>
+	  <text variable="publisher" suffix=", "/>
+	  <date variable="issued" form="numeric"/>
+          <number variable="volume" prefix=", c. "/>
+	  <number variable="issue" prefix=", sy. "/>
+	  <text variable="page" prefix=", ss. "/>
+    	  <label variable="locator" form="short" prefix=", " suffix=" "/>
+	  <text variable="locator"/>
+ 	</else>
+      </choose>
+    </layout>
+  </citation>
+  <bibliography entry-spacing="0" hanging-indent="true">
+    <sort>
+      <key variable="language"/>
+      <key variable="type"/>
+      <key variable="author"/>
+      <key variable="title"/>
+      <key variable="issued"/>
+    </sort>
+    <layout suffix="">
+      <group suffix=".">
+	<text macro="author-bib" suffix=", "/>
+	<text macro="title-bib/cit" suffix=", "/>
+	<text variable="container-title" suffix=", "/>
+	<text macro="editor-bib" prefix="ed. " suffix=", "/>
+	<number variable="edition" suffix=". bs., "/>
+	<text variable="publisher-place" suffix=", "/>
+	<text variable="publisher" suffix=", "/>
+	<date variable="issued" form="numeric"/>
+	<number variable="volume" prefix=", c. "/>
+	<number variable="issue" prefix=", sy. "/>
+	<text variable="page" prefix=", ss. "/>
+      </group>
+      <text macro="disambiguate" prefix=" (Atıf: " suffix=")"/>
+    </layout>
+  </bibliography>
+</style>
+<<===== CSL =====<<
+
+
+>>===== CITATION-ITEMS =====>>
+[ [ {"id":"kollerSchweizerischesWerkvertragsrecht2015"},
+    {"id":"kollerSchweizerischesObligationenrechtBesonderer2012"}
+  ],
+  [ {"id":"kollerSchweizerischesWerkvertragsrecht2015"} ],
+  [ {"id":"kollerSchweizerischesObligationenrechtBesonderer2012"} ]
+]
+<<===== CITATION-ITEMS =====<<
+
+
+
+>>===== INPUT =====>>
+[
+  {
+    "author": [
+      {
+        "family": "Koller",
+        "given": "Alfred"
+      }
+    ],
+    "id": "kollerSchweizerischesWerkvertragsrecht2015",
+    "issued": {
+      "date-parts": [
+        [
+          2015
+        ]
+      ]
+    },
+    "language": "de-DE",
+    "publisher": "Dike Verlag AG",
+    "publisher-place": "Zürich/St. Gallen",
+    "title": "Schweizerisches Werkvertragsrecht",
+    "title-short": "Werkvertragsrecht",
+    "type": "book"
+  },
+  {
+    "author": [
+      {
+        "family": "Koller",
+        "given": "Alfred"
+      }
+    ],
+    "id": "kollerSchweizerischesObligationenrechtBesonderer2012",
+    "issued": {
+      "date-parts": [
+        [
+          2012
+        ]
+      ]
+    },
+    "language": "de-DE",
+    "publisher": "Stämpfli Verlag",
+    "publisher-place": "Bern",
+    "title": "Schweizerisches Obligationenrecht Besonderer Teil Band I",
+    "title-short": "OR BT I",
+    "type": "book"
+  }
+]
+<<===== INPUT =====<<
+
+
+>>===== VERSION =====>>
+1.0
+<<===== VERSION =====<<
+
