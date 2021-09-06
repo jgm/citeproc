@@ -4,7 +4,7 @@ LOCALE_DATA=$(patsubst locales-upstream/locales-%.xml,locales/%.xml, $(wildcard 
 .PHONY: locales test bench ghcid repl clean update-locales update-test-suite update-locales-upstream test-diff
 
 test:
-	cabal test --jobs=1 --test-show-details=streaming --test-options="$(PATTERN)" | tee spec.log
+	cabal test --jobs=1 --test-show-details=streaming --test-options="$(PATTERN)" --ghc-option=-Wall | tee spec.log
 
 test-diff: test
 	cp spec.failed spec.failed.prev || exit 0
