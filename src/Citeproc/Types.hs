@@ -1503,6 +1503,8 @@ data Tag =
     | TagDate Date
     | TagYearSuffix Int
     | TagLocator
+    | TagPrefix
+    | TagSuffix
   deriving (Show, Eq)
 
 outputToText :: CiteprocOutput a => Output a -> Text

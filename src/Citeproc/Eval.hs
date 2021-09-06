@@ -1104,9 +1104,9 @@ evalLayout layout (citationGroupNumber, citation) = do
       updateLastCitedMap citationGroupNumber positionInCitation citation item
 
     return $
-          maybe id (\pref x -> grouped [Literal pref, x])
+          maybe id (\pref x -> Tagged TagPrefix (grouped [Literal pref, x]))
                 (citationItemPrefix item)
-        . maybe id (\suff x -> grouped [x, Literal suff])
+        . maybe id (\suff x -> Tagged TagSuffix (grouped [x, Literal suff]))
                    (citationItemSuffix item)
         . (\x -> case x of
                    NullOutput -> x
