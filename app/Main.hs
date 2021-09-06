@@ -77,7 +77,6 @@ main = do
         Left e -> err (T.unpack $ prettyCiteprocError e)
         Right parsedStyle -> do
           let style = parsedStyle{ styleAbbreviations = abbreviations }
-          let locale = mergeLocales lang style
           let result= citeproc defaultCiteprocOptions
                          style
                          lang
