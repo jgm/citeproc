@@ -1154,8 +1154,8 @@ evalItem layout (position, item) = do
           }))
         $ do xs <- mconcat <$> mapM eElement (layoutElements layout)
 
-             -- find identifiers that can be used to hyperlink the title 
-             let mbident = 
+             -- find identifiers that can be used to hyperlink the title
+             let mbident =
                     foldl (<|>) Nothing
                       [ IdentDOI   <$> (valToText =<< lookupVariable "DOI" ref)
                       , IdentPMCID <$> (valToText =<< lookupVariable "PMCID" ref)
@@ -1163,14 +1163,14 @@ evalItem layout (position, item) = do
                       , IdentURL   <$> (valToText =<< lookupVariable "URL" ref)
                       ]
              let mburl = identifierToURL <$> mbident
-            
+
              -- hyperlink any titles in the output
              let linkTitle url (Tagged TagTitle x) = Linked url [Tagged TagTitle x]
                  linkTitle _ x = x
-             
+
              usedLink  <- gets stateUsedIdentifier
              usedTitle <- gets stateUsedTitle
-             inBiblio  <- asks contextInBibliography 
+             inBiblio  <- asks contextInBibliography
 
              -- when no links were rendered for a bibliography item, hyperlink
              -- the title, if it exists, otherwise hyperlink the whole item
@@ -1183,7 +1183,7 @@ evalItem layout (position, item) = do
                                         -- hyperlink the title
                                         then fmap (transform (linkTitle url)) xs
                                         -- hyperlink the entire bib item
-                                        else [Linked url xs] 
+                                        else [Linked url xs]
 
              let mblang = lookupVariable "language" ref
                           >>= valToText
@@ -1586,7 +1586,7 @@ eText (TextVariable varForm v) = do
             let url = identifierToURL (identConstr t)
             return $ Linked url [Literal $ fromText t]
       handleSubst :: Eval a ()
-      handleSubst = do inSubst <- asks contextInSubstitute 
+      handleSubst = do inSubst <- asks contextInSubstitute
                        when inSubst $
                          modify $ \st -> -- delete variable so it isn't used again...
                            st{ stateReference =
