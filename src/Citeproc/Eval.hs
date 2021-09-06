@@ -155,6 +155,17 @@ evalStyle style mblang refs' citations =
       let sortedCiteIds = sortOn
               (fromMaybe maxBound . (`M.lookup` citationOrder))
               (map referenceId refs)
+      let layoutOpts = layoutOptions $ styleCitation style
+      let mbcgDelim =
+            case styleCiteGroupDelimiter (styleOptions style) of
+              Just x -> Just x
+              Nothing
+                -- grouping is activated whenever there is
+                -- collapsing; this is the default
+                -- cite-group-delimiter
+                | isJust (layoutCollapse layoutOpts) -> Just ", "
+                | otherwise -> Nothing
+
       assignCitationNumbers sortedCiteIds
       -- sorting of bibliography, insertion of citation-number
       collate <- asks contextCollate
@@ -222,17 +233,7 @@ evalStyle style mblang refs' citations =
                         $ groupBy canGroup
                         $ citationItems citation' }
       let citCitations = map sortCitationItems citations
-      let layoutOpts = layoutOptions $ styleCitation style
       cs <- disambiguateCitations style bibSortKeyMap citCitations
-      let mbcgDelim =
-            case styleCiteGroupDelimiter (styleOptions style) of
-              Just x -> Just x
-              Nothing
-                -- grouping is activated whenever there is
-                -- collapsing; this is the default
-                -- cite-group-delimiter
-                | isJust (layoutCollapse layoutOpts) -> Just ", "
-                | otherwise -> Nothing
       let cs' = case mbcgDelim of
                    Nothing -> cs
                    Just citeGroupDelim -> map
@@ -779,12 +780,24 @@ groupAndCollapseCitations citeGroupDelim yearSuffixDelim afterCollapseDelim
                  (groupWith sameNames xs)
  where
   --   Note that we cannot assume we've sorted by name,
-  --   so we can't just use Data.ListgroupBy
-  groupWith :: (b -> b -> Bool) -> [b] -> [[b]]
-  groupWith _ [] = []
-  groupWith isMatched (z:zs) =
-    (z : filter (isMatched z) zs) :
-         groupWith isMatched (filter (not . isMatched z) zs)
+  --   so we can't just use Data.ListgroupBy.  We also
+  --   take care not to move anything past a prefix or suffix.
+  groupWith :: CiteprocOutput a
+            => (Output a -> Output a -> Bool)
+            -> [Output a]
+            -> [[Output a]]
+  groupWith isMatched zs =
+    case span hasNoPrefixOrSuffix zs of
+      ([],[]) -> []
+      ([],(y:ys)) -> [y] : groupWith isMatched ys
+      ((x:xs),ys) ->
+        (x : filter (isMatched x) xs) :
+          groupWith isMatched (filter (not . isMatched x) xs ++ ys)
+
+  hasNoPrefixOrSuffix :: Output a -> Bool
+  hasNoPrefixOrSuffix x =
+    null [y | y@(Tagged TagPrefix _) <- universe x] &&
+    null [y | y@(Tagged TagSuffix _) <- universe x]
 
   collapseRange :: [Output a] -> [Output a] -> [Output a]
   collapseRange ys zs
