@@ -801,18 +801,24 @@ groupAndCollapseCitations citeGroupDelim yearSuffixDelim afterCollapseDelim
   groupWith :: (Output a -> Output a -> Bool)
             -> [Output a]
             -> [[Output a]]
-  groupWith isMatched zs =
+  groupWith _ [] = []
+  groupWith isMatched (z:zs)
+   | hasSuffix z = [z] : groupWith isMatched zs
+   | otherwise =  -- we allow a prefix on first item in collapsed group
     case span hasNoPrefixOrSuffix zs of
-      ([],[]) -> []
-      ([],(y:ys)) -> [y] : groupWith isMatched ys
-      ((w:ws),ys) ->
-        (w : filter (isMatched w) ws) :
-          groupWith isMatched (filter (not . isMatched w) ws ++ ys)
+      ([],ys) -> [z] : groupWith isMatched ys
+      (ws,ys) ->
+        (z : filter (isMatched z) ws) :
+          groupWith isMatched (filter (not . isMatched z) ws ++ ys)
 
   hasNoPrefixOrSuffix :: Output a -> Bool
-  hasNoPrefixOrSuffix x =
-    null [y | y@(Tagged TagPrefix _) <- universe x] &&
-    null [y | y@(Tagged TagSuffix _) <- universe x]
+  hasNoPrefixOrSuffix x = not (hasPrefix x) && not (hasSuffix x)
+
+  hasPrefix :: Output a -> Bool
+  hasPrefix x = not $ null [y | y@(Tagged TagPrefix _) <- universe x]
+
+  hasSuffix :: Output a -> Bool
+  hasSuffix x = not $ null [y | y@(Tagged TagSuffix _) <- universe x]
 
   collapseRange :: [Output a] -> [Output a] -> [Output a]
   collapseRange ys zs
