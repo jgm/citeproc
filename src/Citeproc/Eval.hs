@@ -730,9 +730,14 @@ getAmbiguities =
       . groupBy (\x y -> ddRendered x == ddRendered y)
       . sortOn ddRendered
       . map toDisambData
+      . extractTagItems
 
-toDisambData :: CiteprocOutput a => Output a -> DisambData
-toDisambData (Tagged (TagItem NormalCite iid) x) =
+extractTagItems :: [Output a] -> [(ItemId, Output a)]
+extractTagItems xs =
+  [(iid, x) | Tagged (TagItem NormalCite iid) x <- concatMap universe xs]
+
+toDisambData :: CiteprocOutput a => (ItemId, Output a) -> DisambData
+toDisambData (iid, x) =
   let xs = universe x
       ns' = getNames xs
       ds' = getDates xs
@@ -750,7 +755,6 @@ toDisambData (Tagged (TagItem NormalCite iid) x) =
                   = d : getDates xs
   getDates (_ : xs)   = getDates xs
   getDates []         = []
-toDisambData _ = error "toDisambData called without tagged item"
 
 
 --
