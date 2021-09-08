@@ -429,8 +429,9 @@ disambiguateCitations style bibSortKeyMap citations = do
                    , not (ident `Set.member` citeIdsSet)]
   -- note that citations must go first, and order must be preserved:
   -- we use a "basic item" that strips off prefixes, suffixes, locators
-  let allItems = map basicItem $ citeIds ++ ghostItems
-  allCites <- renderItems allItems
+  let citations' = citations ++
+                   [Citation Nothing Nothing (map basicItem ghostItems)]
+  allCites <- renderCitations citations'
 
   mblang <- asks (localeLanguage . contextLocale)
   styleOpts <- asks contextStyleOptions
@@ -486,55 +487,51 @@ disambiguateCitations style bibSortKeyMap citations = do
                      (unReferenceMap $ stateRefMap st)
                      refIds }
            -- redo citations
-           renderItems allItems
+           renderCitations citations'
 
   case getAmbiguities allCites' of
     []          -> return ()
-    ambiguities -> analyzeAmbiguities mblang strategy ambiguities
-  withRWST (\ctx st -> (ctx,
-                        st { stateLastCitedMap = mempty
-                           , stateNoteMap = mempty })) $
-     mapM (evalLayout (styleCitation style)) (zip [1..] citations)
+    ambiguities -> analyzeAmbiguities mblang strategy citations' ambiguities
+  renderCitations citations
 
  where
 
-  renderItems :: [CitationItem a] -> Eval a [Output a]
-  renderItems = withRWST (\ctx st -> (ctx,
-                                      st { stateLastCitedMap = mempty
-                                         , stateNoteMap = mempty })) .
-                  mapM (\item ->
-                          Tagged (TagItem NormalCite (citationItemId item)) . grouped <$>
-                                   evalItem (styleCitation style) ([], item))
+  renderCitations :: [Citation a] -> Eval a [Output a]
+  renderCitations cs =
+    withRWST (\ctx st -> (ctx,
+                          st { stateLastCitedMap = mempty
+                             , stateNoteMap = mempty })) $
+     mapM (evalLayout (styleCitation style)) (zip [1..] cs)
 
-  refreshAmbiguities :: [[DisambData]] -> Eval a [[DisambData]]
-  refreshAmbiguities = fmap (concatMap getAmbiguities) .
-                            mapM (renderItems . map (basicItem . ddItem))
+  refreshAmbiguities :: [Citation a] -> Eval a [[DisambData]]
+  refreshAmbiguities = fmap getAmbiguities . renderCitations
 
   analyzeAmbiguities :: Maybe Lang
                      -> DisambiguationStrategy
+                     -> [Citation a]
                      -> [[DisambData]]
                      -> Eval a ()
-  analyzeAmbiguities mblang strategy ambiguities = do
+  analyzeAmbiguities mblang strategy cs ambiguities = do
     -- add names to et al.
     return ambiguities
       >>= (\as ->
            (if not (null as) && disambiguateAddNames strategy
                then do
                  mapM_ (tryAddNames mblang (disambiguateAddGivenNames strategy)) as
-                 refreshAmbiguities as
+                 refreshAmbiguities cs
                else
                  return as))
       >>= (\as ->
            (case disambiguateAddGivenNames strategy of
                   Just ByCite | not (null as) -> do
                      mapM_ (tryAddGivenNames mblang) as
-                     refreshAmbiguities as
+                     refreshAmbiguities cs
                   _           -> return as))
       >>= (\as ->
            (if not (null as) && disambiguateAddYearSuffix strategy
                then do
                  addYearSuffixes bibSortKeyMap as
-                 refreshAmbiguities as
+                 refreshAmbiguities cs
                else return as))
       >>= mapM_ tryDisambiguateCondition
 
@@ -741,7 +738,7 @@ toDisambData (iid, x) =
   let xs = universe x
       ns' = getNames xs
       ds' = getDates xs
-      t   = outputToText x
+      t   = outputToText $ transform stripAffix x
    in DisambData iid ns' ds' t
  where
   getNames :: [Output a] -> [Name]
@@ -755,6 +752,11 @@ toDisambData (iid, x) =
                   = d : getDates xs
   getDates (_ : xs)   = getDates xs
   getDates []         = []
+
+  stripAffix (Tagged TagPrefix _) = NullOutput
+  stripAffix (Tagged TagSuffix _) = NullOutput
+  stripAffix (Tagged TagLocator _) = NullOutput
+  stripAffix z = z
 
 
 --
