@@ -427,15 +427,24 @@ disambiguateCitations style bibSortKeyMap citations = do
   let ghostItems = [ ident
                    | ident <- refIds
                    , not (ident `Set.member` citeIdsSet)]
-  let convertAuthorInTextToNormal (Citation a b (i1:i2:is))
+
+  -- for purposes of disambiguation, we remove prefixes and
+  -- suffixes and locators, and we convert author-in-text to normal citation.
+  let removeAffix item = item{ citationItemLabel = Nothing
+                             , citationItemLocator = Nothing
+                             , citationItemPrefix = Nothing
+                             , citationItemSuffix = Nothing }
+  let cleanCitation (Citation a b (i1:i2:is))
        | citationItemType i1 == AuthorOnly
        , citationItemType i2 == SuppressAuthor
-        = Citation a b (i2{ citationItemType = NormalCite }:is)
-      convertAuthorInTextToNormal cit = cit
+        = Citation a b
+            (map removeAffix (i2{ citationItemType = NormalCite }:is))
+      cleanCitation (Citation a b is)
+        = Citation a b (map removeAffix is)
 
   -- note that citations must go first, and order must be preserved:
   -- we use a "basic item" that strips off prefixes, suffixes, locators
-  let citations' = map convertAuthorInTextToNormal citations ++
+  let citations' = map cleanCitation citations ++
                    [Citation Nothing Nothing (map basicItem ghostItems)]
   allCites <- renderCitations citations'
 
@@ -744,7 +753,7 @@ toDisambData (iid, x) =
   let xs = universe x
       ns' = getNames xs
       ds' = getDates xs
-      t   = outputToText $ transform stripAffix x
+      t   = outputToText x
    in DisambData iid ns' ds' t
  where
   getNames :: [Output a] -> [Name]
@@ -758,11 +767,6 @@ toDisambData (iid, x) =
                   = d : getDates xs
   getDates (_ : xs)   = getDates xs
   getDates []         = []
-
-  stripAffix (Tagged TagPrefix _) = NullOutput
-  stripAffix (Tagged TagSuffix _) = NullOutput
-  stripAffix (Tagged TagLocator _) = NullOutput
-  stripAffix z = z
 
 
 --
