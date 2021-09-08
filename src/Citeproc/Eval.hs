@@ -29,11 +29,11 @@ import Control.Applicative
 import Data.Generics.Uniplate.Operations (universe, transform)
 
 -- import Debug.Trace (trace)
-
+--
 -- traceShowIdLabeled :: Show a => String -> a -> a
 -- traceShowIdLabeled label x =
 --   trace (label ++ ": " ++ show x) x
-
+--
 -- import Text.Show.Pretty (ppShow)
 -- ppTrace :: Show a => a -> a
 -- ppTrace x = trace (ppShow x) x
@@ -427,9 +427,15 @@ disambiguateCitations style bibSortKeyMap citations = do
   let ghostItems = [ ident
                    | ident <- refIds
                    , not (ident `Set.member` citeIdsSet)]
+  let convertAuthorInTextToNormal (Citation a b (i1:i2:is))
+       | citationItemType i1 == AuthorOnly
+       , citationItemType i2 == SuppressAuthor
+        = Citation a b (i2{ citationItemType = NormalCite }:is)
+      convertAuthorInTextToNormal cit = cit
+
   -- note that citations must go first, and order must be preserved:
   -- we use a "basic item" that strips off prefixes, suffixes, locators
-  let citations' = citations ++
+  let citations' = map convertAuthorInTextToNormal citations ++
                    [Citation Nothing Nothing (map basicItem ghostItems)]
   allCites <- renderCitations citations'
 
