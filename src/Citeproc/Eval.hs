@@ -1021,8 +1021,9 @@ evalSortKey citeId (SortKeyVariable sortdir var) = do
              <$> mapM getNamePartSortOrder ns
       Just (DateVal d)  -> return $ Just [T.toLower $ dateToText d]
 
+-- Note: we do a case-insensitive sort (using toCaseFold):
 normalizeSortKey :: Text -> [Text]
-normalizeSortKey = filter (not . T.null) . T.split isWordSep
+normalizeSortKey = filter (not . T.null) . T.split isWordSep . T.toCaseFold
  where
   isWordSep c = isSpace c || c == '\'' || c == '’' || c == ',' ||
                 c == 'ʾ' || c == 'ʿ' -- ayn/hamza in transliterated arabic
