@@ -1,10 +1,10 @@
+{-# LANGUAGE CPP #-}
 {-# LANGUAGE StrictData #-}
 {-# LANGUAGE ScopedTypeVariables #-}
 {-# LANGUAGE OverloadedStrings #-}
 module Main (main) where
 import Citeproc
 import Citeproc.CslJson
-import Data.Semigroup
 import Data.Algorithm.DiffContext
 import System.TimeIt (timeIt)
 import Control.Monad (unless)
@@ -30,6 +30,9 @@ import Data.Text.Encoding (decodeUtf8)
 import System.FilePath
 import Data.Maybe (fromMaybe)
 import Text.Printf (printf)
+#if !MIN_VERSION_base(4,11,0)
+import Data.Semigroup
+#endif
 
 data CiteprocTest a =
   CiteprocTest
