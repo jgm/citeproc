@@ -1297,8 +1297,8 @@ capitalizeInitialTerm :: [Output a] -> [Output a]
 capitalizeInitialTerm [] = []
 capitalizeInitialTerm (z:zs) = go z : zs
  where
-  go (Tagged TagTerm x) =
-    Tagged TagTerm
+  go (Tagged (TagTerm t) x) =
+    Tagged (TagTerm t)
       (formatted mempty{ formatTextCase = Just CapitalizeFirst } [x])
   go (Formatted f xs) = Formatted f (capitalizeInitialTerm xs)
   go (Tagged tg x) = Tagged tg (go x)
@@ -1642,7 +1642,7 @@ eText (TextTerm term) = do
                     -> return $ grouped [t', Literal (fromText " "), suff]
                   | otherwise -> return $ grouped [t', suff]
             else return t'
-  return $ Tagged TagTerm t''
+  return $ Tagged (TagTerm term) t''
 
 
 -- Numbers with prefixes or suffixes are never ordinalized

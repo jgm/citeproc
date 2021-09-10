@@ -1492,7 +1492,7 @@ fixShortDOI x = if "10/" `T.isPrefixOf` x
                    else x
 
 data Tag =
-      TagTerm
+      TagTerm Term
     | TagCitationNumber Int
     | TagCitationLabel
     | TagTitle
