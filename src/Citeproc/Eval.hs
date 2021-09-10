@@ -85,9 +85,11 @@ type Eval a = RWS (Context a) (Set.Set Text) (EvalState a)
 updateVarCount :: Int -> Int -> Eval a ()
 updateVarCount total' nonempty' =
   modify $ \st ->
-    let VarCount total nonempty = stateVarCount st
+    let VarCount{ variablesAccessed = total
+                , variablesNonempty = nonempty } = stateVarCount st
      in st{ stateVarCount =
-              VarCount (total + total') (nonempty + nonempty') }
+              VarCount { variablesAccessed = total + total',
+                         variablesNonempty = nonempty + nonempty' } }
 
 evalStyle  :: CiteprocOutput a
            => Style a          -- ^ Parsed CSL style.
@@ -759,7 +761,10 @@ toDisambData (iid, x) =
       ns' = getNames xs
       ds' = getDates xs
       t   = outputToText x
-   in DisambData iid ns' ds' t
+   in DisambData { ddItem = iid
+                 , ddNames = ns'
+                 , ddDates = ds'
+                 , ddRendered = t }
  where
   getNames :: [Output a] -> [Name]
   getNames (Tagged (TagNames _ _ ns) _ : xs)
