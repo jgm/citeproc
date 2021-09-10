@@ -1013,17 +1013,9 @@ evalSortKey citeId (SortKeyVariable sortdir var) = do
   SortKeyValue sortdir <$>
     case lookupReference citeId refmap >>= lookupVariable var of
       Nothing           -> return Nothing
-      Just (TextVal t)
-        | var == "lang" -> -- make lang sorting case-insensitive
-            return $ Just $ normalizeSortKey $ T.toLower t
-        | otherwise ->
-            return $ Just $ normalizeSortKey t
+      Just (TextVal t)  -> return $ Just $ normalizeSortKey t
       Just (NumVal  i)  -> return $ Just [T.pack $ printf "%09d" i]
-      Just (FancyVal x)
-        | var == "lang" ->
-          return $ Just $ normalizeSortKey $ T.toLower $ toText x
-        | otherwise ->
-          return $ Just $ normalizeSortKey $ toText x
+      Just (FancyVal x) -> return $ Just $ normalizeSortKey $ toText x
       Just (NamesVal ns) ->
         Just . normalizeSortKey . mconcat . intersperse "," . map T.unwords
              <$> mapM getNamePartSortOrder ns
