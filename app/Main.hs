@@ -32,7 +32,7 @@ main = do
     putStr $ usageInfo "citeproc [OPTIONS] [FILE]" options
     exitSuccess
   when (optVersion opt) $ do
-    putStrLn $ "citeproc version " <> VERSION_citeproc
+    putStrLn $ "citeproc version " ++ VERSION_citeproc
     exitSuccess
   format <- case optFormat opt of
               Just "html" -> return Html
