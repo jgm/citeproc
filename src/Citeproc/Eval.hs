@@ -746,7 +746,12 @@ getAmbiguities =
 
 extractTagItems :: [Output a] -> [(ItemId, Output a)]
 extractTagItems xs =
-  [(iid, x) | Tagged (TagItem NormalCite iid) x <- concatMap universe xs]
+  [(iid, x) | Tagged (TagItem NormalCite iid) x <- concatMap universe xs
+            , not (hasIbid x)]
+ where -- we don't want two "ibid" entries to be treated as ambiguous.
+  hasIbid x = not $ null [ trm | Tagged (TagTerm trm) _ <- universe x
+                               , termName trm == "ibid" ]
+
 
 toDisambData :: CiteprocOutput a => (ItemId, Output a) -> DisambData
 toDisambData (iid, x) =
