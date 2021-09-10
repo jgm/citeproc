@@ -8,8 +8,8 @@ bibliography
 
 >>===== RESULT =====>>
 <div class="csl-bib-body">
-  <div class="csl-entry">Abe, Al</div>
-  <div class="csl-entry">abe, Bob</div>
+  <div class="csl-entry">The Civil Law</div>
+  <div class="csl-entry">The civil life</div>
 </div>
 <<===== RESULT =====<<
 
@@ -31,10 +31,10 @@ bibliography
   </citation>
   <bibliography>
     <sort>
-      <text variable="author"/>
+      <text variable="title"/>
     </sort>
     <layout>
-      <name variable="author"/>
+      <text variable="title"/>
     </layout>
   </bibliography>
 </style>
@@ -44,22 +44,12 @@ bibliography
 >>===== INPUT =====>>
 [
     {
-        "author": [
-            {
-                "family": "Abe",
-                "given": "Al"
-            }
-        ],
+        "title": "The Civil Law",
         "id": "ITEM-1",
         "type": "book"
     },
     {
-        "author": [
-            {
-                "family": "abe",
-                "given": "Bob"
-            }
-        ],
+        "title": "The civil life",
         "id": "ITEM-2",
         "type": "book"
     }
