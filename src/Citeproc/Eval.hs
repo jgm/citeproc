@@ -281,16 +281,14 @@ evalStyle style mblang refs' citations =
                   (x@(Tagged (TagItem AuthorOnly _) _):xs) : ys)
                   | isNoteCitation
                     -> formatted mempty
-                        (Formatted f'{ formatPrefix = Nothing
-                                     , formatSuffix = Nothing } [x] :
+                        (x :
                          if null xs && null ys
                             then []
                             else [InNote (formatted f
                                            (formatted f' xs : ys))])
                   | otherwise
                     -> Formatted mempty
-                        (Formatted f'{ formatPrefix = Nothing
-                                     , formatSuffix = Nothing } [x] :
+                        (x :
                          if null xs && null ys
                             then []
                             else [Literal (fromText " "),
@@ -2000,8 +1998,12 @@ eNames vars namesFormat' subst formatting = do
                    else return vars
               else return vars
   inSubstitute <- asks contextInSubstitute
-  let (nameFormat, nameFormatting) =
-        fromMaybe (defaultNameFormat, mempty) $ namesName namesFormat
+  let (nameFormat, nameFormatting') =
+        fromMaybe (defaultNameFormat, mempty) (namesName namesFormat)
+  let nameFormatting = nameFormatting' <>
+                       formatting{ formatPrefix = Nothing
+                                 , formatSuffix = Nothing
+                                 , formatDelimiter = Nothing }
   rawContribs <- mapM (\var -> (var,) <$>
                        askVariable
                        (if var == "editortranslator"
@@ -2040,7 +2042,10 @@ eNames vars namesFormat' subst formatting = do
              CountName -> Literal $ fromText $ T.pack $ show $ length
                [name
                  | Tagged (TagName name) _ <- concatMap universe xs]
-             _ -> formatted formatting xs
+             _ -> formatted mempty{ formatPrefix = formatPrefix formatting
+                                  , formatSuffix = formatSuffix formatting
+                                  , formatDelimiter =
+                                    formatDelimiter formatting } xs
 
 eSubstitute :: CiteprocOutput a
             => [Element a]
