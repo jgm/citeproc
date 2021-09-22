@@ -1298,13 +1298,7 @@ updateLastCitedMap citationGroupNumber positionInCitation citation item = do
 -- but it might be the editor if it's an edited volume.
 getAuthors :: Output a -> Output a
 getAuthors x =
-  case [y | y@(Tagged TagNames{} _) <- universe x] of
-    [] -> NullOutput
-    (z@(Tagged (TagNames _ namesformat _) _) :_)
-      | Just (_, formatting) <- namesName namesformat
-      , formatting /= mempty
-        -> formatted formatting [z]
-    _ -> x
+  headDef NullOutput [y | y@(Tagged TagNames{} _) <- universe x]
 
 removeNames :: Output a -> Output a
 removeNames (Tagged TagNames{} _) = NullOutput
