@@ -265,13 +265,12 @@ evalStyle style mblang refs' citations =
       let handleAuthorOnly formattedCit =
             case formattedCit of
               Formatted f
-                (x@(Tagged (TagItem AuthorOnly _)
-                     (Tagged (TagNames _ namesformat _) _)):xs)
+                (x@(Tagged (TagItem AuthorOnly _) _):xs)
                   | isNoteCitation
-                    -> formatted (maybe mempty snd (namesName namesformat))
+                    -> formatted mempty
                         (x : [InNote (formatted f xs) | not (null xs)])
                   | otherwise
-                    -> formatted (maybe mempty snd (namesName namesformat))
+                    -> formatted mempty
                         (x :
                          if null xs
                             then []
