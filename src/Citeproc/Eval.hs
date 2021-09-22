@@ -2698,4 +2698,5 @@ getBareNameFormatting nf =
   case namesName nf of
     Nothing -> mempty
     (Just (_,fmt)) -> fmt{ formatPrefix = Nothing
-                         , formatSuffix = Nothing }
+                         , formatSuffix = Nothing
+                         , formatDelimiter = Nothing }
