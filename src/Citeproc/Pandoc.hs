@@ -161,12 +161,6 @@ dropTextWhile' f ils = evalState (walkM go ils) True
              unless (T.null t') $
                put False
              return $ Str t'
-           Space ->
-             if f ' '
-                then return $ Str ""
-                else do
-                  put False
-                  return Space
            _ -> return x
        else return x
 
@@ -185,7 +179,6 @@ dropTextWhileEnd' f ils =
              unless (T.null t') $
                put False
              return $ Str t'
-           Space | f ' ' -> return $ Str ""
            _ -> return x
        else return x
 
@@ -198,7 +191,6 @@ stringify :: Walkable Inline a => a -> T.Text
 stringify = query go . walk (unNote . unQuote)
  where
   go :: Inline -> T.Text
-  go Space                                       = " "
   go SoftBreak                                   = " "
   go (Str x)                                     = x
   go (Code _ x)                                  = x
@@ -246,7 +238,6 @@ caseTransform' f ils =
     _ -> mapM go ils
  where
   go (Str t) = Str . mconcat <$> mapM g (splitUp t)
-  go Space = Space <$ g " "
   go (SmallCaps zs) = return' $ SmallCaps zs
   go (Superscript zs) = return' $ Superscript zs
   go (Subscript zs) = return' $ Subscript zs
