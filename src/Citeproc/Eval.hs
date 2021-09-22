@@ -268,10 +268,10 @@ evalStyle style mblang refs' citations =
                 (x@(Tagged (TagItem AuthorOnly _)
                      (Tagged (TagNames _ namesformat _) _)):xs)
                   | isNoteCitation
-                    -> formatted (maybe mempty snd (namesName namesformat))
+                    -> formatted (getBareNameFormatting namesformat)
                         (x : [InNote (formatted f xs) | not (null xs)])
                   | otherwise
-                    -> formatted (maybe mempty snd (namesName namesformat))
+                    -> formatted (getBareNameFormatting namesformat)
                         (x :
                          if null xs
                             then []
@@ -2693,3 +2693,9 @@ endsWithSpace t = not (T.null t) && isSpace (T.last t)
 beginsWithSpace :: Text -> Bool
 beginsWithSpace t = not (T.null t) && isSpace (T.head t)
 
+getBareNameFormatting :: NamesFormat -> Formatting
+getBareNameFormatting nf =
+  case namesName nf of
+    Nothing -> mempty
+    (Just (_,fmt)) -> fmt{ formatPrefix = Nothing
+                         , formatSuffix = Nothing }
