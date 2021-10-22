@@ -1,5 +1,38 @@
 # citeproc changelog
 
+## 0.6
+
+  * Add Term parameter to TagTerm [API change].
+
+  * Add TagPrefix, TagSuffix constructors to Tag [API change].
+
+  * Make sure that extracted AuthorOnly names have the correct
+    formatting (#55).
+
+  * Do case-insensitive sorting, like Zotero (#91).
+
+  * Ignore "ibid" entries in computing ambiguities.
+
+  * Improved disambiguation for author-in-text citations.
+
+  * In disambiguating, convert author-in-text to normal citations.
+    Otherwise we disambiguate incorrectly.
+
+  * Fix title disambiguation with note style (#90).
+    Previously we'd been calculating ambiguities by generating
+    renderings for citation items independently of context.
+    This meant that we didn't detect ambiguities in "subsequent"
+    citations (which might e.g. just have an author).
+
+  * Ensure we don't do collapsing of items across a prefix or suffix (#89).
+    If we have `[@doe99; for contrasting views see @smith33; @doe00]`,
+    we don't want to get collapsing to
+    `(Doe 1999, 2000; for contrasting views, see Smith 1933)`.
+    This isn't strictly by the spec, but it gives better results.
+
+  * Allow collapsing after an initial prefix.
+
+
 ## 0.5
 
   * Add `linkBibliography` field to `CiteprocOptions` [API change].
