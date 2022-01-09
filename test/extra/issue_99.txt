@@ -1,0 +1,78 @@
+>>===== MODE =====>>
+bibliography
+<<===== MODE =====<<
+
+
+
+
+>>===== RESULT =====>>
+<div class="csl-bib-body">
+  <div class="csl-entry">Doe, John</div>
+</div>
+<<===== RESULT =====<<
+
+
+>>===== CSL =====>>
+<?xml version="1.0" encoding="utf-8"?>
+<style
+    xmlns="http://purl.org/net/xbiblio/csl"
+    class="note"
+    version="1.0">
+  <info>
+    <id />
+    <title />
+  </info>
+  <citation>
+    <layout>
+      <names variable="author">
+        <name form="long"/>
+      </names>
+    </layout>
+  </citation>
+  <bibliography>
+    <layout>
+      <choose>
+        <if position="subsequent">
+          <names variable="author">
+            <name form="short"/>
+          </names>
+        </if>
+        <else>
+          <names variable="author">
+            <name form="long"/>
+          </names>
+        </else>
+      </choose>
+    </layout>
+  </bibliography>
+</style>
+<<===== CSL =====<<
+
+
+>>===== CITATION-ITEMS =====>>
+[ [ {"id":"Doe"} ] ]
+<<===== CITATION-ITEMS =====<<
+
+
+
+>>===== INPUT =====>>
+[
+  {
+    "author": [
+      {
+        "family": "Doe",
+        "given": "John"
+      }
+    ],
+    "id": "Doe",
+    "type": "book",
+    "title": "Title"
+  }
+]
+<<===== INPUT =====<<
+
+
+>>===== VERSION =====>>
+1.0
+<<===== VERSION =====<<
+
