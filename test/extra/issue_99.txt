@@ -7,7 +7,7 @@ bibliography
 
 >>===== RESULT =====>>
 <div class="csl-bib-body">
-  <div class="csl-entry">Doe, John</div>
+  <div class="csl-entry">John Doe</div>
 </div>
 <<===== RESULT =====<<
 

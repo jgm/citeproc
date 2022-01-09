@@ -1315,42 +1315,52 @@ capitalizeInitialTerm (z:zs) = go z : zs
 
 getPosition :: Int -> Maybe Int -> CitationItem a -> Int -> Eval a [Position]
 getPosition groupNum mbNoteNum item posInGroup = do
-  lastCitedMap <- gets stateLastCitedMap
-  noteMap <- gets stateNoteMap
-  case M.lookup (citationItemId item) lastCitedMap of
-    Nothing -> return [FirstPosition]
-    Just (prevGroupNum, mbPrevNoteNum,
-           prevPosInGroup, prevAloneInGroup, prevLabel, prevLoc) -> do
-      isNote <- asks (styleIsNoteStyle . contextStyleOptions)
-      nearNoteDistance <- fromMaybe 5 <$>
-                           asks (styleNearNoteDistance . contextStyleOptions)
-      let noteNum = fromMaybe groupNum mbNoteNum
-      let prevNoteNum = fromMaybe prevGroupNum mbPrevNoteNum
-      let prevAloneInNote =
-            case M.lookup prevNoteNum noteMap of
-              Nothing -> True
-              Just s  -> Set.size s <= 1
-      let prevAlone = prevAloneInGroup && prevAloneInNote
-      return $
-        (if isNote && noteNum - prevNoteNum < nearNoteDistance
-            then (NearNote :)
-            else id) .
-        (if (groupNum == prevGroupNum &&
-             posInGroup == prevPosInGroup + 1) ||
-            (groupNum == prevGroupNum + 1 &&
-              (((-) <$> mbNoteNum <*> mbPrevNoteNum) <= Just 1) &&
-             posInGroup == 1 &&
-             prevAlone)
-             then case (prevLoc, citationItemLocator item) of
-                    (Nothing, Just _)  -> (IbidWithLocator :) . (Ibid :)
-                    (Nothing, Nothing) -> (Ibid :)
-                    (Just _, Nothing)   -> id
-                    (Just l1, Just l2)
-                      | l1 == l2
-                      , citationItemLabel item == prevLabel -> (Ibid :)
-                      | otherwise -> (IbidWithLocator :) . (Ibid :)
-             else id)
-        $ [Subsequent]
+  inBibliography <- asks contextInBibliography
+  if inBibliography
+     then return []
+     else getPosition'
+ where
+  getPosition' = do
+    lastCitedMap <- gets stateLastCitedMap
+    noteMap <- gets stateNoteMap
+    case M.lookup (citationItemId item) lastCitedMap of
+      Nothing -> return [FirstPosition]
+      Just (prevGroupNum, mbPrevNoteNum,
+             prevPosInGroup, prevAloneInGroup,
+             prevLabel, prevLoc) -> do
+        isNote <- asks (styleIsNoteStyle . contextStyleOptions)
+        nearNoteDistance <- fromMaybe 5 <$>
+                asks (styleNearNoteDistance . contextStyleOptions)
+        let noteNum = fromMaybe groupNum mbNoteNum
+        let prevNoteNum = fromMaybe prevGroupNum mbPrevNoteNum
+        let prevAloneInNote =
+              case M.lookup prevNoteNum noteMap of
+                Nothing -> True
+                Just s  -> Set.size s <= 1
+        let prevAlone = prevAloneInGroup && prevAloneInNote
+        return $
+          (if isNote && noteNum - prevNoteNum < nearNoteDistance
+              then (NearNote :)
+              else id) .
+          (if (groupNum == prevGroupNum &&
+               posInGroup == prevPosInGroup + 1) ||
+              (groupNum == prevGroupNum + 1 &&
+                (((-) <$> mbNoteNum <*> mbPrevNoteNum) <= Just 1) &&
+               posInGroup == 1 &&
+               prevAlone)
+               then case (prevLoc, citationItemLocator item) of
+                      (Nothing, Just _)
+                        -> (IbidWithLocator :) . (Ibid :)
+                      (Nothing, Nothing) -> (Ibid :)
+                      (Just _, Nothing)   -> id
+                      (Just l1, Just l2)
+                        | l1 == l2
+                        , citationItemLabel item == prevLabel
+                          -> (Ibid :)
+                        | otherwise
+                          -> (IbidWithLocator :) . (Ibid :)
+               else id)
+          $ [Subsequent]
 
 eElement :: CiteprocOutput a => Element a -> Eval a [Output a]
 eElement (Element etype formatting) =
