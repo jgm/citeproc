@@ -1,5 +1,9 @@
 # citeproc changelog
 
+## 0.6.0.1
+
+  * Ensure that position evaluates false inside bibliography (#99).
+
 ## 0.6
 
   * Add Term parameter to TagTerm [API change].
