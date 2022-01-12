@@ -76,6 +76,7 @@ jobs:
 
     - name: Build dependencies
       run: |
+        cabal update
         cabal configure --enable-tests --enable-benchmarks --test-show-details=direct
         cabal build --dependencies-only --disable-optimization all
 
