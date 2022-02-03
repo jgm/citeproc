@@ -807,7 +807,7 @@ data Reference a =
            -- ^ This is added in processing; if you are constructing
            -- a Reference, set to Nothing
   , referenceVariables      :: M.Map Variable (Val a)
-  } deriving (Show, Functor, Foldable, Traversable)
+  } deriving (Show, Ord, Eq, Functor, Foldable, Traversable)
 
 instance ToJSON a => ToJSON (Reference a) where
   toJSON r = toJSON $
@@ -821,14 +821,14 @@ data DisambiguationData =
   , disambNameMap     :: M.Map Name NameHints
   , disambEtAlNames   :: Maybe Int
   , disambCondition   :: Bool
-  } deriving (Show)
+  } deriving (Show, Ord, Eq)
 
 data NameHints =
     AddInitials
   | AddGivenName
   | AddInitialsIfPrimary
   | AddGivenNameIfPrimary
-  deriving (Show)
+  deriving (Show, Ord, Eq)
 
 instance (Eq a, FromJSON a)  => FromJSON (Reference a) where
   parseJSON v = parseJSON v >>= parseReference
@@ -1079,7 +1079,7 @@ data Val a =
   | NumVal  Int       -- ^ Numerical value
   | NamesVal [Name]    -- ^ Structured names
   | DateVal Date       -- ^ Structured date
-  deriving (Show, Eq, Functor, Foldable, Traversable)
+  deriving (Show, Ord, Eq, Functor, Foldable, Traversable)
 
 instance ToJSON a => ToJSON (Val a) where
   toJSON (TextVal t) = toJSON t
