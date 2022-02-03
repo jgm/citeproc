@@ -268,9 +268,10 @@ data CitationItem a =
   , citationItemType           :: CitationItemType
   , citationItemPrefix         :: Maybe a
   , citationItemSuffix         :: Maybe a
+  , citationItemData           :: Maybe (Reference a)
   } deriving (Show, Eq, Ord)
 
-instance FromJSON a => FromJSON (CitationItem a) where
+instance (FromJSON a, Eq a) => FromJSON (CitationItem a) where
   parseJSON = withObject "CitationItem" $ \v -> CitationItem
     <$> (v .: "id" >>= fmap ItemId . asText)
     <*> v .:? "label"
@@ -286,6 +287,7 @@ instance FromJSON a => FromJSON (CitationItem a) where
                            _ -> NormalCite) )
     <*> v .:? "prefix"
     <*> v .:? "suffix"
+    <*> v .:? "itemData"
 
 instance ToJSON a => ToJSON (CitationItem a) where
   toJSON i = object $
@@ -298,7 +300,9 @@ instance ToJSON a => ToJSON (CitationItem a) where
     [ ("prefix", toJSON (citationItemPrefix i))
                  | isJust (citationItemPrefix i) ] ++
     [ ("suffix", toJSON (citationItemSuffix i))
-                 | isJust (citationItemSuffix i) ]
+                 | isJust (citationItemSuffix i) ] ++
+    [ ("itemData", toJSON (citationItemData i))
+                 | isJust (citationItemData i) ]
 
 
 -- | A citation (which may include several items, e.g.
@@ -309,7 +313,7 @@ data Citation a =
            , citationItems      :: [CitationItem a] }
   deriving (Show, Eq, Ord)
 
-instance FromJSON a => FromJSON (Citation a) where
+instance (FromJSON a, Eq a) => FromJSON (Citation a) where
  parseJSON v =
    withArray "Citation"
      (\ary ->

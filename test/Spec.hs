@@ -159,7 +159,8 @@ referencesToCitation rs =
                            , citationItemLocator = Nothing
                            , citationItemType = NormalCite
                            , citationItemPrefix = Nothing
-                           , citationItemSuffix = Nothing }) rs
+                           , citationItemSuffix = Nothing
+                           , citationItemData = Nothing }) rs
            }
 
 -- remove >>[0] or ..[1]

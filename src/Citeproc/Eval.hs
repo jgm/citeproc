@@ -204,7 +204,7 @@ evalStyle style mblang refs' citations =
             let bibCitations = map (\ident ->
                   Citation (Just $ unItemId ident) Nothing
                    [CitationItem ident Nothing Nothing
-                      NormalCite Nothing Nothing]) sortedIds
+                      NormalCite Nothing Nothing Nothing]) sortedIds
             return (bibCitations, bibSortKeyMap)
       -- styling of citations
       sortKeyMap <-
@@ -558,6 +558,7 @@ basicItem iid = CitationItem
   , citationItemType    = NormalCite
   , citationItemPrefix  = Nothing
   , citationItemSuffix  = Nothing
+  , citationItemData    = Nothing
   }
 
 isDisambiguated :: Maybe Lang
