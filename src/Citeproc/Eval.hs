@@ -101,7 +101,8 @@ evalStyle  :: CiteprocOutput a
 evalStyle style mblang refs' citations =
   (citationOs, bibliographyOs, Set.toList warnings)
  where
-  (refs, refmap) = makeReferenceMap refs'
+  refs'' = refs' ++ extractItemData citations
+  (refs, refmap) = makeReferenceMap refs''
 
   ((citationOs, bibliographyOs), warnings) = evalRWS go
      Context
@@ -315,6 +316,9 @@ evalStyle style mblang refs' citations =
                      Nothing -> []
                      Just _  ->
                        zip (map (fromMaybe "" . citationId) bibCitations) bs)
+
+extractItemData :: [Citation a] -> [Reference a]
+extractItemData = concatMap (mapMaybe citationItemData . citationItems)
 
 subsequentAuthorSubstitutes :: CiteprocOutput a
                             => SubsequentAuthorSubstitute
