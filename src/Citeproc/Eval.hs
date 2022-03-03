@@ -1624,7 +1624,7 @@ eText (TextVariable varForm v) = do
                  Just (NumVal x) -> return $ Literal
                                            $ fromText (T.pack (show x))
                  _ -> return NullOutput
-        handleSubst
+        deleteSubstitutedVariables [v]
         if v == "title" && res /= NullOutput
             then do
               modify (\st -> st { stateUsedTitle = True })
@@ -1635,7 +1635,7 @@ eText (TextVariable varForm v) = do
       handleIdent :: CiteprocOutput b => (Text -> Text) -> (Text -> Identifier) -> Eval b (Output b)
       handleIdent f identConstr = do
         mbv <- askVariable v
-        handleSubst
+        deleteSubstitutedVariables [v]
         case f <$> (valToText =<< mbv) of
           Nothing -> return NullOutput
           Just t  -> do
@@ -1643,13 +1643,6 @@ eText (TextVariable varForm v) = do
             modify (\st -> st { stateUsedIdentifier = True })
             let url = identifierToURL (identConstr t)
             return $ Linked url [Literal $ fromText t]
-      handleSubst :: Eval a ()
-      handleSubst = do inSubst <- asks contextInSubstitute
-                       when inSubst $
-                         modify $ \st -> -- delete variable so it isn't used again...
-                           st{ stateReference =
-                                 let Reference id' type' d' m' = stateReference st
-                                  in Reference id' type' d' (M.delete v m') }
 eText (TextMacro name) = do
   warn $ "encountered unexpanded macro " <> name
   return NullOutput
@@ -1668,6 +1661,16 @@ eText (TextTerm term) = do
             else return t'
   return $ Tagged (TagTerm term) t''
 
+
+-- | Delete substituted variables so they aren't used again.
+deleteSubstitutedVariables :: [Variable] -> Eval a ()
+deleteSubstitutedVariables vars = do
+  inSubst <- asks contextInSubstitute
+  when inSubst $
+    modify $ \st -> -- delete variables so they aren't used again...
+      st{ stateReference =
+                  let Reference id' type' d' m' = stateReference st
+                   in Reference id' type' d' (foldr M.delete m' vars) }
 
 -- Numbers with prefixes or suffixes are never ordinalized
 -- or rendered in roman numerals (e.g. “2E” remains “2E).
@@ -2045,12 +2048,7 @@ eNames vars namesFormat' subst formatting = do
      else do
         xs <- mapM (formatNames namesFormat nameFormat nameFormatting)
                rawContribs
-        when inSubstitute $
-          modify $ \st ->  -- delete variables so they aren't used again...
-              st{ stateReference =
-                  let Reference id' type' d' m' = stateReference st
-                   in Reference id' type' d' (foldr M.delete m'
-                                         [v | (v, Just _) <- rawContribs ])}
+        deleteSubstitutedVariables [v | (v, Just _) <- rawContribs ]
 
         return $
           case nameForm nameFormat of
