@@ -1081,8 +1081,9 @@ data Val a =
     TextVal Text      -- ^ Plain text value
   | FancyVal a        -- ^ Formatted value with parameterized type
   | NumVal  Int       -- ^ Numerical value
-  | NamesVal [Name]    -- ^ Structured names
-  | DateVal Date       -- ^ Structured date
+  | NamesVal [Name]   -- ^ Structured names
+  | DateVal Date      -- ^ Structured date
+  | SubstitutedVal    -- ^ Value suppressed through substitution
   deriving (Show, Ord, Eq, Functor, Foldable, Traversable)
 
 instance ToJSON a => ToJSON (Val a) where
@@ -1091,6 +1092,7 @@ instance ToJSON a => ToJSON (Val a) where
   toJSON (NumVal n) = toJSON n
   toJSON (NamesVal ns) = toJSON ns
   toJSON (DateVal d) = toJSON d
+  toJSON SubstitutedVal = toJSON ()
 
 valToText :: CiteprocOutput a => Val a -> Maybe Text
 valToText (TextVal x)  = Just x

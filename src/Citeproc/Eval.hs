@@ -1028,6 +1028,7 @@ evalSortKey citeId (SortKeyVariable sortdir var) = do
         Just . normalizeSortKey . mconcat . intersperse "," . map T.unwords
              <$> mapM getNamePartSortOrder ns
       Just (DateVal d)  -> return $ Just [T.toLower $ dateToText d]
+      Just SubstitutedVal -> return Nothing
 
 -- Note: we do a case-insensitive sort (using toCaseFold):
 normalizeSortKey :: Text -> [Text]
@@ -1673,7 +1674,7 @@ deleteSubstitutedVariables vars = do
     modify $ \st -> -- delete variables so they aren't used again...
       st{ stateReference =
                   let Reference id' type' d' m' = stateReference st
-                   in Reference id' type' d' (foldr M.delete m' vars) }
+                   in Reference id' type' d' (foldr (\v -> M.insert v SubstitutedVal) m' vars) }
 
 -- Numbers with prefixes or suffixes are never ordinalized
 -- or rendered in roman numerals (e.g. “2E” remains “2E).
