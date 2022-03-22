@@ -2177,7 +2177,7 @@ formatNames namesFormat nameFormat formatting (var, Just (NamesVal names)) =
                       Just beforeEtAl <> formatPrefix f } $
                  lookupTerm' emptyTerm{ termName = term }
                 Nothing
-                  | etAlUseLast ->
+                  | etAlUseLast && not finalNameIsOthers ->
                     return $
                       Formatted mempty{ formatPrefix = Just beforeEtAl }
                         [literal "\x2026 "] -- ellipses
@@ -2187,15 +2187,15 @@ formatNames namesFormat nameFormat formatting (var, Just (NamesVal names)) =
   let addNameAndDelim name idx
        | etAlThreshold == Just 0 = NullOutput
        | idx == 1    = name
+       | maybe False (idx - 1 ==) etAlThreshold =
+         if inSortKey
+            then NullOutput
+            else etAl
        | idx == numnames
        , etAlUseLast
        , maybe False (idx - 1 >=) etAlThreshold
          = name
        | maybe False (idx - 1 >) etAlThreshold = NullOutput
-       | maybe False (idx - 1 ==) etAlThreshold =
-         if inSortKey
-            then NullOutput
-            else etAl
        | inSortKey = name
        | idx == numnames
          = formatted mempty{ formatPrefix =
