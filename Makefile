@@ -1,5 +1,4 @@
 VERSION?=$(shell grep '^[Vv]ersion:' citeproc.cabal | awk '{print $$2;}')
-LOCALE_DATA=$(patsubst locales-upstream/locales-%.xml,locales/%.xml, $(wildcard locales-upstream/*.xml)) locales/locales.json
 
 .PHONY: locales test bench ghcid repl clean update-locales update-test-suite update-locales-upstream test-diff
 
@@ -29,12 +28,11 @@ locales-upstream:
 update-locales-upstream: locales-upstream
 	cd $< && git pull
 
-update-locales: update-locales-upstream $(LOCALE_DATA)
+update-locales: update-locales-upstream
+	cp locales-upstream/locales.json locales/
+	for f in locales-upstream/*.xml; do cp -v $$f locales/$${f#locales-upstream/locales-} ; done
 
 locales/%.xml: locales-upstream/locales-%.xml
-	cp $< $@
-
-locales/locales.json: locales-upstream/locales.json
 	cp $< $@
 
 man/citeproc.1: man/citeproc.1.md
