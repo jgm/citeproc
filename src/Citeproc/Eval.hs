@@ -1415,10 +1415,13 @@ withFormatting formatting p = do
 lookupTerm :: Term -> Eval a [(Term, Text)]
 lookupTerm term = do
   terms <- asks (localeTerms . contextLocale)
-  case M.lookup (termName term) terms of
-     Just ts -> return $ [(term',t)
-                         | (term',t) <- ts
-                         , term <= term'
+  let term' = if termName term == "sub verbo"
+                 then term{ termName = "sub-verbo" }
+                 else term
+  case M.lookup (termName term') terms of
+     Just ts -> return $ [ (term'',t)
+                         | (term'',t) <- ts
+                         , term' <= term''
                          ]
      Nothing -> return []
 
