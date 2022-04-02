@@ -1,5 +1,25 @@
 # citeproc changelog
 
+## 0.7
+
+  * Handle old term form `sub verbo` as if it is `sub-verbo` (the new form).
+
+  * Update to latest locales in CSL repository.
+
+  * Makefile: Fix update-locales target.
+
+  * Keep explicit "et al." (#102, Albert Krewinkel).
+
+  * Factor out `deleteSubstitutedVariables`.
+
+  * Add any references in `citationItemData` to references.
+
+  * Add `citationItemData` field to `CitationItem` [API change].
+    This corresponds to the `itemData` that can appear
+    in the JSON representation of a citation item.
+
+  * Add Ord, Eq instances for `Reference`, `DisambiguationData`, `Val` [API change].
+
 ## 0.6.0.1
 
   * Ensure that position evaluates false inside bibliography (#99).
