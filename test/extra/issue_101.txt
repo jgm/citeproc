@@ -1,0 +1,247 @@
+>>===== MODE =====>>
+bibliography
+<<===== MODE =====<<
+
+
+
+
+>>===== RESULT =====>>
+<div class="csl-bib-body">
+  <div class="csl-entry">AUTHOR EDITOR Blockley, D. AUTHOR EDITOR, 2021. <i>Engineering: a very short introduction</i>. W.M. Haynes, ed. AUTHOR EDITOR. Oxford: Oxford University Press.</div>
+  <div class="csl-entry">NO_AUTHOR EDITOR Haynes, W.M., ed. NO_AUTHOR EDITOR, 2014. <i>CRC handbook of chemistry and physics</i>. NO_AUTHOR EDITOR. Boca Raton, Fla.: CRC Press/Taylor and Francis.</div>
+</div>
+<<===== RESULT =====<<
+
+
+>>===== CSL =====>>
+<?xml version="1.0" encoding="utf-8"?>
+<style xmlns="http://purl.org/net/xbiblio/csl" class="in-text" version="1.0" demote-non-dropping-particle="sort-only" default-locale="en-GB">
+  <info>
+    <title>Test Harvard</title>
+    <id>http://www.zotero.org/styles/test-style</id>
+  </info>
+  <macro name="author">
+    <group suffix=" " delimiter=" ">
+      <choose>
+        <if variable="author">
+          <text value="AUTHOR"/>
+        </if>
+        <else>
+          <text value="NO_AUTHOR"/>
+        </else>
+      </choose>
+      <choose>
+        <if variable="editor">
+          <text value="EDITOR"/>
+        </if>
+        <else>
+          <text value="NO_EDITOR"/>
+        </else>
+      </choose>
+    </group>
+    <names variable="author">
+      <name and="text" delimiter-precedes-last="never" initialize-with="." name-as-sort-order="all"/>
+      <label form="short" prefix=" " text-case="lowercase"/>
+      <substitute>
+        <names variable="editor">
+          <name and="text" delimiter-precedes-last="never" initialize-with="." name-as-sort-order="all"/>
+          <label form="short" prefix=", " text-case="lowercase"/>
+        </names>
+        <text macro="title-label"/>
+      </substitute>
+    </names>
+    <group prefix=" " delimiter=" ">
+      <choose>
+        <if variable="author">
+          <text value="AUTHOR"/>
+        </if>
+        <else>
+          <text value="NO_AUTHOR"/>
+        </else>
+      </choose>
+      <choose>
+        <if variable="editor">
+          <text value="EDITOR"/>
+        </if>
+        <else>
+          <text value="NO_EDITOR"/>
+        </else>
+      </choose>
+    </group>
+  </macro>
+  <macro name="author-short">
+    <names variable="author">
+      <name form="short" and="text" delimiter-precedes-last="never" initialize-with="."/>
+      <substitute>
+        <names variable="editor"/>
+        <text macro="title-short"/>
+      </substitute>
+    </names>
+  </macro>
+  <macro name="editor">
+    <names variable="editor">
+      <name and="text" delimiter-precedes-last="never" initialize-with="."/>
+      <label form="short" prefix=", " text-case="lowercase"/>
+    </names>
+    <group prefix=" " delimiter=" ">
+      <choose>
+        <if variable="author">
+          <text value="AUTHOR"/>
+        </if>
+        <else>
+          <text value="NO_AUTHOR"/>
+        </else>
+      </choose>
+      <choose>
+        <if variable="editor">
+          <text value="EDITOR"/>
+        </if>
+        <else>
+          <text value="NO_EDITOR"/>
+        </else>
+      </choose>
+    </group>
+  </macro>
+  <macro name="title">
+    <choose>
+      <if type="bill book dataset graphic legal_case map motion_picture musical_score patent report song speech webpage thesis" match="any">
+        <text variable="title" font-style="italic"/>
+      </if>
+      <else>
+        <text variable="title"/>
+      </else>
+    </choose>
+  </macro>
+  <macro name="title-short">
+    <choose>
+      <if type="bill book dataset graphic legal_case map motion_picture musical_score patent report song speech webpage thesis" match="any">
+        <text variable="title" form="short" font-style="italic"/>
+      </if>
+      <else>
+        <text variable="title" form="short"/>
+      </else>
+    </choose>
+  </macro>
+  <macro name="title-label">
+    <choose>
+      <if type="bill book dataset graphic legal_case map motion_picture musical_score patent report song speech webpage thesis" match="any">
+        <text variable="title" font-style="italic"/>
+       </if>
+      <else>
+        <text variable="title"/>
+      </else>
+    </choose>
+  </macro>
+  <macro name="publisher">
+    <group delimiter=": ">
+      <text variable="publisher-place"/>
+      <text variable="publisher"/>
+    </group>
+  </macro>
+  <macro name="year-date">
+    <choose>
+      <if variable="issued">
+        <date variable="issued">
+          <date-part name="year"/>
+        </date>
+      </if>
+      <else>
+        <text term="no date" form="short"/>
+      </else>
+    </choose>
+  </macro>
+  <citation et-al-min="4" et-al-use-first="1" disambiguate-add-year-suffix="true" disambiguate-add-names="true" disambiguate-add-givenname="true">
+    <layout prefix="(" suffix=")" delimiter="; ">
+      <group delimiter=", ">
+        <text macro="author-short"/>
+        <text macro="year-date"/>
+        <group>
+          <label variable="locator" form="short"/>
+          <text variable="locator"/>
+        </group>
+      </group>
+    </layout>
+  </citation>
+  <bibliography entry-spacing="1" hanging-indent="false">
+    <sort>
+      <key macro="author"/>
+      <key variable="issued"/>
+      <key variable="title"/>
+    </sort>
+    <layout>
+      <text macro="author" suffix=","/>
+      <group prefix=" " suffix="." delimiter=". ">
+        <text macro="year-date"/>
+        <text macro="title"/>
+        <text macro="editor"/>
+        <text macro="publisher"/>
+      </group>
+    </layout>
+  </bibliography>
+</style>
+<<===== CSL =====<<
+
+
+>>===== CITATION-ITEMS =====>>
+[ [ {"id":"haynes2014crc"}, {"id":"blockley2021evs"} ] ]
+<<===== CITATION-ITEMS =====<<
+
+
+
+>>===== INPUT =====>>
+[
+  {
+    "editor": [
+      {
+        "family": "Haynes",
+        "given": "W. M."
+      }
+    ],
+    "id": "haynes2014crc",
+    "issued": {
+      "date-parts": [
+        [
+          2014
+        ]
+      ]
+    },
+    "publisher": "CRC Press/Taylor and Francis",
+    "publisher-place": "Boca Raton, Fla.",
+    "title": "CRC handbook of chemistry and physics",
+    "type": "book"
+  },
+  {
+    "author": [
+      {
+        "family": "Blockley",
+        "given": "D."
+      }
+    ],
+    "editor": [
+      {
+        "family": "Haynes",
+        "given": "W. M."
+      }
+    ],
+    "id": "blockley2021evs",
+    "issued": {
+      "date-parts": [
+        [
+          2021
+        ]
+      ]
+    },
+    "publisher": "Oxford University Press",
+    "publisher-place": "Oxford",
+    "short-title": "Engineering",
+    "title": "Engineering: a very short introduction",
+    "type": "book"
+  }
+]
+<<===== INPUT =====<<
+
+
+>>===== VERSION =====>>
+1.0
+<<===== VERSION =====<<
+
