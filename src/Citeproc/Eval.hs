@@ -1743,8 +1743,6 @@ eLabel var termform pluralize formatting = do
                 | ". " `T.isPrefixOf` T.dropWhile isLetter loc
                                          -> return NullOutput
                 | otherwise              -> getTerm "page" (TextVal loc)
-             ("page", Just loc, _) ->
-               getTerm "page" (TextVal loc)
              _ -> case lookupVariable var' ref of
                          Nothing -> return NullOutput
                          Just x  -> getTerm (fromVariable var) x

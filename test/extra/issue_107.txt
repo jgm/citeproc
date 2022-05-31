@@ -1,0 +1,229 @@
+>>===== MODE =====>>
+citation
+<<===== MODE =====<<
+
+
+
+
+>>===== RESULT =====>>
+pp. 3–17, at p. 15
+pp. 120–154, at pp. 123–124
+pp. 380–387, at p. 281
+<<===== RESULT =====<<
+
+
+>>===== CSL =====>>
+<?xml version="1.0" encoding="utf-8"?>
+<style class="note" version="1.0" xmlns="http://purl.org/net/xbiblio/csl">
+  <citation>
+    <layout>
+	  <group delimiter=" " font-style="normal">
+	    <label variable="page" form="short" plural="contextual"/>
+	    <text variable="page"/>
+      </group>
+      <group>
+       <label prefix=", at " suffix=" " variable="locator" plural="contextual" form="short"/>
+       <text variable="locator"/>
+      </group>
+	</layout>
+  </citation>
+  <bibliography>
+    <layout suffix=".">
+	  <text variable="title"/>
+    </layout>
+  </bibliography>
+</style>
+<<===== CSL =====<<
+
+
+>>===== CITATION-ITEMS =====>>
+[ [ {"id":"latourette_community_1938", "locator":"15"} ],
+  [ {"id":"oldham_responsible_1948", "locator":"123-124"} ],
+  [ {"id":"barbour_justice_1979", "locator":"281"} ]
+]
+<<===== CITATION-ITEMS =====<<
+
+
+>>===== INPUT =====>>
+[
+  {
+    "DOI": "10.1111/j.1758-6623.1979.tb02528.x",
+    "ISSN": "130796",
+    "URL": "http://libezproxy.open.ac.uk/login?url=https://search.ebscohost.com/login.aspx?direct=true&db=a9h&AN=6431771&site=ehost-live&scope=site",
+    "accessed": {
+      "date-parts": [
+        [
+          2021,
+          1,
+          19
+        ]
+      ]
+    },
+    "author": [
+      {
+        "family": "Barbour",
+        "given": "Ian G."
+      }
+    ],
+    "citation-key": "barbour_justice_1979",
+    "container-title": "Ecumenical Review",
+    "container-title-short": "Ecumenical Review",
+    "id": "barbour_justice_1979",
+    "issue": "4",
+    "issued": {
+      "date-parts": [
+        [
+          1979,
+          10
+        ]
+      ]
+    },
+    "language": "en-GB",
+    "page": "380-387",
+    "publisher": "Wiley-Blackwell",
+    "source": "EBSCOhost",
+    "title": "Justice, participation and sustainability at MIT",
+    "title-short": "Justice, participation and sustainability",
+    "type": "article-journal",
+    "volume": "31"
+  },
+  {
+    "author": [
+      {
+        "family": "Latourette",
+        "given": "Kenneth S."
+      }
+    ],
+    "citation-key": "latourette_community_1938",
+    "collection-number": "5",
+    "collection-title": "Church, community and state",
+    "container-title": "Church and community",
+    "editor": [
+      {
+        "family": "Latourette",
+        "given": "Kenneth S."
+      },
+      {
+        "family": "Barker",
+        "given": "Ernest"
+      },
+      {
+        "family": "Boegner",
+        "given": "Marc"
+      },
+      {
+        "family": "Lilje",
+        "given": "Hanns"
+      },
+      {
+        "family": "Björkquist",
+        "given": "Manfred"
+      },
+      {
+        "family": "Zankov",
+        "given": "Stefan"
+      },
+      {
+        "family": "Aubrey",
+        "given": "Edwin E."
+      },
+      {
+        "family": "Douglass",
+        "given": "H. Paul"
+      }
+    ],
+    "event-place": "Chicago",
+    "id": "latourette_community_1938",
+    "issued": {
+      "date-parts": [
+        [
+          1938
+        ]
+      ]
+    },
+    "language": "en-GB",
+    "page": "3-17",
+    "publisher": "Willett, Clark & Company",
+    "publisher-place": "Chicago",
+    "title": "Community and church: an historical survey and interpretation",
+    "title-short": "Community and church",
+    "type": "chapter"
+  },
+  {
+    "author": [
+      {
+        "family": "Oldham",
+        "given": "J. H."
+      }
+    ],
+    "citation-key": "oldham_responsible_1948",
+    "collection-number": "3",
+    "collection-title": "Man’s disorder and God’s design",
+    "container-title": "The church and the disorder of society",
+    "editor": [
+      {
+        "family": "Bates",
+        "given": "S."
+      },
+      {
+        "family": "Bennett",
+        "given": "J. C."
+      },
+      {
+        "family": "Bliss",
+        "given": "Kathleen"
+      },
+      {
+        "family": "Brunner",
+        "given": "Emil"
+      },
+      {
+        "family": "Ellul",
+        "given": "Jacques"
+      },
+      {
+        "family": "Niebuhr",
+        "given": "Reinhold"
+      },
+      {
+        "family": "Oldham",
+        "given": "J. H."
+      },
+      {
+        "family": "Patijn",
+        "given": "C. L."
+      },
+      {
+        "family": "Thomas",
+        "given": "M. M."
+      },
+      {
+        "family": "Urwin",
+        "given": "E. C."
+      }
+    ],
+    "event-place": "London",
+    "id": "oldham_responsible_1948",
+    "issued": {
+      "date-parts": [
+        [
+          1948
+        ]
+      ]
+    },
+    "language": "en-GB",
+    "page": "120-154",
+    "publisher": "SCM Press",
+    "publisher-place": "London",
+    "title": "A responsible society",
+    "title-short": "Responsible society",
+    "type": "chapter"
+  }
+]
+<<===== INPUT =====<<
+
+
+>>===== VERSION =====>>
+1.0
+<<===== VERSION =====<<
+
