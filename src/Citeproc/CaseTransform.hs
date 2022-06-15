@@ -17,7 +17,7 @@ module Citeproc.CaseTransform
 where
 
 import Data.Ord ()
-import Data.Char (isUpper, isLower)
+import Data.Char (isUpper, isLower, isLetter)
 import Data.Text (Text)
 import qualified Data.Text as T
 import Citeproc.Types (Lang(..))
@@ -92,8 +92,8 @@ withTitleCase = CaseTransformer go
  where
   go mblang st chunk
      | isMixedCase chunk = chunk
-     | T.all isUpper chunk = chunk  -- spec doesn't say this but tests do
-                                    -- textcase_TitleCapitalization.txt
+     | T.all (\c -> isUpper c || not (isLetter c)) chunk = chunk
+        -- spec doesn't say this but tests do: textcase_TitleCapitalization.txt
      | st == StartSentence || st == Start =
        capitalizeText mblang $ Unicode.toLower mblang chunk
      | st == AfterWordEnd
