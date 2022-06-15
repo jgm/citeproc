@@ -8,7 +8,7 @@ bibliography
 >>===== RESULT =====>>
 <div class="csl-bib-body">
   <div class="csl-entry">AUTHOR EDITOR Blockley, D. AUTHOR EDITOR, 2021. <i>Engineering: a very short introduction</i>. W.M. Haynes, ed. AUTHOR EDITOR. Oxford: Oxford University Press.</div>
-  <div class="csl-entry">NO_AUTHOR EDITOR Haynes, W.M., ed. NO_AUTHOR EDITOR, 2014. <i>CRC handbook of chemistry and physics</i>. NO_AUTHOR EDITOR. Boca Raton, Fla.: CRC Press/Taylor and Francis.</div>
+  <div class="csl-entry">NO_AUTHOR EDITOR Haynes, W.M., ed. NO_AUTHOR EDITOR, 2014. <i>CRC handbook of chemistry and physics</i>. Boca Raton, Fla.: CRC Press/Taylor and Francis.</div>
 </div>
 <<===== RESULT =====<<
 
