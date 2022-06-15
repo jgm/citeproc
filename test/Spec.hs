@@ -28,7 +28,7 @@ import qualified Data.Aeson as A
 import Data.Aeson ((.:?), (.!=))
 import Data.Text.Encoding (decodeUtf8)
 import System.FilePath
-import Data.Maybe (fromMaybe)
+import Data.Maybe (fromMaybe, isJust)
 import Text.Printf (printf)
 #if !MIN_VERSION_base(4,11,0)
 import Data.Semigroup
@@ -177,9 +177,9 @@ compareTest :: CiteprocTest (CslJson Text)
             -> Text
             -> StateT Counts IO TestResult
 compareTest test actual = do
-  let expected = case citations test of
-                   Just _ -> removeCitationNums $ result test
-                   Nothing -> result test
+  let expected = if mode test == "citation" && isJust (citations test)
+                    then removeCitationNums $ result test
+                    else result test
   if actual == expected
      then do
        modify $ \st -> st{ passed = category test : passed st }
@@ -340,7 +340,7 @@ main = do
                (length (skipped counts))
   case length (failed counts) + length (errored counts) of
     0 -> exitSuccess
-    n | n <= 65 -> do
+    n | n <= 64 -> do
          putStrLn "We have passed all the CSL tests we expect to..."
          exitSuccess
       | otherwise -> exitWith $ ExitFailure n
