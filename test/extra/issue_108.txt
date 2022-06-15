@@ -6,7 +6,7 @@ bibliography
 
 >>===== RESULT =====>>
 <div class="csl-bib-body">
-  <div class="csl-entry"><i>Stanze in lode della donna brutta</i>. 1547. Florence.</div>
+  <div class="csl-entry"><i>Stanze in lode della donna brutta</i>. 1547.</div>
 </div>
 <<===== RESULT =====<<
 
