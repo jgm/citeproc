@@ -2661,7 +2661,7 @@ askVariable "page-first" = do
 askVariable v = do
   ref <- gets stateReference
   case lookupVariable v ref of
-    Just x | isNonEmpty x -> do
+    Just x | isNonEmpty x && x /= SubstitutedVal -> do
       updateVarCount 1 1
       return $ Just x
     _ -> do
