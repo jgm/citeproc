@@ -2504,14 +2504,15 @@ eGroup isMacro formatting els = do
   VarCount oldVars oldNonempty <- gets stateVarCount
   xs <- mconcat <$> mapM eElement els
   VarCount newVars newNonempty <- gets stateVarCount
+  let isempty = newVars /= oldVars && newNonempty == oldNonempty
+
   -- see
   -- https://github.com/citation-style-language/documentation/blob/master/specification.rst#group
   -- "When a cs:group contains a child cs:macro, if the cs:macro is
   -- non-empty, it is treated as a non-empty variable for the purposes of
   -- determining suppression of the outer cs:group."
-  when (isMacro && not (all (== NullOutput) xs)) $
-    updateVarCount 1 1
-  return $ if oldVars == newVars || newNonempty > oldNonempty
+  when (isMacro && not isempty) $ updateVarCount 1 1
+  return $ if not isempty
               then formatted formatting xs
               else NullOutput
 
