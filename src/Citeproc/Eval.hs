@@ -2213,8 +2213,9 @@ formatNames namesFormat nameFormat formatting (var, Just (NamesVal names)) =
               then label ++ names''
               else names'' ++ label
 
-formatNames _ _ _ (var, Just _) = do
-  warn $ "ignoring non-name value for variable " <> fromVariable var
+formatNames _ _ _ (var, Just x) = do
+  when (x /= SubstitutedVal) $
+    warn $ "ignoring non-name value for variable " <> fromVariable var
   return NullOutput
 formatNames _ _ _ (_, Nothing) = return NullOutput
 
