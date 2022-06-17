@@ -1,5 +1,26 @@
 # citeproc changelog
 
+## 0.8
+
+  * Add `SubstitutedVal` constructor for `Val` [API change] (#101, #108).
+    This is used to track variables that are repressed due to substitution.
+    (We can't just delete them, because they still count when we have
+    "if" elements that check for a variable.)
+
+  * Fix logic for including a group. A group with a text node and an
+    empty variable should count as empty.
+
+  * CaseTransform: don't change words that are a mix of uppercase
+    and nonletters, like CRT1000.
+
+  * Fix label with "page" variable (#107).
+
+  * Fix error in test suite. We stripped indentation in the expected result
+    in some cases.
+
+  * Update fr-FR locale from upstream.
+
+
 ## 0.7
 
   * Handle old term form `sub verbo` as if it is `sub-verbo` (the new form).
