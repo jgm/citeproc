@@ -58,10 +58,6 @@ jobs:
         ghcup install ghc --set ${{ matrix.versions.ghc }}
         ghcup install cabal --set ${{ matrix.versions.cabal }}
 
-    - name: Freeze
-      run: |
-        cabal freeze
-
     - name: Cache cabal global package db
       id:   cabal-global
       uses: actions/cache@v2
