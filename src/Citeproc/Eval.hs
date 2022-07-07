@@ -1133,6 +1133,8 @@ evalLayout layout (citationGroupNumber, citation) = do
  where
   formatting = layoutFormatting layout
 
+  secondFieldAlign [Linked t (x:xs)] =
+    secondFieldAlign [x, Linked t xs]
   secondFieldAlign (x:xs) =
     formatted mempty{ formatDisplay = Just DisplayLeftMargin } [x]
     : [formatted mempty{ formatDisplay = Just DisplayRightInline } xs]
