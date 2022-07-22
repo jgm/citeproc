@@ -1487,11 +1487,11 @@ formatPageRange mbPageRangeFormat delim t =
         length $ filter not $ zipWith (==) (xs ++ repeat ' ') ys
       minimal threshold pref x y =
         case T.commonPrefixes x y of
-             Just (_comm, _erstx, resty) ->
+             Just (_comm, restx, resty) | T.length restx == T.length resty ->
                  if T.length resty < threshold && T.length y >= threshold
                     then inRange pref [x, T.takeEnd threshold y]
                     else inRange pref [x, resty]
-             Nothing -> inRange pref [x, y]
+             _ -> inRange pref [x, y]
    in case rangeParts of
         []     -> NullOutput
         [w]    -> literal w
@@ -1511,14 +1511,22 @@ formatPageRange mbPageRangeFormat delim t =
                                then T.take (xlen - ylen) x <> y
                                else y
                  case fmt of
-                   PageRangeChicago
+                   PageRangeChicago15
                        | xlen < 3  -> inRange pref [x, y']
                        | "00" `T.isSuffixOf` x -> inRange pref [x, y']
                        | T.take 1 (T.takeEnd 2 x) == "0"
+                       , T.take 1 (T.takeEnd 2 y') == "0"
                          -> minimal 1 pref x y'
                        | xlen == 4
                        , changedDigits (T.unpack x) (T.unpack y') >= 3
                          -> inRange pref [x, y']
+                       | otherwise -> minimal 2 pref x y'
+                   PageRangeChicago16
+                       | xlen < 3  -> inRange pref [x, y']
+                       | "00" `T.isSuffixOf` x -> inRange pref [x, y']
+                       | T.take 1 (T.takeEnd 2 x) == "0"
+                       , T.take 1 (T.takeEnd 2 y') == "0"
+                         -> minimal 1 pref x y'
                        | otherwise -> minimal 2 pref x y'
                    PageRangeExpanded ->
                        inRange mempty [pref <> x, pref <> y']

@@ -683,7 +683,8 @@ data SecondFieldAlign =
     deriving (Show, Eq)
 
 data PageRangeFormat =
-    PageRangeChicago
+    PageRangeChicago15
+  | PageRangeChicago16
   | PageRangeExpanded
   | PageRangeMinimal
   | PageRangeMinimalTwo

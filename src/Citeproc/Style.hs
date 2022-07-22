@@ -165,7 +165,11 @@ pStyle defaultLocale node = do
                      lookupAttribute "initialize-with-hyphen" attr
                  , stylePageRangeFormat =
                      case lookupAttribute "page-range-format" attr of
-                       Just "chicago"     -> Just PageRangeChicago
+                       Just "chicago"     -> Just PageRangeChicago15
+                       -- chicago is an alias for chicago-15, but this
+                       -- will change to chicago-16 in v1.1
+                       Just "chicago-15"  -> Just PageRangeChicago15
+                       Just "chicago-16"  -> Just PageRangeChicago16
                        Just "expanded"    -> Just PageRangeExpanded
                        Just "minimal"     -> Just PageRangeMinimal
                        Just "minimal-two" -> Just PageRangeMinimalTwo
