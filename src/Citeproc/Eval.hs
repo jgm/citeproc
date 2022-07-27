@@ -426,11 +426,11 @@ disambiguateCitations :: forall a . CiteprocOutput a
 disambiguateCitations style bibSortKeyMap citations = do
   refs <- unReferenceMap <$> gets stateRefMap
   let refIds = M.keys refs
-  let citeIds = concatMap (map citationItemId . citationItems) citations
-  let citeIdsSet = Set.fromList citeIds
   let ghostItems = [ ident
                    | ident <- refIds
-                   , not (ident `Set.member` citeIdsSet)]
+                   ]
+                   -- we add additional references for EVERY citation,
+                   -- even those we have already, to handle cases like #116
 
   -- for purposes of disambiguation, we remove prefixes and
   -- suffixes and locators, and we convert author-in-text to normal citation.
