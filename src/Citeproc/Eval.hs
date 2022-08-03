@@ -394,9 +394,7 @@ replaceMatch rule replacement (names, raw) (z:zs) =
      = Tagged (TagName n) (Literal replacement)
   replaceEach x = x
   replaceFirst num x@(Tagged (TagNames _ _ ns') _)
-    -- a kludge to get this to type-check!
-    | True = foldr (transform . replaceName) x $ take num ns'
-    | False = Literal replacement
+    = foldr (transform . replaceName) x $ take num ns'
   replaceFirst _num x = x
   replaceName name (Tagged (TagName n) _)
     | n == name = Tagged (TagName n) (Literal replacement)
@@ -1441,12 +1439,9 @@ lookupTerm' term = lookupTerm term >>= f
        Verb      -> lookupTerm' term{ termForm = Long }
        Short     -> lookupTerm' term{ termForm = Long }
        _         -> return NullOutput
-   f xs  = case xs of
-             []        -> return NullOutput
-             ((_,t):_) -> return $
-                            if T.null t
-                               then NullOutput
-                               else Literal $ fromText t
+   f ((_,t):_) = return $ if T.null t
+                             then NullOutput
+                             else Literal $ fromText t
 
 pageRange :: CiteprocOutput a => Text -> Eval a (Output a)
 pageRange x = do
