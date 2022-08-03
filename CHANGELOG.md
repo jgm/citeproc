@@ -1,5 +1,20 @@
 # citeproc changelog
 
+## 0.8.0.1
+
+  * Fix disambiguation edge case (#116). We weren't properly
+    disambiguating when only one of two ambiguous names had a
+    subsequent citation.
+
+  * Chicago page numbering fixes.
+
+  * Update test suite form upstream.
+
+  * Handle whole-citation links differently in `secondFieldAlign` (#113,
+    Benjamin Bray).
+
+  * Require data-default >= 0.5.2 (#114, Bodigrim).
+
 ## 0.8
 
   * Add `SubstitutedVal` constructor for `Val` [API change] (#101, #108).
