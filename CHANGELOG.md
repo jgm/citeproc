@@ -1,5 +1,10 @@
 # citeproc changelog
 
+## 0.8.0.2
+
+  * Fix missing locator after collapsing and grouping with year
+    suffix (#96).
+
 ## 0.8.0.1
 
   * Fix disambiguation edge case (#116). We weren't properly
