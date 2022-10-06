@@ -1,0 +1,166 @@
+>>===== MODE =====>>
+citation
+<<===== MODE =====<<
+
+
+
+>>===== RESULT =====>>
+(Dummy 2022a, p. 100, b, p. 6)
+(Dummy 2022a, p. 100; Dummy 2022b, and a suffix)
+<<===== RESULT =====<<
+
+
+>>===== CITATIONS =====>>
+[[ { "id":"a", "locator": "100", "label": "page" },
+   { "id":"b", "locator": "6", "label": "page" } ]
+,[ { "id":"a", "locator": "100", "label": "page" },
+   { "id":"b", "suffix": ", and a suffix" } ]
+]
+<<===== CITATIONS =====<<
+
+
+
+
+>>===== CSL =====>>
+<?xml version="1.0" encoding="utf-8"?>
+<style xmlns="http://purl.org/net/xbiblio/csl" class="in-text" version="1.0" demote-non-dropping-particle="sort-only" default-locale="en-GB">
+  <info>
+    <title>Monographs of the Palaeontographical Society</title>
+    <title-short>Monogr. Palaeontogr. Soc.</title-short>
+    <id>http://www.zotero.org/styles/monographs-of-the-palaeontographical-society</id>
+    <link href="http://www.zotero.org/styles/monographs-of-the-palaeontographical-society" rel="self"/>
+    <link href="http://www.zotero.org/styles/palaeontology" rel="template"/>
+    <link href="https://www.palaeosoc.org/site/page/for-authors/notes/" rel="documentation"/>
+    <link href="https://www.tandfonline.com/action/authorSubmission?show=instructions&amp;journalCode=tmps20" rel="documentation"/>
+    <author>
+      <name>Benjamin Moon</name>
+      <email>ben@bcmoon.uk</email>
+      <uri>https://bcmoon.uk</uri>
+    </author>
+    <category citation-format="author-date"/>
+    <category field="biology"/>
+    <issn>0269-3445</issn>
+    <eissn>2576-1900</eissn>
+    <summary>Some bibliography entries may need plate numbers added or indications of translated titles. Separate formatting for Monographs can be achieved from Zotero by adding 'Publisher Place: London' into the Extra field; this is used as the key to identify these. Similarly 'Number Of Pages' may be added in the Extra field too.</summary>
+    <updated>2021-12-16T16:15:06</updated>
+    <rights license="http://creativecommons.org/licenses/by-sa/3.0/">This work is licensed under a Creative Commons Attribution-ShareAlike 3.0 License</rights>
+  </info>
+  <macro name="author">
+    <names variable="author">
+      <name sort-separator=", " initialize-with=". " and="symbol" name-as-sort-order="all" delimiter=", " delimiter-precedes-last="never" form="long">
+        <name-part name="family" text-case="capitalize-first" font-variant="small-caps"/>
+      </name>
+      <substitute>
+        <text macro="editor"/>
+      </substitute>
+    </names>
+  </macro>
+  <macro name="editor">
+    <names variable="editor">
+      <name sort-separator=", " initialize-with=". " and="symbol" name-as-sort-order="all" delimiter=", " delimiter-precedes-last="never">
+        <name-part name="family" text-case="capitalize-first" font-variant="small-caps"/>
+      </name>
+      <label form="short" prefix=" (" suffix=".)" text-case="capitalize-first"/>
+    </names>
+  </macro>
+  <macro name="author-short">
+    <names variable="author">
+      <name form="short" and="symbol" delimiter=", " delimiter-precedes-last="never" initialize-with=". "/>
+      <et-al font-style="italic"/>
+      <substitute>
+        <names variable="editor"/>
+        <names variable="translator"/>
+      </substitute>
+    </names>
+  </macro>
+  <macro name="year-date">
+    <choose>
+      <if variable="issued">
+        <date variable="issued">
+          <date-part name="year"/>
+        </date>
+      </if>
+      <else>
+        <text term="no date" form="short"/>
+      </else>
+    </choose>
+    <text variable="year-suffix"/>
+  </macro>
+  <macro name="publisher">
+    <group delimiter=", ">
+      <text variable="publisher"/>
+      <text variable="publisher-place"/>
+    </group>
+  </macro>
+  <macro name="no-pages">
+    <group delimiter=" ">
+      <text variable="number-of-pages"/>
+      <label variable="number-of-pages" form="short" plural="always"/>
+    </group>
+  </macro>
+  <citation et-al-min="3" et-al-use-first="1" disambiguate-add-year-suffix="true" disambiguate-add-names="false" disambiguate-add-givenname="false" collapse="year-suffix" cite-group-delimiter=", " year-suffix-delimiter=", ">
+    <sort>
+      <key macro="author"/>
+      <key variable="issued"/>
+    </sort>
+    <layout prefix="(" suffix=")" delimiter="; ">
+      <group>
+        <text macro="author-short" suffix=" "/>
+        <text macro="year-date"/>
+      </group>
+      <group prefix=", " delimiter=" ">
+        <label variable="locator" form="short"/>
+        <text variable="locator"/>
+      </group>
+    </layout>
+  </citation>
+</style>
+<<===== CSL =====<<
+
+
+>>===== INPUT =====>>
+[
+  {
+    "author": [
+      {
+        "family": "Dummy",
+        "given": "John"
+      }
+    ],
+    "id": "a",
+    "issued": {
+      "date-parts": [
+        [
+          2022
+        ]
+      ]
+    },
+    "title": "A dummy article",
+    "type": "article"
+  },
+  {
+    "author": [
+      {
+        "family": "Dummy",
+        "given": "John"
+      }
+    ],
+    "id": "b",
+    "issued": {
+      "date-parts": [
+        [
+          2022
+        ]
+      ]
+    },
+    "title": "Another dummy article",
+    "type": "article"
+  }
+]
+
+<<===== INPUT =====<<
+
+
+>>===== VERSION =====>>
+1.0
+<<===== VERSION =====<<

@@ -29,11 +29,9 @@ import Control.Applicative
 import Data.Generics.Uniplate.Operations (universe, transform)
 
 -- import Debug.Trace (trace)
---
 -- traceShowIdLabeled :: Show a => String -> a -> a
 -- traceShowIdLabeled label x =
 --   trace (label ++ ": " ++ show x) x
---
 -- import Text.Show.Pretty (ppShow)
 -- ppTrace :: Show a => a -> a
 -- ppTrace x = trace (ppShow x) x
@@ -929,9 +927,19 @@ groupAndCollapseCitations citeGroupDelim yearSuffixDelim afterCollapseDelim
       []     -> ([item], items)
       (z:zs)
         | getYears z == getYears item
-          -> (z:zs ++ [x | x@(Tagged (TagYearSuffix _) _) <- universe item],
-              items)
+          -> (z:zs ++ [transform removeYear item], items)
         | otherwise -> ([item], yearSuffixGroup useRanges (z:zs) : items)
+
+  removeYear :: Output a -> Output a
+  removeYear (Tagged (TagDate d) x) =
+    Tagged (TagDate d) (extractYearSuffix x)
+  removeYear x = x
+
+  extractYearSuffix :: Output a -> Output a
+  extractYearSuffix x =
+    case [z | z@(Tagged (TagYearSuffix _) _) <- universe x] of
+      (y:_) -> y
+      _     -> NullOutput
 
   isAdjacentCitationNumber :: Output a -> Output a -> Bool
   isAdjacentCitationNumber
