@@ -530,12 +530,12 @@ pLayout macroMap node = do
   local (<> attrmap) $ do
     node' <- expandMacros macroMap node
     let layouts = getChildren "layout" node'
-    -- In case there are multiple layouts (as CSL-M allows), we just use
-    -- the last one, which should be locale-unspecific
-    layout <- case reverse layouts of
-                [] -> parseFailure $ "No layout element present in " <>
-                          T.unpack (X.nameLocalName (X.elementName node))
-                (l:_) -> return l
+    -- In case there are multiple layouts (as CSL-M allows), we raise an error
+    let elname = T.unpack $ X.nameLocalName $ X.elementName node
+    layout <- case layouts of
+                [] -> parseFailure $ "No layout element present in " <> elname
+                [l] -> return l
+                (_:_) -> parseFailure $ "Multiple layout elements present in " <> elname
     let formatting = getFormatting . getAttributes $ layout
     let sorts   = getChildren "sort" node'
     elements <- mapM pElement $ allChildren layout
