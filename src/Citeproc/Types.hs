@@ -606,7 +606,8 @@ data SortKeyValue =
 
 data Layout a =
   Layout
-  { layoutOptions        :: LayoutOptions
+  { layoutLocales        :: Set.Set Lang
+  , layoutOptions        :: LayoutOptions
   , layoutFormatting     :: Formatting
   , layoutElements       :: [Element a]
   , layoutSortKeys       :: [SortKey a]

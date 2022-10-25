@@ -17,6 +17,7 @@ import qualified Data.Text as T
 import qualified Data.Map as M
 import Data.Maybe (fromMaybe, isNothing)
 import Data.Default (def)
+import qualified Data.Set as Set
 import qualified Data.Text.Lazy as TL
 import Control.Monad.Trans.Reader (local)
 
@@ -533,6 +534,10 @@ pLayout macroMap node = do
     let formatting = mconcat $ map (getFormatting . getAttributes) layouts
     let sorts   = getChildren "sort" node'
     elements <- mapM pElement (concatMap allChildren layouts)
+    let locales' = T.words $ fromMaybe "" $ lookupAttribute "locale" attr
+    let locales = foldr (\l -> case parseLang l of
+                                 Right x -> Set.insert x
+                                 Left _ -> id) Set.empty locales'
     let opts = LayoutOptions
                { layoutCollapse =
                    case lookupAttribute "collapse" attr of
@@ -553,7 +558,8 @@ pLayout macroMap node = do
                      formatDelimiter formatting
                }
     sortKeys <- mapM pSortKey (concatMap (getChildren "key") sorts)
-    return $ Layout { layoutOptions  = opts
+    return $ Layout { layoutLocales = locales
+                    , layoutOptions  = opts
                     , layoutFormatting = formatting{
                                            formatAffixesInside = True }
                     , layoutElements = elements
