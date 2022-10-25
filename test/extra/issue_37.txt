@@ -18,7 +18,6 @@ J. Doe
       </names>
     </layout>
     </citation>
-    <bibliography/>
 </style>
 <<===== CSL =====<<
 

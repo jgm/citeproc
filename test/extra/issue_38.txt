@@ -634,7 +634,6 @@ citation
       </group>
     </layout>
   </citation>
-  <bibliography/>
 </style>
 <<===== CSL =====<<
 
