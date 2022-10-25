@@ -103,13 +103,12 @@ pStyle defaultLocale node = do
     macroMap <- M.fromList <$> mapM pMacro (getChildren "macro" node)
     (cattr, citations)
         <- case getChildren "citation" node of
-                   [n] -> (getAttributes n,) <$> pLayout macroMap n
+                   [n] -> (getAttributes n,) <$> pLayouts macroMap n
                    []  -> parseFailure "No citation element present"
                    _   -> parseFailure "More than one citation element present"
     (battr, bibliography) <- case getChildren "bibliography" node of
-                      [n] -> (\z -> (getAttributes n, Just z))
-                                <$> pLayout macroMap n
-                      []  -> return (mempty, Nothing)
+                      [n] -> (getAttributes n,) <$> pLayouts macroMap n
+                      []  -> return (mempty, [])
                       _   -> parseFailure
                                "More than one bibliography element present"
 
@@ -146,8 +145,8 @@ pStyle defaultLocale node = do
               hasYearSuffixVariable (Element (EChoose conds) f)
         hasYearSuffixVariable _ = False
     let usesYearSuffixVariable =
-          any hasYearSuffixVariable $
-            layoutElements citations ++ maybe [] layoutElements bibliography
+          any (any hasYearSuffixVariable . layoutElements)
+            (citations ++ bibliography)
 
     let sOpts = StyleOptions
                  { styleIsNoteStyle =
@@ -524,47 +523,51 @@ getInheritableNameAttributes elt =
                    Just k' -> M.insert k' v m
                    Nothing -> m) M.empty (X.elementAttributes elt)
 
-pLayout :: M.Map Text [X.Element] -> X.Element -> ElementParser (Layout a)
-pLayout macroMap node = do
+pLayouts :: M.Map Text [X.Element] -> X.Element -> ElementParser [Layout a]
+pLayouts macroMap node = do
   let attrmap = getInheritableNameAttributes node
   let attr = getAttributes node
   local (<> attrmap) $ do
     node' <- expandMacros macroMap node
-    let layouts = getChildren "layout" node'
-    let formatting = mconcat $ map (getFormatting . getAttributes) layouts
-    let sorts   = getChildren "sort" node'
-    elements <- mapM pElement (concatMap allChildren layouts)
-    let locales' = T.words $ fromMaybe "" $ lookupAttribute "locale" attr
-    let locales = foldr (\l -> case parseLang l of
-                                 Right x -> Set.insert x
-                                 Left _ -> id) Set.empty locales'
-    let opts = LayoutOptions
-               { layoutCollapse =
-                   case lookupAttribute "collapse" attr of
-                     Just "citation-number" -> Just CollapseCitationNumber
-                     Just "year"            -> Just CollapseYear
-                     Just "year-suffix"     -> Just CollapseYearSuffix
-                     Just "year-suffix-ranged"
-                                            -> Just CollapseYearSuffixRanged
-                     _                      -> Nothing
-               , layoutYearSuffixDelimiter =
-                   lookupAttribute "year-suffix-delimiter" attr <|>
-                     -- technically the spec doesn't say this, but
-                     -- this seems to be what the test suites want?:
-                     lookupAttribute "cite-group-delimiter" attr <|>
-                     formatDelimiter formatting
-               , layoutAfterCollapseDelimiter =
-                   lookupAttribute "after-collapse-delimiter" attr <|>
-                     formatDelimiter formatting
-               }
-    sortKeys <- mapM pSortKey (concatMap (getChildren "key") sorts)
-    return $ Layout { layoutLocales = locales
-                    , layoutOptions  = opts
-                    , layoutFormatting = formatting{
-                                           formatAffixesInside = True }
-                    , layoutElements = elements
-                    , layoutSortKeys = sortKeys
-                    }
+    mapM (pLayout attr) (getChildren "layout" node')
+
+pLayout :: Attributes -> X.Element -> ElementParser (Layout a)
+pLayout attr layout = do
+  let formatting = getFormatting . getAttributes $ layout
+  let sorts   = getChildren "sort" layout
+  elements <- mapM pElement (allChildren layout)
+  let locales' = T.words $ fromMaybe "" $ lookupAttribute "locale" $
+                                          getAttributes layout
+  let locales = foldr (\l -> case parseLang l of
+                               Right x -> Set.insert x
+                               Left _ -> id) Set.empty locales'
+  let opts = LayoutOptions
+             { layoutCollapse =
+                 case lookupAttribute "collapse" attr of
+                   Just "citation-number" -> Just CollapseCitationNumber
+                   Just "year"            -> Just CollapseYear
+                   Just "year-suffix"     -> Just CollapseYearSuffix
+                   Just "year-suffix-ranged"
+                                          -> Just CollapseYearSuffixRanged
+                   _                      -> Nothing
+             , layoutYearSuffixDelimiter =
+                 lookupAttribute "year-suffix-delimiter" attr <|>
+                   -- technically the spec doesn't say this, but
+                   -- this seems to be what the test suites want?:
+                   lookupAttribute "cite-group-delimiter" attr <|>
+                   formatDelimiter formatting
+             , layoutAfterCollapseDelimiter =
+                 lookupAttribute "after-collapse-delimiter" attr <|>
+                   formatDelimiter formatting
+             }
+  sortKeys <- mapM pSortKey (concatMap (getChildren "key") sorts)
+  return $ Layout { layoutLocales = locales
+                  , layoutOptions  = opts
+                  , layoutFormatting = formatting{
+                                         formatAffixesInside = True }
+                  , layoutElements = elements
+                  , layoutSortKeys = sortKeys
+                  }
 
 pSortKey :: X.Element -> ElementParser (SortKey a)
 pSortKey node = do

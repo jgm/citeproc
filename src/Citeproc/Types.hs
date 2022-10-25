@@ -695,8 +695,8 @@ data Style a =
   Style
   { styleCslVersion    :: (Int,Int,Int)
   , styleOptions       :: StyleOptions
-  , styleCitation      :: Layout a
-  , styleBibliography  :: Maybe (Layout a)
+  , styleCitation      :: [Layout a]
+  , styleBibliography  :: [Layout a]
   , styleLocales       :: [Locale]
   , styleAbbreviations :: Maybe Abbreviations
   } deriving (Show, Eq)
