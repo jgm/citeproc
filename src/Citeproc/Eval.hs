@@ -137,6 +137,8 @@ evalStyle style mblang refs' citations =
                            ref{ referenceVariables =
                                  M.insert "citation-number"
                                     (NumVal num) .
+                                 M.insert "citation-key"
+                                     (TextVal (unItemId citeId)) .
                                  M.alter (addIfMissing (citationLabel ref))
                                     "citation-label"
                                  $ referenceVariables ref
