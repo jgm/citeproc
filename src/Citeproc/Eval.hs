@@ -1863,54 +1863,76 @@ getYearSuffix = do
       | otherwise -> return Nothing
     Nothing  -> return Nothing
 
-
+formatSortDate :: CiteprocOutput a
+               => [DP] -> (Maybe Int, Maybe Int, Maybe Int) -> Output a
+formatSortDate dpSpecs (mbyr, mbmo, mbda) =
+  Literal $ fromText $ T.pack $  sortyr <> sortmo <> sortda
+ where
+  sortyr = case mbyr of
+             Just yr | any ((== DPYear) . dpName) dpSpecs
+                -> printf "%04d" (yr + 5000) -- to work with BC and AD
+             _  -> ""
+  sortmo = case mbmo of
+             Just mo | any ((== DPMonth) . dpName) dpSpecs
+                -> printf "%02d" mo
+             _  -> ""
+  sortda = case mbda of
+             Just da | any ((== DPDay) . dpName) dpSpecs
+                -> printf "%02d" da
+             _  -> ""
 
 formatDateParts :: CiteprocOutput a
           => [DP] -> (DateParts, Maybe DateParts) -> Eval a [Output a]
 formatDateParts dpSpecs (date, mbNextDate) = do
+  inSortKey <- asks contextInSortKey
   let (yr,mo,da) = bindDateParts date
-  case mbNextDate of
-    Nothing -> mapM (eDP (yr,mo,da)) dpSpecs
-    Just nextDate -> do
-      let (nextyr,nextmo,nextda) = bindDateParts nextDate
-      let isOpenRange = nextyr == Just 0 &&
-                        isNothing nextmo &&
-                        isNothing nextda
-      -- figure out where the range goes:
-      -- first to differ out of the items selected by dpSpecs, in order y->m->d
-      let dpToNs DPYear  = (yr, nextyr)
-          dpToNs DPMonth = (mo, nextmo)
-          dpToNs DPDay   = (da, nextda)
-      let areSame = takeWhile (uncurry (==) . dpToNs) $
-                      sort $ map dpName dpSpecs
-      let (sames1, rest) = span (\dp -> dpName dp `elem` areSame) dpSpecs
-      let (diffs, sames2) = span (\dp -> dpName dp `notElem` areSame) rest
-      let cleanup = filter (/= NullOutput)
-      sames1' <- cleanup <$> mapM (eDP (yr,mo,da)) sames1
-      diffsLeft' <- cleanup <$> mapM (eDP (yr,mo,da)) diffs
-      diffsRight' <- cleanup <$> mapM (eDP (nextyr,nextmo,nextda)) diffs
-      sames2' <- cleanup <$> mapM (eDP (yr,mo,da)) sames2
-      let rangeDelim = case sortOn dpName diffs of
-                              []     -> Nothing
-                              (dp:_) -> Just $ dpRangeDelimiter dp
-      let toRange xs ys =
-            case lastMay xs of
-              Just xlast ->
-                   initSafe xs ++
-                     [Formatted mempty{ formatDelimiter = rangeDelim }
-                     [xlast, headDef (Literal mempty) ys]] ++
-                   tailSafe ys
-              _ -> xs ++ ys
+  case bindDateParts <$> mbNextDate of
+    Nothing
+      | inSortKey -> return [formatSortDate dpSpecs (yr, mo, da)]
+      | otherwise -> mapM (eDP (yr,mo,da)) dpSpecs
+    Just (nextyr, nextmo, nextda)
+      | inSortKey -> return [formatSortDate dpSpecs (yr, mo, da),
+                             Literal (fromText "-"),
+                             formatSortDate dpSpecs (nextyr, nextmo, nextda)]
+      | otherwise -> do
+        let isOpenRange = nextyr == Just 0 &&
+                          isNothing nextmo &&
+                          isNothing nextda
+        -- figure out where the range goes:
+        -- first to differ out of the items selected by dpSpecs, in order y->m->d
+        let dpToNs DPYear  = (yr, nextyr)
+            dpToNs DPMonth = (mo, nextmo)
+            dpToNs DPDay   = (da, nextda)
+        let areSame = takeWhile (uncurry (==) . dpToNs) $
+                        sort $ map dpName dpSpecs
+        let (sames1, rest) = span (\dp -> dpName dp `elem` areSame) dpSpecs
+        let (diffs, sames2) = span (\dp -> dpName dp `notElem` areSame) rest
+        let cleanup = filter (/= NullOutput)
+        sames1' <- cleanup <$> mapM (eDP (yr,mo,da)) sames1
+        diffsLeft' <- cleanup <$> mapM (eDP (yr,mo,da)) diffs
+        diffsRight' <- cleanup <$> mapM (eDP (nextyr,nextmo,nextda)) diffs
+        sames2' <- cleanup <$> mapM (eDP (yr,mo,da)) sames2
+        let rangeDelim = case sortOn dpName diffs of
+                                []     -> Nothing
+                                (dp:_) -> Just $ dpRangeDelimiter dp
+        let toRange xs ys =
+              case lastMay xs of
+                Just xlast ->
+                     initSafe xs ++
+                       [Formatted mempty{ formatDelimiter = rangeDelim }
+                       [xlast, headDef (Literal mempty) ys]] ++
+                     tailSafe ys
+                _ -> xs ++ ys
 
-      return $
-        if isOpenRange
-           then [Formatted mempty{ formatSuffix = rangeDelim }
-                    (removeLastSuffix $ sames1' ++ diffsLeft')]
-           else removeLastSuffix $
-                 sames1' ++
-                 toRange (removeLastSuffix diffsLeft')
-                         (removeFirstPrefix diffsRight') ++
-                 sames2'
+        return $
+          if isOpenRange
+             then [Formatted mempty{ formatSuffix = rangeDelim }
+                      (removeLastSuffix $ sames1' ++ diffsLeft')]
+             else removeLastSuffix $
+                   sames1' ++
+                   toRange (removeLastSuffix diffsLeft')
+                           (removeFirstPrefix diffsRight') ++
+                   sames2'
 
 removeFirstPrefix :: [Output a] -> [Output a]
 removeFirstPrefix (Formatted f xs : rest) =
