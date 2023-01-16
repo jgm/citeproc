@@ -300,4 +300,5 @@ caseTransform' f ils =
   hasWordBreak = T.any isWordBreak
   splitUp = T.groupBy sameType
   sameType c d =
-    (isAlphaNum c && isAlphaNum d) || (isSpace c && isSpace d)
+    (isAlphaNum c && isAlphaNum d) || (isSpace c && isSpace d) ||
+      (isPunctuation c && isPunctuation d)

@@ -33,7 +33,7 @@ import Citeproc.Types
 import Citeproc.Locale (lookupQuotes)
 import Citeproc.CaseTransform
 import Data.Ord ()
-import Data.Char (isAlphaNum, isSpace, isAscii)
+import Data.Char (isAlphaNum, isSpace, isAscii, isPunctuation)
 import Data.Text (Text)
 import qualified Data.Text as T
 import Data.Foldable (fold)
@@ -562,7 +562,8 @@ caseTransform' f lev el =
   hasWordBreak = any (T.any isWordBreak)
   splitUp = T.groupBy sameType
   sameType c d =
-    (isAlphaNum c && isAlphaNum d) || (isSpace c && isSpace d)
+    (isAlphaNum c && isAlphaNum d) || (isSpace c && isSpace d) ||
+      (isPunctuation c && isPunctuation d)
 
 caseTransform :: Maybe Lang
               -> CaseTransformer
