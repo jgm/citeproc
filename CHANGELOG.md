@@ -1,5 +1,29 @@
 # citeproc changelog
 
+## 0.8.1
+
+  * In Pandoc and CslJson CaseTransform, group punctuation in clusters (#127).
+
+  * Fix sorting on dates (#126). Previously this broke for some styles,
+    e.g. apa.csl, which styles dates as MM/DD/YYYY, and would lead to
+    incorrect sorting of dates with months and/or days.
+
+  * Add citation-key variable from citeId. This is a new addition in CSL 1.0.2.
+
+  * Update locales from upstream.
+
+  * Raise an error if multiple layout elements are present (#120).
+
+  * Fix two test cases. They had illegal bibliography elements with
+    no layout children.
+
+  * If there are multiple layout elements, only use the last one.
+    This can happen with CSL-M styles. The last layout should be
+    locale-unspecific. This change will prevent us from emitting
+    doubled citations or bibliographic references (see #120),
+    allowing more graceful handling of CSL-M styles, even though we
+    don't support CSL-M.
+
 ## 0.8.0.2
 
   * Fix missing locator after collapsing and grouping with year
