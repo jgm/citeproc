@@ -1,0 +1,139 @@
+>>===== MODE =====>>
+citation
+<<===== MODE =====<<
+
+>>===== RESULT =====>>
+https://doi.org/10/gg7vfk.
+<<===== RESULT =====<<
+
+
+>>===== CSL =====>>
+<?xml version="1.0" encoding="utf-8"?>
+<style xmlns="http://purl.org/net/xbiblio/csl" class="note" version="1.0" demote-non-dropping-particle="display-and-sort" page-range-format="chicago">
+  <macro name="access-note">
+    <group delimiter=", ">
+      <choose>
+        <if type="legal_case" match="none">
+          <choose>
+            <if variable="DOI">
+              <text variable="DOI" prefix="https://doi.org/"/>
+            </if>
+            <else>
+              <text variable="URL"/>
+            </else>
+          </choose>
+        </if>
+      </choose>
+    </group>
+  </macro>
+  <macro name="access">
+    <group delimiter=". ">
+      <choose>
+        <if variable="issued" match="none">
+          <group delimiter=" ">
+            <text term="accessed" text-case="capitalize-first"/>
+            <date variable="accessed" form="text"/>
+          </group>
+        </if>
+      </choose>
+      <choose>
+        <if type="legal_case" match="none">
+          <choose>
+            <if variable="DOI">
+              <text variable="DOI" prefix="https://doi.org/"/>
+            </if>
+            <else>
+              <text variable="URL"/>
+            </else>
+          </choose>
+        </if>
+      </choose>
+    </group>
+  </macro>
+  <citation et-al-min="4" et-al-use-first="1" disambiguate-add-names="true">
+    <layout suffix="." delimiter="; ">
+      <text macro="access-note"/>
+    </layout>
+  </citation>
+</style>
+<<===== CSL =====<<
+
+
+>>===== CITATION-ITEMS =====>>
+[ [ {"id":"baiMolAICal21", "type":"normal"} ] ]
+<<===== CITATION-ITEMS =====<<
+
+
+
+>>===== INPUT =====>>
+[
+  {
+    "id": "baiMolAICal21",
+    "abstract": "",
+    "accessed": {
+      "date-parts": [
+        [
+          2022,
+          6,
+          10
+        ]
+      ]
+    },
+    "author": [
+      {
+        "family": "Bai",
+        "given": "Qifeng"
+      },
+      {
+        "family": "Tan",
+        "given": "Shuoyan"
+      },
+      {
+        "family": "Xu",
+        "given": "Tingyang"
+      },
+      {
+        "family": "Liu",
+        "given": "Huanxiang"
+      },
+      {
+        "family": "Huang",
+        "given": "Junzhou"
+      },
+      {
+        "family": "Yao",
+        "given": "Xiaojun"
+      }
+    ],
+    "citation-key": "baiMolAICal21",
+    "container-title": "Briefings in Bioinformatics",
+    "DOI": "10/gg7vfk",
+    "ISSN": "1467-5463, 1477-4054",
+    "issue": "3",
+    "issued": {
+      "date-parts": [
+        [
+          2021,
+          5,
+          20
+        ]
+      ]
+    },
+    "language": "en",
+    "note": "MolAICal",
+    "page": "bbaa161",
+    "source": "DOI.org (Crossref)",
+    "title": "MolAICal: a soft tool for 3D drug design of protein targets by artificial intelligence and classical algorithm",
+    "title-short": "MolAICal",
+    "type": "article-journal",
+    "URL": "https://academic.oup.com/bib/article/doi/10.1093/bib/bbaa161/5890512",
+    "volume": "22"
+  }
+]
+<<===== INPUT =====<<
+
+
+>>===== VERSION =====>>
+1.0
+<<===== VERSION =====<<
+
