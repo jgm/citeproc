@@ -1,0 +1,199 @@
+>>===== MODE =====>>
+bibliography
+<<===== MODE =====<<
+
+>>===== RESULT =====>>
+<div class="csl-bib-body">
+  <div class="csl-entry"><span style="font-variant:small-caps;">van</span> <span style="font-variant:small-caps;">Inwagen</span>, Peter. 1975.</div>
+  <div class="csl-entry"><span style="font-variant:small-caps;">Lewis</span>, David, and Stephanie R. <span style="font-variant:small-caps;">Lewis</span>. 1970.</div>
+</div>
+<<===== RESULT =====<<
+
+
+>>===== CSL =====>>
+<?xml version="1.0" encoding="utf-8"?>
+<style xmlns="http://purl.org/net/xbiblio/csl" class="in-text"
+version="1.0" demote-non-dropping-particle="sort-only" page-range-format="expanded">
+  <info>
+    <title>title</title>
+    <id>id</id>
+    <category citation-format="author-date"/>
+    <category field="generic-base"/>
+    <summary>Based on the author-date variant of the Chicago style</summary>
+    <updated>2024-05-30T19:54:33+00:00</updated>
+  </info>
+  <locale xml:lang="en">
+    <terms>
+      <term name="editor" form="verb-short">ed.</term>
+      <term name="container-author" form="verb">by</term>
+      <term name="translator" form="verb-short">trans.</term>
+      <term name="editortranslator" form="verb">edited and translated by</term>
+      <term name="translator" form="short">trans.</term>
+    </terms>
+  </locale>
+  <macro name="contributors">
+    <group delimiter=". ">
+      <names variable="author">
+        <name and="text" name-as-sort-order="first" sort-separator=", " delimiter=", " delimiter-precedes-last="always">
+          <name-part name="family" font-variant="small-caps"/>
+        </name>
+        <label form="short" prefix=", "/>
+        <substitute>
+          <names variable="editor"/>
+          <names variable="translator"/>
+          <names variable="director"/>
+        </substitute>
+      </names>
+    </group>
+  </macro>
+  <macro name="contributors-short">
+    <names variable="author">
+      <name form="short" and="text" delimiter=", " initialize-with=". "/>
+      <substitute>
+        <names variable="editor"/>
+        <names variable="translator"/>
+        <names variable="director"/>
+      </substitute>
+    </names>
+  </macro>
+  <macro name="date">
+    <choose>
+      <if variable="issued">
+        <group delimiter=" ">
+          <date variable="original-date" form="text" date-parts="year" prefix="(" suffix=")"/>
+          <date variable="issued">
+            <date-part name="year"/>
+          </date>
+        </group>
+      </if>
+      <else-if variable="status">
+        <text variable="status" text-case="capitalize-first"/>
+      </else-if>
+      <else>
+        <text term="no date" form="short"/>
+      </else>
+    </choose>
+  </macro>
+  <macro name="date-in-text">
+    <choose>
+      <if variable="issued">
+        <group delimiter=" ">
+          <date variable="original-date" form="text" date-parts="year" prefix="[" suffix="]"/>
+          <date variable="issued">
+            <date-part name="year"/>
+          </date>
+        </group>
+      </if>
+      <else-if variable="status">
+        <text variable="status"/>
+      </else-if>
+      <else>
+        <text term="no date" form="short"/>
+      </else>
+    </choose>
+  </macro>
+  <citation et-al-min="4" et-al-use-first="1" disambiguate-add-year-suffix="true" disambiguate-add-names="true" disambiguate-add-givenname="true" givenname-disambiguation-rule="primary-name" collapse="year" after-collapse-delimiter="; ">
+    <layout prefix="(" suffix=")" delimiter="; ">
+      <group delimiter=", ">
+        <choose>
+          <if variable="issued accessed" match="any">
+            <group delimiter=" ">
+              <text macro="contributors-short"/>
+              <text macro="date-in-text"/>
+            </group>
+          </if>
+          <else>
+            <group delimiter=", ">
+              <text macro="contributors-short"/>
+              <text macro="date-in-text"/>
+            </group>
+          </else>
+        </choose>
+      </group>
+    </layout>
+  </citation>
+  <bibliography hanging-indent="true" et-al-min="11" et-al-use-first="7" subsequent-author-substitute="—" entry-spacing="0">
+    <sort>
+      <key macro="contributors"/>
+      <key variable="issued"/>
+    </sort>
+    <layout suffix=".">
+      <group delimiter=". ">
+        <text macro="contributors"/>
+        <text macro="date"/>
+      </group>
+    </layout>
+  </bibliography>
+</style>
+<<===== CSL =====<<
+
+
+>>===== CITATION-ITEMS =====>>
+[ [ {"id":"lewis_dk-lewis:1970", "type":"normal"} ]
+, [ {"id":"vaninwagen:1975", "type":"normal"} ] ]
+<<===== CITATION-ITEMS =====<<
+
+
+
+>>===== INPUT =====>>
+[
+  {
+    "DOI": "10.1080/00048407012341181",
+    "author": [
+      {
+        "family": "Lewis",
+        "given": "David"
+      },
+      {
+        "family": "Lewis",
+        "given": "Stephanie R."
+      }
+    ],
+    "container-title": "Australasian Journal of Philosophy",
+    "id": "lewis_dk-lewis:1970",
+    "issue": "2",
+    "issued": {
+      "date-parts": [
+        [
+          1970
+        ]
+      ]
+    },
+    "note": "reprinted in ",
+    "page": "206-212",
+    "title": "Holes",
+    "type": "article-journal",
+    "volume": "48"
+  },
+  {
+    "DOI": "10.1007/bf01624156",
+    "author": [
+      {
+        "family": "Inwagen",
+        "given": "Peter",
+        "non-dropping-particle": "van"
+      }
+    ],
+    "container-title": "Philosophical Studies",
+    "id": "vaninwagen:1975",
+    "issue": "3",
+    "issued": {
+      "date-parts": [
+        [
+          1975
+        ]
+      ]
+    },
+    "page": "185-199",
+    "title": "The incompatibility of Free Will and Determinism",
+    "type": "article-journal",
+    "volume": "27"
+  }
+]
+<<===== INPUT =====<<
+
+
+>>===== VERSION =====>>
+1.0
+<<===== VERSION =====<<
+

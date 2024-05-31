@@ -2470,19 +2470,35 @@ getDisplayName nameFormat formatting order name = do
         maybe NullOutput (familyFormatting . (:[]) . literal) $
           nameFamily name
   let suffix = maybe NullOutput literal $ nameSuffix name
-  let useSortOrder = inSortKey ||
-                     case nameAsSortOrder nameFormat of
-                       Just NameAsSortOrderAll -> True
-                       Just NameAsSortOrderFirst -> order == 1
-                       _ -> False
+  let nameAsSort = case nameAsSortOrder nameFormat of
+                          Just NameAsSortOrderAll -> True
+                          Just NameAsSortOrderFirst -> order == 1
+                          _ -> False
   return $ formatted formatting . (:[]) $
     if isByzantineName name
        then
          case nameForm nameFormat of
               LongName
-                | demoteNonDroppingParticle == DemoteNever ||
-                  demoteNonDroppingParticle == DemoteSortOnly
-                , useSortOrder->
+                | demoteNonDroppingParticle == DemoteNever
+                , inSortKey || nameAsSort ->
+                      familyAffixes
+                      [ nonDroppingParticle <+>
+                        family ] <:>
+                      givenAffixes
+                      [ given <+>
+                        droppingParticle ] <:>
+                      suffix
+                | demoteNonDroppingParticle == DemoteSortOnly
+                , inSortKey ->
+                      familyAffixes
+                      [ family ] <:>
+                      givenAffixes
+                      [ given <+>
+                        droppingParticle <+>
+                        nonDroppingParticle ] <:>
+                      suffix
+                | demoteNonDroppingParticle == DemoteSortOnly
+                , nameAsSort ->
                       familyAffixes
                       [ nonDroppingParticle <+>
                         family ] <:>
@@ -2491,7 +2507,7 @@ getDisplayName nameFormat formatting order name = do
                         droppingParticle ] <:>
                       suffix
                 | demoteNonDroppingParticle == DemoteDisplayAndSort
-                , useSortOrder->
+                , inSortKey || nameAsSort ->
                       familyAffixes
                       [ family ] <:>
                       givenAffixes
