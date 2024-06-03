@@ -18,11 +18,11 @@ bibliography
 >>===== RESULT =====>>
 <div class="csl-bib-body">
   <div class="csl-entry"><a href="https://doi.org/10.1021/ja01577a030">Apple. 2010</a></div>
-  <div class="csl-entry"><a href="https://doi.org/bbbbb">Blueberry. 2011</a></div>
+  <div class="csl-entry"><a href="https://doi.org/10/bbbbb">Blueberry. 2011</a></div>
   <div class="csl-entry"><a href="https://pandoc.org/">Cherry. 2012</a></div>
   <div class="csl-entry"><a href="https://www.ncbi.nlm.nih.gov/pubmed/30310042">Durian. 2013</a></div>
   <div class="csl-entry"><a href="https://www.ncbi.nlm.nih.gov/pmc/articles/PMC3531190">Elderberry. 2014</a></div>
-  <div class="csl-entry"><a href="https://doi.org/bbbbb">Fig. 2015</a></div>
+  <div class="csl-entry"><a href="https://doi.org/10/bbbbb">Fig. 2015</a></div>
   <div class="csl-entry"><a href="https://www.ncbi.nlm.nih.gov/pmc/articles/PMC3531190">Grapefruit. 2016</a></div>
   <div class="csl-entry"><a href="https://www.ncbi.nlm.nih.gov/pubmed/30310042">Honeydew. 2017</a></div>
 </div>

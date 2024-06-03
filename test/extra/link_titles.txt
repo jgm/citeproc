@@ -17,11 +17,11 @@ bibliography
 >>===== RESULT =====>>
 <div class="csl-bib-body">
   <div class="csl-entry">Apple. <a href="https://doi.org/10.1021/ja01577a030">AAAA</a>. 2010</div>
-  <div class="csl-entry">Blueberry. <a href="https://doi.org/bbbbb">BBBB</a>. 2011</div>
+  <div class="csl-entry">Blueberry. <a href="https://doi.org/10/bbbbb">BBBB</a>. 2011</div>
   <div class="csl-entry">Cherry. <a href="https://pandoc.org/">CCCC</a>. 2012</div>
   <div class="csl-entry">Durian. <a href="https://www.ncbi.nlm.nih.gov/pubmed/30310042">DDDD</a>. 2013</div>
   <div class="csl-entry">Elderberry. <a href="https://www.ncbi.nlm.nih.gov/pmc/articles/PMC3531190">EEEE</a>. 2014</div>
-  <div class="csl-entry">Fig. <a href="https://doi.org/bbbbb">FFFF</a>. 2015</div>
+  <div class="csl-entry">Fig. <a href="https://doi.org/10/bbbbb">FFFF</a>. 2015</div>
   <div class="csl-entry">Grapefruit. <a href="https://www.ncbi.nlm.nih.gov/pmc/articles/PMC3531190">GGGG</a>. 2016</div>
   <div class="csl-entry">Honeydew. <a href="https://www.ncbi.nlm.nih.gov/pubmed/30310042">HHHH</a>. 2017</div>
 </div>

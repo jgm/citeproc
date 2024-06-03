@@ -1483,7 +1483,7 @@ data Identifier =
 identifierToURL :: Identifier -> Text
 identifierToURL ident =
     case ident of
-      IdentDOI t   -> tolink "https://doi.org/" (fixShortDOI t)
+      IdentDOI t   -> tolink "https://doi.org/" t
       IdentPMCID t -> tolink "https://www.ncbi.nlm.nih.gov/pmc/articles/" t
       IdentPMID t  -> tolink "https://www.ncbi.nlm.nih.gov/pubmed/" t
       IdentURL t   -> tolink "https://" t
@@ -1492,6 +1492,8 @@ identifierToURL ident =
                            then x
                            else pref <> x
 
+{-# DEPRECATED fixShortDOI
+   "This function is no longer used and will be removed." #-}
 -- see https://shortdoi.org
 fixShortDOI :: Text -> Text
 fixShortDOI x = if "10/" `T.isPrefixOf` x

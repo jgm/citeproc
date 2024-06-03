@@ -1616,7 +1616,7 @@ eText (TextVariable varForm v) = do
                       coerce (referenceId ref)
             return NullOutput
 
-    "DOI"   -> handleIdent fixShortDOI IdentDOI
+    "DOI"   -> handleIdent id IdentDOI
     "PMCID" -> handleIdent id IdentPMCID
     "PMID"  -> handleIdent id IdentPMID
     "URL"   -> handleIdent id IdentURL

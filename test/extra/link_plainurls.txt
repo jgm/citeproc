@@ -2,8 +2,6 @@ This test checks the following properties:
   - plain URLs appearing in bibliography items should be linkified
   - when a link's prefix+anchor matches its target, the
       prefix should be included in the anchor
-  - shortDOIs should be handled correctly, meaning that every shortDOI of
-      the form 10/abcde should be converted to the DOI abcde
 
 >>===== MODE =====>>
 bibliography
@@ -18,7 +16,7 @@ bibliography
 >>===== RESULT =====>>
 <div class="csl-bib-body">
   <div class="csl-entry">Apple. AAAA. 2010. <a href="https://doi.org/10.1021/ja01577a030">https://doi.org/10.1021/ja01577a030</a></div>
-  <div class="csl-entry">Blueberry. BBBB. 2011. <a href="https://doi.org/bbbbb">https://doi.org/bbbbb</a></div>
+  <div class="csl-entry">Blueberry. BBBB. 2011. <a href="https://doi.org/10/bbbbb">https://doi.org/10/bbbbb</a></div>
   <div class="csl-entry">Cherry. CCCC. 2012. <a href="https://pandoc.org/">https://pandoc.org/</a></div>
   <div class="csl-entry">Durian. DDDD. 2013. <a href="https://www.ncbi.nlm.nih.gov/pubmed/30310042">https://www.ncbi.nlm.nih.gov/pubmed/30310042</a></div>
   <div class="csl-entry">Elderberry. EEEE. 2014. <a href="https://www.ncbi.nlm.nih.gov/pmc/articles/PMC3531190">https://www.ncbi.nlm.nih.gov/pmc/articles/PMC3531190</a></div>
