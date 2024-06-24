@@ -1,5 +1,13 @@
 # citeproc changelog
 
+## 0.8.1.1
+
+  * Include `10/` prefix in short DOI links (#136).
+
+  * Properly implement `demote-non-dropping-particle="sort-only"` (#141).
+    We had previously gotten sorting behavior right for this, but
+    not display behavior.
+
 ## 0.8.1
 
   * In Pandoc and CslJson CaseTransform, group punctuation in clusters (#127).
