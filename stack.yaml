@@ -3,6 +3,7 @@ flags:
     executable: true
     icu: false
 resolver: lts-19.0
-extra-deps: []
+extra-deps:
+- Diff-1.0.2
 ghc-options:
   "$locals": -fhide-source-paths
