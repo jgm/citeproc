@@ -148,7 +148,7 @@ test-suite spec
                      , transformers
                      , mtl
                      , timeit
-                     , Diff >= 0.4
+                     , Diff >= 1.0
                      , pretty
                      , filepath
                      , aeson

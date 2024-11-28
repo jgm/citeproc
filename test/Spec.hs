@@ -363,6 +363,6 @@ showDiff expected actual = do
   putStrLn $ Pretty.render $ prettyContextDiff
     (Pretty.text "expected")
     (Pretty.text "actual")
-    (Pretty.text . T.unpack)
-    $ getContextDiff 1 (T.lines expected) (T.lines actual)
+    (Pretty.text . T.unpack . unnumber)
+    $ getContextDiff Nothing (T.lines expected) (T.lines actual)
 
