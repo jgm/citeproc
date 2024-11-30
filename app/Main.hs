@@ -77,11 +77,16 @@ main = do
         Left e -> err (T.unpack $ prettyCiteprocError e)
         Right parsedStyle -> do
           let style = parsedStyle{ styleAbbreviations = abbreviations }
-          let result= citeproc defaultCiteprocOptions
-                         style
-                         lang
-                         references
-                         (fromMaybe [] (inputsCitations inp))
+          let result=
+                citeproc
+                  defaultCiteprocOptions
+                    { linkCitations = optLinkCitations opt
+                    , linkBibliography = optLinkBibliography opt
+                    }
+                  style
+                  lang
+                  references
+                  (fromMaybe [] (inputsCitations inp))
           let jsonResult :: Aeson.Value
               jsonResult =
                 case format of
@@ -107,13 +112,15 @@ main = do
 data Format = Json | Html deriving (Show, Ord, Eq)
 
 data Opt =
-  Opt{ optStyle         :: Maybe String
-     , optReferences    :: Maybe String
-     , optAbbreviations :: Maybe String
-     , optFormat        :: Maybe String
-     , optLang          :: Maybe Lang
-     , optHelp          :: Bool
-     , optVersion       :: Bool
+  Opt{ optStyle            :: Maybe String
+     , optReferences       :: Maybe String
+     , optAbbreviations    :: Maybe String
+     , optFormat           :: Maybe String
+     , optLang             :: Maybe Lang
+     , optLinkCitations    :: Bool
+     , optLinkBibliography :: Bool
+     , optHelp             :: Bool
+     , optVersion          :: Bool
      } deriving Show
 
 defaultOpt :: Opt
@@ -123,6 +130,8 @@ defaultOpt =
       , optAbbreviations = Nothing
       , optFormat = Nothing
       , optLang = Nothing
+      , optLinkCitations = False
+      , optLinkBibliography = False
       , optHelp = False
       , optVersion = False
       }
@@ -148,6 +157,12 @@ options =
   , Option ['f'] ["format"]
      (ReqArg (\format opt -> return opt{ optFormat = Just format }) "html|json")
      "Controls formatting of entries in result"
+  , Option [] ["link-citations"]
+     (NoArg (\opt -> return opt{ optLinkCitations = True }))
+     "Enable hyperlinking of citations to the bibliography"
+  , Option [] ["link-bibliography"]
+     (NoArg (\opt -> return opt{ optLinkBibliography = True }))
+     "Enable hyperlinking of bibliography entries"
   , Option ['h'] ["help"]
      (NoArg (\opt -> return opt{ optHelp = True }))
      "Print usage information"
