@@ -161,13 +161,13 @@ dropTextWhile' f ils = evalState (walkM go ils) True
              unless (T.null t') $
                put False
              return $ Str t'
-           Space ->
+           _ | x == Space || x == SoftBreak ->
              if f ' '
                 then return $ Str ""
                 else do
                   put False
                   return Space
-           _ -> return x
+             | otherwise  -> return x
        else return x
 
 
@@ -185,8 +185,9 @@ dropTextWhileEnd' f ils =
              unless (T.null t') $
                put False
              return $ Str t'
-           Space | f ' ' -> return $ Str ""
-           _ -> return x
+           _ | x == Space || x == SoftBreak
+             , f ' ' -> return $ Str ""
+             | otherwise -> return x
        else return x
 
 -- taken from Text.Pandoc.Shared:
