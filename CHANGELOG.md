@@ -1,5 +1,14 @@
 # citeproc changelog
 
+## 0.8.1.2
+
+  * Allow containers 0.7 (#143)
+
+  * Update tests to use Diff >= 1.0 (#146).
+
+  * Fix `dropTextWhile` and `dropTextWhileEnd` in Citeproc.Pandoc.
+    Ensure that they treat SoftBreak like Space (jgm/pandoc#10451).
+
 ## 0.8.1.1
 
   * Include `10/` prefix in short DOI links (#136).
