@@ -1643,7 +1643,7 @@ eText (TextVariable varForm v) = do
                  Just (NumVal x) -> return $ Literal
                                            $ fromText (T.pack (show x))
                  _ -> return NullOutput
-        deleteSubstitutedVariables [v]
+        unless (isNothing mbv) $ deleteSubstitutedVariables [v]
         if v == "title" && res /= NullOutput
             then do
               modify (\st -> st { stateUsedTitle = True })

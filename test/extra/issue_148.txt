@@ -1,0 +1,65 @@
+>>===== MODE =====>>
+citation
+<<===== MODE =====<<
+
+
+
+
+>>===== RESULT =====>>
+Variable not present
+<<===== RESULT =====<<
+
+
+>>===== CSL =====>>
+<?xml version="1.0" encoding="utf-8"?>
+<style xmlns="http://purl.org/net/xbiblio/csl" class="note" version="1.0">
+  <info>
+    <title>Subtitution test</title>
+    <id>http://www.zotero.org/styles/substitution-test</id>
+    <updated>2025-02-02T12:27:40+00:00</updated>
+  </info>
+  <macro name="contributors-note">
+    <names>
+      <substitute>
+        <text variable="editor"/>
+      </substitute>
+    </names>
+  </macro>
+  <citation>
+    <layout>
+      <text macro="contributors-note"/>
+      <choose>
+        <if variable="editor">
+          <text value="Variable present"/>
+        </if>
+        <else-if match="none" variable="editor">
+          <text value="Variable not present"/>
+        </else-if>
+      </choose>
+    </layout>
+  </citation>
+</style>
+<<===== CSL =====<<
+
+
+>>===== CITATION-ITEMS =====>>
+[ [ {"id":"test"} ] ]
+<<===== CITATION-ITEMS =====<<
+
+
+
+>>===== INPUT =====>>
+[
+  {
+    "id": "test",
+    "type": "book",
+    "title": "Title"
+  }
+]
+<<===== INPUT =====<<
+
+
+>>===== VERSION =====>>
+1.0
+<<===== VERSION =====<<
+
