@@ -13,14 +13,16 @@ jobs:
     strategy:
       matrix:
         os: [ubuntu-latest]
-        cabal: ["3.2"]
+        cabal: ["latest"]
         ghc:
-          - "8.4.4"
-          - "8.6.5"
-          - "8.8.4"
-          - "8.10.7"
-          - "9.0.2"
-          - "9.2.2"
+          - "8.10"
+          - "9.0"
+          - "9.2"
+          - "9.4"
+          - "9.6"
+          - "9.8"
+          - "9.10"
+          - "9.12"
 
     steps:
     - uses: actions/checkout@v2
@@ -68,8 +70,8 @@ jobs:
     runs-on: ubuntu-latest
     strategy:
       matrix:
-        stack: ["2.7.3"]
-        ghc: ["9.0.2"]
+        stack: ["3.1.1"]
+        ghc: ["9.8.4"]
         stackopts: ["--flag citeproc:icu", ""]
 
     steps:
