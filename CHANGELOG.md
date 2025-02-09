@@ -1,5 +1,11 @@
 # citeproc changelog
 
+## 0.8.1.3
+
+ * Don't add SubstitutedVal to variables that were empty (#148).
+   This fixes a bug which caused `variable=` tests to succeed
+   in some cases where they should have failed.
+
 ## 0.8.1.2
 
   * Allow containers 0.7 (#143)
