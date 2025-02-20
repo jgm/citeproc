@@ -50,6 +50,17 @@ citation processing to non-Haskell projects.
     default) uses HTML tags and entities for formatting.  `json`
     creates a structured JSON representation of a formatted document.
 
+`--link-citations`
+:   Enable hyperlinking of citations to the bibliography.
+
+`--link-bibliography`
+:   Enable automatic linkification of any identifiers (DOI, PMCID,
+    PMID, or URL) appearing in a bibliography entry.  When an entry
+    has a DOI, PMCID, PMID, or URL available but none of these are
+    rendered by the style, add a link to the title (or, if no title
+    is present, the whole entry), using the URL for the DOI, PMCID,
+    PMID, or URL (in that order of priority).
+
 `-h, --help`
 :   Print usage information.
 
