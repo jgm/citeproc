@@ -25,7 +25,7 @@ jobs:
           - "9.12"
 
     steps:
-    - uses: actions/checkout@v2
+    - uses: actions/checkout@v4
       if: github.event.action == 'opened' || github.event.action == 'synchronize' || github.event.ref == 'refs/heads/master'
 
     - name: Install cabal/ghc
@@ -35,7 +35,7 @@ jobs:
 
     - name: Cache cabal global package db
       id:   cabal-global
-      uses: actions/cache@v2
+      uses: actions/cache@v4
       with:
         path: |
           ~/.cabal
@@ -43,7 +43,7 @@ jobs:
 
     - name: Cache cabal work
       id:   cabal-local
-      uses: actions/cache@v2
+      uses: actions/cache@v4
       with:
         path: |
           dist-newstyle
@@ -75,7 +75,7 @@ jobs:
         stackopts: ["--flag citeproc:icu", ""]
 
     steps:
-    - uses: actions/checkout@v2
+    - uses: actions/checkout@v4
       if: github.event.action == 'opened' || github.event.action == 'synchronize' || github.event.ref == 'refs/heads/master'
 
     # We should have ghc 8.10, cabal, stack pre-installed
@@ -84,7 +84,7 @@ jobs:
     #     enable-stack: true
     #     stack-version: 'latest'
 
-    - uses: actions/cache@v1
+    - uses: actions/cache@v4
       name: Cache ~/.stack
       with:
         path: ~/.stack
