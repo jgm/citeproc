@@ -280,7 +280,7 @@ parseIf node = do
              xs (splitVars t)
            _       -> id) .
         (case lookupAttribute "type" attr of
-           Just t  -> \xs -> foldr ((:) . HasType) xs (T.words $ T.strip t)
+           Just t  -> (HasType (T.words $ T.strip t) :)
            _       -> id) .
         (case lookupAttribute "variable" attr of
            Just t  -> \xs -> foldr ((:) . HasVariable) xs (splitVars t)

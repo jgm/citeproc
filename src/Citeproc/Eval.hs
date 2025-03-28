@@ -2590,7 +2590,10 @@ eChoose ((match, conditions, els):rest) = do
              case lookupVariable t ref of
                Just x  -> isNonEmpty x
                Nothing -> False
-           HasType t -> lookupVariable "type" ref == Just (TextVal t)
+           HasType ts ->
+             case lookupVariable "type" ref of
+               Just (TextVal ty) -> ty `elem` ts
+               _ -> False
            IsUncertainDate t -> case lookupVariable t ref of
                                   Just (DateVal d) -> dateCirca d
                                   _                -> False

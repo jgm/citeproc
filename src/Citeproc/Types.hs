@@ -351,7 +351,7 @@ data Match =
 
 data Condition =
     HasVariable Variable
-  | HasType Text
+  | HasType [Text]
   | IsUncertainDate Variable
   | IsNumeric Variable
   | HasLocatorType Variable

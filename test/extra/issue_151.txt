@@ -1,0 +1,59 @@
+>>===== MODE =====>>
+citation
+<<===== MODE =====<<
+
+
+
+
+>>===== RESULT =====>>
+type is article-journal or chaptertype is article-journal or chapter
+<<===== RESULT =====<<
+
+
+>>===== CSL =====>>
+<?xml version="1.0" encoding="utf-8"?>
+<style xmlns="http://purl.org/net/xbiblio/csl" class="in-text" version="1.0">
+  <info>
+    <title>Type conditional test</title>
+    <id>http://www.zotero.org/styles/type-conditional-test</id>
+    <updated>2025-03-27T23:03:22+00:00</updated>
+  </info>
+  <citation>
+    <layout>
+      <choose>
+        <if match="all" type="article-journal chapter">
+          <text value="type is article-journal or chapter"/>
+        </if>
+      </choose>
+    </layout>
+  </citation>
+</style>
+<<===== CSL =====<<
+
+
+>>===== CITATION-ITEMS =====>>
+[ [ {"id":"test1"}, {"id":"test2"} ] ]
+<<===== CITATION-ITEMS =====<<
+
+
+
+>>===== INPUT =====>>
+[
+  {
+    "id": "test1",
+    "type": "article-journal",
+    "title": "Test One"
+  },
+  {
+    "id": "test2",
+    "type": "chapter",
+    "title": "Test Two"
+  }
+]
+<<===== INPUT =====<<
+
+
+>>===== VERSION =====>>
+1.0
+<<===== VERSION =====<<
+
