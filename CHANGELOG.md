@@ -1,5 +1,12 @@
 # citeproc changelog
 
+## 0.9.0.1
+
+  * Fix `readAsInt` so it handles negative numbers in strings.
+    `readAsInt` attempts to read strings as integers, but previously
+    it didn't properly handle strings like `"-387"`, which are
+    sometimes used in bibliographies. See jgm/pandoc#10839.
+
 ## 0.9
 
   * Fix handling of `type` conditions in `if` (#151).
