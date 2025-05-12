@@ -1641,7 +1641,13 @@ formatted formatting = grouped' . filter (not . isNullOutput)
 
 readAsInt :: Text -> Maybe Int
 readAsInt t =
-  case TR.decimal t of
+  case T.uncons t of
+    Just ('-', t') -> (0 -) <$> readAsDecimal t'
+    Just (c, _) | isDigit c -> readAsDecimal t
+    _ -> Nothing
+  where
+    readAsDecimal s =
+      case TR.decimal s of
       Right (x,t') | T.null t' -> Just x
       _                        -> Nothing
 
