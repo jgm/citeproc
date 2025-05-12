@@ -6,4 +6,5 @@ dist-newstyle/
 .stack-work
 stack.yaml.lock
 cabal.project.local
+spec.log
 .hie/
