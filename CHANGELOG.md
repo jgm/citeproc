@@ -20,6 +20,8 @@
   * Add `--link-citations` and `--link-bibliography` options to binary
     (#142, Daphne Preston-Kendal).
 
+  * Bump containers upper bound.
+
 ## 0.8.1.3
 
  * Don't add SubstitutedVal to variables that were empty (#148).
