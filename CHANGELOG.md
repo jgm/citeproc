@@ -1,5 +1,25 @@
 # citeproc changelog
 
+## 0.9
+
+  * Fix handling of `type` conditions in `if` (#151).
+    In an `if` element with `type="article-journal chapter"`, citeproc
+    previously treated this as two separate conditions
+    (type=article-journal, type=chapter).  But it seems that the
+    intended behavior is to treat it as a single condition that
+    succeeds if any of the listed types match. The difference between
+    current and intended behavior comes out when `match="all"` is used;
+    this will always fail when `type` contains more than one type.
+
+    To fix this, we change the `HasType` constructor on `Condition`
+    so that it takes a list of Texts rather than single one [API change],
+    and we populate it with the result of splitting the argument
+    of `type`. In Eval, we change the clause for the HasType condition
+    so that it succeeds if any of the types in the list match.
+
+  * Add `--link-citations` and `--link-bibliography` options to binary
+    (#142, Daphne Preston-Kendal).
+
 ## 0.8.1.3
 
  * Don't add SubstitutedVal to variables that were empty (#148).
