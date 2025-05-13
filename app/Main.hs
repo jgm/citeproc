@@ -99,7 +99,17 @@ main = do
                                    (resultBibliography result))
                           , ("warnings", Aeson.toJSON $ resultWarnings result)
                           ]
-                   Html -> Aeson.toJSON result
+                   Html -> Aeson.object
+                          [ ("citations", Aeson.toJSON $
+                               map cslJsonToHtml
+                                   (resultCitations result))
+                          , ("bibliography", Aeson.toJSON $
+                               map (second cslJsonToHtml)
+                                   (resultBibliography result))
+                          , ("warnings", Aeson.toJSON $ resultWarnings result)
+                          ]
+                          where cslJsonToHtml el =
+                                  renderCslJson True mempty el
           BL.putStr $ AesonPretty.encodePretty'
                        AesonPretty.defConfig
                          { confIndent = AesonPretty.Spaces 2
