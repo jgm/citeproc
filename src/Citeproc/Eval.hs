@@ -217,12 +217,14 @@ evalStyle style mblang refs' citations =
       -- We can't just sort all the citations, because
       -- this can make a hash out of prefixes and suffixes.
       -- See e.g. pandoc-citeproc issue #292.
-      -- we need to first break into groups so that any
-      -- suffix ends a group and any prefix begins a group;
-      -- then sort the groups; then combine again:
+      -- We need to first break into groups so that any item
+      -- with a prefix or suffix is insulated from sorting.
+      -- We sort the groups, then combine again:
       let canGroup i1 i2
            =   isNothing (citationItemSuffix i1) &&
-               isNothing (citationItemPrefix i2)
+               isNothing (citationItemPrefix i2) &&
+               isNothing (citationItemSuffix i2) &&
+               isNothing (citationItemPrefix i1)
       let sortCitationItems citation' =
             citation'{ citationItems =
                           concatMap
