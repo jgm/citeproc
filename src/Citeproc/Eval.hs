@@ -1119,7 +1119,24 @@ evalLayout layout (citationGroupNumber, citation) = do
           (c:_) | citationItemType c == AuthorOnly -> [0..]
           _ -> [1..]
 
-  items <- mapM evalItem' (zip positionsInCitation (citationItems citation))
+  let addCitationAffixes =
+          maybe id (\pref xs ->
+                      case xs of
+                        [] -> []
+                        (x:rest) -> x{ citationItemPrefix = Just $ pref <>
+                                         fromMaybe mempty (citationItemPrefix x) }
+                                          : rest)
+                (citationPrefix citation) .
+          maybe id (\suff xs ->
+                      case reverse xs of
+                        [] -> []
+                        (x:rest) -> reverse rest ++ [x{ citationItemSuffix = Just $
+                                                        fromMaybe mempty (citationItemSuffix x)
+                                                        <> suff }])
+                (citationSuffix citation)
+
+  items <- mapM evalItem' (zip positionsInCitation
+                            (addCitationAffixes (citationItems citation)))
 
   -- see display_SecondFieldAlignMigratePunctuation.txt
   let moveSuffixInsideDisplay zs =
@@ -1136,6 +1153,7 @@ evalLayout layout (citationGroupNumber, citation) = do
             | otherwise -> (\ys' -> initSafe zs ++ [Formatted f ys']) <$>
                              moveSuffixInsideDisplay ys
           _ -> Nothing
+
   return $
     case moveSuffixInsideDisplay items of
       Nothing     -> formatted formatting items
