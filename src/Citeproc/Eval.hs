@@ -203,7 +203,7 @@ evalStyle style mblang refs' citations =
                   -> reverse sortedIds
                 _ -> sortedIds
             let bibCitations = map (\ident ->
-                  Citation (Just $ unItemId ident) Nothing
+                  Citation (Just $ unItemId ident) Nothing Nothing Nothing
                    [CitationItem ident Nothing Nothing
                       NormalCite Nothing Nothing Nothing]) sortedIds
             return (bibCitations, bibSortKeyMap)
@@ -438,18 +438,18 @@ disambiguateCitations style bibSortKeyMap citations = do
                              , citationItemLocator = Nothing
                              , citationItemPrefix = Nothing
                              , citationItemSuffix = Nothing }
-  let cleanCitation (Citation a b (i1:i2:is))
+  let cleanCitation (Citation a b c d (i1:i2:is))
        | citationItemType i1 == AuthorOnly
        , citationItemType i2 == SuppressAuthor
-        = Citation a b
+        = Citation a b c d
             (map removeAffix (i2{ citationItemType = NormalCite }:is))
-      cleanCitation (Citation a b is)
-        = Citation a b (map removeAffix is)
+      cleanCitation (Citation a b c d is)
+        = Citation a b c d (map removeAffix is)
 
   -- note that citations must go first, and order must be preserved:
   -- we use a "basic item" that strips off prefixes, suffixes, locators
   let citations' = map cleanCitation citations ++
-                   [Citation Nothing Nothing (map basicItem ghostItems)]
+                   [Citation Nothing Nothing Nothing Nothing (map basicItem ghostItems)]
   allCites <- renderCitations citations'
 
   mblang <- asks (localeLanguage . contextLocale)

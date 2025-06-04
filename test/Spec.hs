@@ -153,6 +153,8 @@ referencesToCitation :: [Reference a] -> Citation a
 referencesToCitation rs =
   Citation { citationId = Nothing
            , citationNoteNumber = Nothing
+           , citationPrefix = Nothing
+           , citationSuffix = Nothing
            , citationItems = map (\r ->
                CitationItem{ citationItemId = referenceId r
                            , citationItemLabel = Nothing
