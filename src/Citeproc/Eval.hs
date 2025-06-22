@@ -203,7 +203,7 @@ evalStyle style mblang refs' citations =
                   -> reverse sortedIds
                 _ -> sortedIds
             let bibCitations = map (\ident ->
-                  Citation (Just $ unItemId ident) Nothing
+                  Citation (Just $ unItemId ident) Nothing Nothing Nothing
                    [CitationItem ident Nothing Nothing
                       NormalCite Nothing Nothing Nothing]) sortedIds
             return (bibCitations, bibSortKeyMap)
@@ -438,18 +438,18 @@ disambiguateCitations style bibSortKeyMap citations = do
                              , citationItemLocator = Nothing
                              , citationItemPrefix = Nothing
                              , citationItemSuffix = Nothing }
-  let cleanCitation (Citation a b (i1:i2:is))
+  let cleanCitation (Citation a b c d (i1:i2:is))
        | citationItemType i1 == AuthorOnly
        , citationItemType i2 == SuppressAuthor
-        = Citation a b
+        = Citation a b c d
             (map removeAffix (i2{ citationItemType = NormalCite }:is))
-      cleanCitation (Citation a b is)
-        = Citation a b (map removeAffix is)
+      cleanCitation (Citation a b c d is)
+        = Citation a b c d (map removeAffix is)
 
   -- note that citations must go first, and order must be preserved:
   -- we use a "basic item" that strips off prefixes, suffixes, locators
   let citations' = map cleanCitation citations ++
-                   [Citation Nothing Nothing (map basicItem ghostItems)]
+                   [Citation Nothing Nothing Nothing Nothing (map basicItem ghostItems)]
   allCites <- renderCitations citations'
 
   mblang <- asks (localeLanguage . contextLocale)
@@ -1119,7 +1119,24 @@ evalLayout layout (citationGroupNumber, citation) = do
           (c:_) | citationItemType c == AuthorOnly -> [0..]
           _ -> [1..]
 
-  items <- mapM evalItem' (zip positionsInCitation (citationItems citation))
+  let addCitationAffixes =
+          maybe id (\pref xs ->
+                      case xs of
+                        [] -> []
+                        (x:rest) -> x{ citationItemPrefix = Just $ pref <>
+                                         fromMaybe mempty (citationItemPrefix x) }
+                                          : rest)
+                (citationPrefix citation) .
+          maybe id (\suff xs ->
+                      case reverse xs of
+                        [] -> []
+                        (x:rest) -> reverse rest ++ [x{ citationItemSuffix = Just $
+                                                        fromMaybe mempty (citationItemSuffix x)
+                                                        <> suff }])
+                (citationSuffix citation)
+
+  items <- mapM evalItem' (zip positionsInCitation
+                            (addCitationAffixes (citationItems citation)))
 
   -- see display_SecondFieldAlignMigratePunctuation.txt
   let moveSuffixInsideDisplay zs =
@@ -1136,6 +1153,7 @@ evalLayout layout (citationGroupNumber, citation) = do
             | otherwise -> (\ys' -> initSafe zs ++ [Formatted f ys']) <$>
                              moveSuffixInsideDisplay ys
           _ -> Nothing
+
   return $
     case moveSuffixInsideDisplay items of
       Nothing     -> formatted formatting items

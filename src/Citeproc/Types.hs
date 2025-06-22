@@ -310,6 +310,8 @@ instance ToJSON a => ToJSON (CitationItem a) where
 data Citation a =
   Citation { citationId         :: Maybe Text
            , citationNoteNumber :: Maybe Int
+           , citationPrefix     :: Maybe a
+           , citationSuffix     :: Maybe a
            , citationItems      :: [CitationItem a] }
   deriving (Show, Eq, Ord)
 
@@ -323,21 +325,27 @@ instance (FromJSON a, Eq a) => FromJSON (Citation a) where
                                   <*> ((o .: "properties"
                                              >>= (.: "noteIndex"))
                                       <|> pure Nothing)
+                                  <*> o .:? "citationPrefix"
+                                  <*> o .:? "citationSuffix"
                                   <*> o .: "citationItems") v'
-                  <|> Citation Nothing Nothing <$> parseJSON v'
+                  <|> Citation Nothing Nothing Nothing Nothing <$> parseJSON v'
          Nothing -> fail "Empty array") v
    <|>
    withObject "Citation"
      (\o -> Citation <$> o .:? "citationID"
                      <*> o .:? "citationNoteNumber"
+                     <*> o .:? "citationPrefix"
+                     <*> o .:? "citationSuffix"
                      <*> o .: "citationItems") v
    <|>
-   (Citation Nothing Nothing <$> parseJSON v)
+   (Citation Nothing Nothing Nothing Nothing <$> parseJSON v)
 
 instance ToJSON a => ToJSON (Citation a) where
  toJSON c =
    object $
      [ ("citationID", toJSON $ citationId c) | isJust (citationId c) ] ++
+     [ ("citationPrefix", toJSON $ citationPrefix c) | isJust (citationPrefix c) ] ++
+     [ ("citationSuffix", toJSON $ citationSuffix c) | isJust (citationSuffix c) ] ++
      [ ("citationItems" , toJSON $ citationItems c) ] ++
      case citationNoteNumber c of
            Nothing -> []
