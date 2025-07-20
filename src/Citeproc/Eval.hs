@@ -2598,7 +2598,8 @@ eChoose ((match, conditions, els):rest) = do
   let disambiguate = maybe False
                       disambCondition (referenceDisambiguation ref)
   positions <- asks contextPosition
-  hasLocator <- isJust <$> asks contextLocator
+  locator <- asks contextLocator
+  let hasLocator = isJust locator
   let isNumeric t = all
         (\chunk -> T.any isDigit chunk && not (T.any isSpace chunk)) $
         T.split (\c -> c == ',' || c == '-' || c == '&')
@@ -2617,11 +2618,13 @@ eChoose ((match, conditions, els):rest) = do
            IsUncertainDate t -> case lookupVariable t ref of
                                   Just (DateVal d) -> dateCirca d
                                   _                -> False
-           IsNumeric t -> case lookupVariable t ref of
-                            Just (NumVal _)   -> True
-                            Just (TextVal x)  -> isNumeric x
-                            Just (FancyVal x) -> isNumeric (toText x)
-                            _                 -> False
+           IsNumeric t
+             | t == "locator" -> maybe False isNumeric locator
+             | otherwise -> case lookupVariable t ref of
+                              Just (NumVal _)   -> True
+                              Just (TextVal x)  -> isNumeric x
+                              Just (FancyVal x) -> isNumeric (toText x)
+                              _                 -> False
            HasLocatorType t -> case label of
                                  Just "sub verbo" -> t == "sub-verbo"
                                  Just x -> toVariable x == t

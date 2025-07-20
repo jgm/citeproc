@@ -1,0 +1,81 @@
+>>===== MODE =====>>
+citation
+<<===== MODE =====<<
+
+
+
+>>===== RESULT =====>>
+chap. 2.
+<<===== RESULT =====<<
+
+
+>>===== CITATIONS =====>>
+[ [{"id":"BarnesCompleteWorksAristotle1984", "locator": "2","label":"chapter"} ] ]
+<<===== CITATIONS =====<<
+
+
+>>===== CSL =====>>
+<?xml version="1.0" encoding="utf-8"?>
+<style xmlns="http://purl.org/net/xbiblio/csl" and="text" class="note" demote-non-dropping-particle="display-and-sort" page-range-format="chicago-16" version="1.0">
+  <macro name="label-locator">
+    <group delimiter=" ">
+      <choose>
+        <if locator="page"/>
+        <else-if is-numeric="locator">
+          <label form="short" variable="locator"/>
+        </else-if>
+        <else-if locator="chapter line verse" match="any"/>
+        <!-- a non-numeric canonical reference is identified by its formatting and does not need a label (CMOS18 14.143-54) -->
+        <else>
+          <label form="short" variable="locator"/>
+        </else>
+      </choose>
+      <text variable="locator"/>
+    </group>
+  </macro>
+  <citation disambiguate-add-givenname="true" disambiguate-add-names="true" et-al-min="3" et-al-use-first="1">
+    <layout delimiter="; " suffix=".">
+      <text macro="label-locator"/>
+    </layout>
+  </citation>
+</style>
+<<===== CSL =====<<
+
+
+>>===== INPUT =====>>
+[
+  {
+    "DOI": "10.1515/9781400835843",
+    "ISBN": "978-0-691-01650-4 978-1-4008-3584-3",
+    "citation-key": "BarnesCompleteWorksAristotle1984",
+    "collection-number": "192",
+    "collection-title": "Bollingen Series",
+    "editor": [
+      {
+        "family": "Barnes",
+        "given": "Jonathan"
+      }
+    ],
+    "event-place": "Princeton, NJ",
+    "id": "BarnesCompleteWorksAristotle1984",
+    "issued": {
+      "date-parts": [
+        [
+          1984
+        ]
+      ]
+    },
+    "language": "en",
+    "number-of-volumes": "2",
+    "publisher": "Princeton University Press",
+    "publisher-place": "Princeton, NJ",
+    "title": "The complete works of Aristotle: the revised Oxford translation",
+    "type": "book"
+  }
+]
+<<===== INPUT =====<<
+
+
+>>===== VERSION =====>>
+1.0
+<<===== VERSION =====<<
