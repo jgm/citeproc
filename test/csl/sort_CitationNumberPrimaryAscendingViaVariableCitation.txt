@@ -3,6 +3,15 @@ citation
 <<===== MODE =====<<
 
 
+>>==== DESCRIPTION ====>>
+Sorting on and rendering citation-numbers is accomplished with specialized logic that isn't fully
+documented in the specification. Please see the links below for an explanation.
+
+https://github.com/citation-style-language/test-suite/issues/62
+https://forums.zotero.org/discussion/71443/reverse-number-bibliography
+<<==== DESCRIPTION ====<<
+
+
 >>===== RESULT =====>>
 >>[0] [1] Aaaa (first-cited); [2] Bbbb (second-cited); [3] Zzzz (third-cited); [4] Xxxx (fourth-cited)
 <<===== RESULT =====<<

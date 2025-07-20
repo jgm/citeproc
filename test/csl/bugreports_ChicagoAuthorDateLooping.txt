@@ -2,6 +2,8 @@
 citation
 <<===== MODE =====<<
 
+
+>>===== DESCRIPTION =====>>
 This is a little weird, but it's what the style wants, I think.
 
 Looping was caused by attempt to render:
@@ -12,7 +14,13 @@ Looping was caused by attempt to render:
 
 (Anon.a; Anon.b; Manstein 1982)
 
-... but seems more sensibly rendered as ...
+but seems more sensibly rendered as the indicated result, below.
+
+Note also that since this test has no explicit CITATION-ITEMS or CITATIONS, they are synthesized
+from the inputs *after* the inputs are sorted, which is why the Anon cite items precede Manstein.
+See https://github.com/citation-style-language/test-suite/issues/66 for discussion.
+<<===== DESCRIPTION =====<<
+
 
 >>===== RESULT =====>>
 (Anon.; Anon.; Manstein 1982)

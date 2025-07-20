@@ -32,7 +32,7 @@ nothing, and the layout suffix should be preserved.
 <<===== CITATION-ITEMS =====<<
 
 >>===== CSL =====>>
-<style 
+<style
       xmlns="http://purl.org/net/xbiblio/csl"
       class="note"
       version="1.0">
@@ -66,48 +66,48 @@ nothing, and the layout suffix should be preserved.
     {
         "author": [
             {
-                "family": "Smith", 
+                "family": "Smith",
                 "given": "John"
             }
-        ], 
-        "id": "ITEM-1", 
+        ],
+        "id": "ITEM-1",
         "issued": {
             "date-parts": [
                 [
                     325
                 ]
             ]
-        }, 
-        "title": "Ignore me 1", 
+        },
+        "title": "Ignore me 1",
         "type": "book"
-    }, 
+    },
     {
         "author": [
             {
-                "family": "Smith", 
+                "family": "Smith",
                 "given": "John"
             }
-        ], 
-        "id": "ITEM-2", 
+        ],
+        "id": "ITEM-2",
         "issued": {
             "date-parts": [
                 [
                     2000
                 ]
             ]
-        }, 
-        "title": "Ignore me 2", 
+        },
+        "title": "Ignore me 2",
         "type": "book"
     },
     {
         "author": [
             {
-                "family": "Smith", 
+                "family": "Smith",
                 "given": "John"
             }
-        ], 
-        "id": "ITEM-3", 
-        "title": "Ignore me 3", 
+        ],
+        "id": "ITEM-3",
+        "title": "Ignore me 3",
         "type": "book"
     }
 ]
@@ -117,4 +117,3 @@ nothing, and the layout suffix should be preserved.
 >>===== VERSION =====>>
 1.0
 <<===== VERSION =====<<
-

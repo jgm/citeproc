@@ -2,6 +2,7 @@
 citation
 <<===== MODE =====<<
 
+>>===== DESCRIPTION =====>>
 Bug report by Carles Pina.
 
 ## 2013-04-17 :: Frank Bennett <biercenator@gmail.com>
@@ -11,6 +12,7 @@ Bug report by Carles Pina.
   specification was subsequently revised to required "by-cite"
   disambiguation. Under by-cite disambiguation, the subsequent form in
   the style is "Kim and Kim", without the given names.
+<<===== DESCRIPTION =====<<
 
 >>===== RESULT =====>>
 B-X Kim and A-Y Kim.

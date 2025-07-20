@@ -57,19 +57,18 @@ Reported by @bwiernik @ https://gist.github.com/bwiernik/a18438c70e7a98155812a66
 
 >>===== INPUT =====>>
 [
-	{
-		"id": "first_day_1_second_not1",
-		"type": "book",
-		"language": "fr",
-		"note": "event-date: 2004-10-01/2004-10-14"
-	},
-  {
-		"id": "first_day_not1_second_1",
-		"type": "book",
-		"language": "fr",
-		"note": "event-date: 2004-10-14/2004-11-01"
-	}
-  
+    {
+        "id": "first_day_1_second_not1",
+        "language": "fr",
+        "note": "event-date: 2004-10-01/2004-10-14",
+        "type": "book"
+    },
+    {
+        "id": "first_day_not1_second_1",
+        "language": "fr",
+        "note": "event-date: 2004-10-14/2004-11-01",
+        "type": "book"
+    }
 ]
 <<===== INPUT =====<<
 

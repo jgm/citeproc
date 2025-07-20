@@ -3,6 +3,14 @@ citation
 <<===== MODE =====<<
 
 
+>>===== DESCRIPTION =====>>
+Per the CSL specification, with the add-year-suffix disambiguation method, "the assignment of
+year-suffixes follows the order of the bibliographies entries."
+
+https://docs.citationstyles.org/en/stable/specification.html#disambiguation
+<<===== DESCRIPTION =====<<
+
+
 >>===== CITATION-ITEMS =====>>
 [
     [
@@ -48,6 +56,7 @@ citation
     ]
 ]
 <<===== CITATION-ITEMS =====<<
+
 
 >>===== RESULT =====>>
 1990m!; 1990l!; 1990k!; 1990j!; 1990i!; 1990h!; 1990g!; 1990f!; 1990e!; 1990d!; 1990c!; 1990b!; 1990a!

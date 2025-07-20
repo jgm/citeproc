@@ -2,6 +2,11 @@
 citation
 <<==== MODE ====<<
 
+>>==== DESCRIPTION ====>>
+See discussion
+https://forums.zotero.org/discussion/19953/csl-processor-bug-citation-delimiter-in-numeric-styles-with-locator
+<<==== DESCRIPTION ====<<
+
 >>==== RESULT ====>>
 [1, 32; 2, 32; 3, 32]
 <<==== RESULT ====<<

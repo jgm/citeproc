@@ -3,6 +3,17 @@ citation
 <<===== MODE =====<<
 
 
+>>===== DESCRIPTION =====>>
+Per the CSL documentation (link below), dashes are standardized for page ranges
+but not everything with a dash is a valid page range. Valid page ranges are
+numbers with the same or no prefix.
+
+For example, 110–115 and N110–N115 are valid page ranges but 110-N6 is not and
+thus retains its original dash character.
+
+https://docs.citationstyles.org/en/stable/specification.html#range-delimiters
+<<===== DESCRIPTION =====<<
+
 
 >>===== RESULT =====>>
 Example: minimal, at 110–115
@@ -19,51 +30,51 @@ Example: first less than second, at 123N110-N5, 000c23-22
 >>===== INPUT =====>>
 [
     {
-        "id": "ITEM-1", 
-        "page": "110-5", 
-        "title": "Example: minimal", 
+        "id": "ITEM-1",
+        "page": "110-5",
+        "title": "Example: minimal",
         "type": "book"
-    }, 
+    },
     {
-        "id": "ITEM-2", 
-        "page": "N110 - 5", 
-        "title": "Example: prefix on first number only", 
+        "id": "ITEM-2",
+        "page": "N110 - 5",
+        "title": "Example: prefix on first number only",
         "type": "book"
-    }, 
+    },
     {
-        "id": "ITEM-3", 
-        "page": "N110 - N5", 
-        "title": "Example: same prefix on both numbers", 
+        "id": "ITEM-3",
+        "page": "N110 - N5",
+        "title": "Example: same prefix on both numbers",
         "type": "book"
-    }, 
+    },
     {
-        "id": "ITEM-4", 
-        "page": "110 - N6", 
-        "title": "Example: prefix on last number only", 
+        "id": "ITEM-4",
+        "page": "110 - N6",
+        "title": "Example: prefix on last number only",
         "type": "book"
-    }, 
+    },
     {
-        "id": "ITEM-5", 
-        "page": "N110 - P5", 
-        "title": "Example: different prefixes on both numbers", 
+        "id": "ITEM-5",
+        "page": "N110 - P5",
+        "title": "Example: different prefixes on both numbers",
         "type": "book"
-    }, 
+    },
     {
-        "id": "ITEM-6", 
-        "page": "123N110 - N5", 
-        "title": "Example: leading number before prefix", 
+        "id": "ITEM-6",
+        "page": "123N110 - N5",
+        "title": "Example: leading number before prefix",
         "type": "book"
-    }, 
+    },
     {
-        "id": "ITEM-7", 
-        "page": "123N110 - N5, 456K200 - 99", 
-        "title": "Example: multiple ranges", 
+        "id": "ITEM-7",
+        "page": "123N110 - N5, 456K200 - 99",
+        "title": "Example: multiple ranges",
         "type": "book"
-    }, 
+    },
     {
-        "id": "ITEM-8", 
-        "page": "123N110 - N5, 000c23 - 22", 
-        "title": "Example: first less than second", 
+        "id": "ITEM-8",
+        "page": "123N110 - N5, 000c23 - 22",
+        "title": "Example: first less than second",
         "type": "book"
     }
 ]
@@ -116,7 +127,7 @@ Example: first less than second, at 123N110-N5, 000c23-22
 
 
 >>===== CSL =====>>
-<style 
+<style
       xmlns="http://purl.org/net/xbiblio/csl"
       class="note"
       version="1.0"
@@ -141,4 +152,3 @@ Example: first less than second, at 123N110-N5, 000c23-22
 >>===== VERSION =====>>
 1.0
 <<===== VERSION =====<<
-

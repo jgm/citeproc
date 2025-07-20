@@ -3,47 +3,39 @@ citation
 <<===== MODE =====<<
 
 
+
 >>===== RESULT =====>>
->>[0] Smith (1986)
+(Smith 2000a; 2000b; 2000c)
+(Smith 2000b)
+(Smith 2000c)
 <<===== RESULT =====<<
 
 
->>===== CITATIONS =====>>
+>>===== CITATION-ITEMS =====>>
 [
     [
         {
-            "citationID": "CITATION-1",
-            "citationItems": [
-                {
-                    "id": "ITEM-1"
-                }
-            ],
-            "properties": {
-                "noteIndex": 0
-            }
+            "id": "ITEM-1"
         },
-        [],
-        []
+        {
+            "id": "ITEM-2"
+        },
+        {
+            "id": "ITEM-3"
+        }
     ],
     [
         {
-            "citationID": "CITATION-1",
-            "citationItems": [
-                {
-                    "id": "ITEM-2"
-                }
-            ],
-            "properties": {
-                "noteIndex": 0
-            }
-        },
-        [],
-        []
+            "id": "ITEM-2"
+        }
+    ],
+    [
+        {
+            "id": "ITEM-3"
+        }
     ]
 ]
-<<===== CITATIONS =====<<
-
-
+<<===== CITATION-ITEMS =====<<
 
 >>===== CSL =====>>
 <style 
@@ -58,14 +50,18 @@ citation
   <citation 
          et-al-min="3"
          et-al-use-first="1"
+         et-al-subsequent-min="3"
+         et-al-subsequent-use-first="1"
          disambiguate-add-names="true"
-         disambiguate-add-givenname="true">
-    <layout delimiter="; ">
+		 disambiguate-add-year-suffix="true"
+		 collapse="year">
+
+    <layout delimiter="; " prefix="(" suffix=")">
       <group delimiter=" ">
         <names delimiter=", " variable="author">
-          <name and="symbol" delimiter-precedes-last="never" form="short"/>
+          <name and="symbol" form="short"/>
         </names>
-        <date variable="issued" prefix="(" suffix=")">
+        <date variable="issued">
           <date-part name="year"/>
         </date>
       </group>
@@ -82,20 +78,17 @@ citation
             {
                 "family": "Smith", 
                 "given": "John"
-            },
-            {
-                "family": "Smith", 
-                "given": "Jane"
             }
         ], 
+        "id": "ITEM-1", 
         "issued": {
             "date-parts": [
                 [
-                    1980
+                    2000
                 ]
             ]
         }, 
-        "id": "ITEM-1",
+		"title": "Book A",
         "type": "book"
     }, 
     {
@@ -105,18 +98,38 @@ citation
                 "given": "John"
             }
         ], 
+        "id": "ITEM-2", 
         "issued": {
             "date-parts": [
                 [
-                    1986
+                    2000
                 ]
             ]
         }, 
-        "id": "ITEM-2",
+		"title": "Book B",
         "type": "book"
-    }
+    },
+   {
+       "author": [
+           {
+               "family": "Smith",
+               "given": "John"
+           }
+       ],
+       "id": "ITEM-3",
+       "issued": {
+           "date-parts": [
+               [
+                   2000
+               ]
+           ]
+       },
+       "title": "Book C",
+       "type": "book"
+   }
 ]
 <<===== INPUT =====<<
+
 
 
 >>===== VERSION =====>>

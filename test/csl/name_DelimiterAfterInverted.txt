@@ -47,63 +47,63 @@ set delimiter
 
 >>===== INPUT =====>>
 [
-  {
-    "id": "AustralianGovernmentProductivityCommissionStrengtheningtransTasmaneconomic2012",
-    "author": [
-      {
-        "literal": "Australian Government Productivity Commission"
-      },
-      {
-        "literal": "New Zealand Productivity Commission"
-      }
-    ],
-    "issued": {
-      "date-parts": [
-        [
-          2012
-        ]
-      ]
+    {
+        "URL": "https://www.pc.gov.au/inquiries/completed/australia-new-zealand/report/trans-tasman.pdf",
+        "author": [
+            {
+                "literal": "Australian Government Productivity Commission"
+            },
+            {
+                "literal": "New Zealand Productivity Commission"
+            }
+        ],
+        "id": "AustralianGovernmentProductivityCommissionStrengtheningtransTasmaneconomic2012",
+        "issued": {
+            "date-parts": [
+                [
+                    2012
+                ]
+            ]
+        },
+        "title": "Strengthening trans-Tasman economic relations",
+        "type": "report"
     },
-    "title": "Strengthening trans-Tasman economic relations",
-    "type": "report",
-    "URL": "https://www.pc.gov.au/inquiries/completed/australia-new-zealand/report/trans-tasman.pdf"
-  },
-  {
-    "id": "WeinstockDefiningforensicpsychiatry2003",
-    "author": [
-      {
-        "family": "Weinstock",
-        "given": "R."
-      },
-      {
-        "family": "Leong",
-        "given": "G. B."
-      },
-      {
-        "family": "Silva",
-        "given": "J. A."
-      }
-    ],
-    "container-title": "Principles and practice of forensic psychiatry",
-    "edition": "2",
-    "editor": [
-      {
-        "family": "Rosner",
-        "given": "R."
-      }
-    ],
-    "issued": {
-      "date-parts": [
-        [
-          2003
-        ]
-      ]
-    },
-    "page": "7-13",
-    "publisher": "CRC Press",
-    "title": "Defining forensic psychiatry: Roles and responsibilities",
-    "type": "chapter"
-  }
+    {
+        "author": [
+            {
+                "family": "Weinstock",
+                "given": "R."
+            },
+            {
+                "family": "Leong",
+                "given": "G. B."
+            },
+            {
+                "family": "Silva",
+                "given": "J. A."
+            }
+        ],
+        "container-title": "Principles and practice of forensic psychiatry",
+        "edition": "2",
+        "editor": [
+            {
+                "family": "Rosner",
+                "given": "R."
+            }
+        ],
+        "id": "WeinstockDefiningforensicpsychiatry2003",
+        "issued": {
+            "date-parts": [
+                [
+                    2003
+                ]
+            ]
+        },
+        "page": "7-13",
+        "publisher": "CRC Press",
+        "title": "Defining forensic psychiatry: Roles and responsibilities",
+        "type": "chapter"
+    }
 ]
 <<===== INPUT =====<<
 

@@ -3,9 +3,13 @@ citation
 <<===== MODE =====<<
 
 
+>>===== DESCRIPTION =====>>
 Test to cover request here:
+http://xbiblio-devel.2463403.n2.nabble.com/contextual-labels-for-non-numeric-page-ranges-td7578166.html
 
-  http://xbiblio-devel.2463403.n2.nabble.com/contextual-labels-for-non-numeric-page-ranges-td7578166.html
+See also:
+https://discourse.citationstyles.org/t/contextual-labels-for-non-numeric-page-ranges/1117
+<<===== DESCRIPTION =====<<
 
 
 >>===== RESULT =====>>

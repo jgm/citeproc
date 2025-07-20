@@ -21,7 +21,7 @@ Title
   </info>
   <citation>
     <layout>
-      <names>
+      <names variable="author">
         <substitute>
           <text variable="title"/>
           <text variable="container-title"/>
@@ -36,10 +36,10 @@ Title
 >>===== INPUT =====>>
 [
     {
+        "container-title": "ContainerTitle",
         "id": "ITEM-1",
-        "type": "book",
         "title": "Title",
-        "container-title": "ContainerTitle"
+        "type": "book"
     }
 ]
 <<===== INPUT =====<<

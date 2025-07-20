@@ -62,7 +62,7 @@ citation
       <group delimiter=" ">
         <names variable="author">
           <name and="symbol" delimiter=", " form="short" />
-          <et-al prefix=" " />
+          <et-al/>
         </names>
         <date variable="issued">
           <date-part name="year" />

@@ -3,6 +3,18 @@ citation
 <<===== MODE =====<<
 
 
+>>===== DESCRIPTION =====>>
+## 2013-04-17 :: Frank Bennett <biercenator@gmail.com>
+
+This test has been recast in three forms, with:
+
+  (1) disambiguate-add-names="true" disambiguate-add-givenname="true" (default by-cite rule)
+  (2) disambiguate-add-names="true"
+  (3) disambiguate-add-givenname="true"
+
+This version is (1).
+<<===== DESCRIPTION =====<<
+
 
 >>===== RESULT =====>>
 Smith, Brown &#38; J. Jones (1980); Smith, Brown &#38; J. Jones (1980)
@@ -40,15 +52,6 @@ Smith, Brown &#38; J. Jones (1980); Smith, Brown &#38; A. Jones (1980)
 ]
 <<===== CITATION-ITEMS =====<<
 
-## 2013-04-17 :: Frank Bennett <biercenator@gmail.com>
-
-  This test has been recast in three forms, with:
-
-    (1) disambiguate-add-names="true" disambiguate-add-givenname="true" (default by-cite rule)
-    (2) disambiguate-add-names="true"
-    (3) disambiguate-add-givenname="true"
-
-  This version is (1).
 
 >>===== CSL =====>>
 <style 

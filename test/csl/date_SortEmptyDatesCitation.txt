@@ -2,10 +2,12 @@
 citation
 <<===== MODE =====<<
 
-Sort position of empty dates differs in citations and bibliographies.
-In citations, empty dates have a value equivalent to zero.  In
-bibliographies, they are always placed at the end of the sort
-(whether ascending or descending).
+
+>>===== DESCRIPTION =====>>
+Citation and bibliography items should both sort empty dates last. See discussion
+https://github.com/citation-style-language/test-suite/issues/70
+<<===== DESCRIPTION =====<<
+
 
 >>===== RESULT =====>>
 BookD 1999; BookB 2000; BookA; BookC; BookE.

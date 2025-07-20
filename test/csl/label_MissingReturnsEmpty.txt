@@ -3,7 +3,7 @@ citation
 <<==== MODE ====<<
 
 >>==== RESULT ====>>
-Aalto, number 23
+Aalto
 <<==== RESULT ====<<
 
 >>==== CITATION-ITEMS ====>>
@@ -17,7 +17,7 @@ Aalto, number 23
 <<==== CITATION-ITEMS ====<<
 
 >>==== CSL ====>>
-<style 
+<style
       xmlns="http://purl.org/net/xbiblio/csl"
       class="note"
       version="1.0">
@@ -32,15 +32,12 @@ Aalto, number 23
   <macro name="author">
     <names variable="author">
       <name form="short" />
+      <label form="long" prefix=", "/>
     </names>
   </macro>
   <citation>
     <layout delimiter="; ">
       <text macro="author" />
-      <group delimiter=" " prefix=", ">
-        <text term="number"/>
-        <number variable="collection-number"/>
-      </group>
     </layout>
   </citation>
 </style>
@@ -55,7 +52,6 @@ Aalto, number 23
         "given": "Alan"
       }
     ],
-    "collection-number": 23,
     "id": "ITEM-1",
     "type": "book"
   }
@@ -67,4 +63,3 @@ Aalto, number 23
 >>===== VERSION =====>>
 1.0
 <<===== VERSION =====<<
-

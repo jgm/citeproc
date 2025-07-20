@@ -3,18 +3,21 @@ citation
 <<===== MODE =====<<
 
 
+>>===== DESCRIPTION =====>>
 ## 2013-04-17 :: Frank Bennett <biercenator@gmail.com>
 
-  This test has been recast in three forms, with:
+This test has been recast in three forms, with:
 
-    (1) disambiguate-add-names="true" disambiguate-add-givenname="true" (default by-cite rule)
-    (2) disambiguate-add-names="true"
-    (3) disambiguate-add-givenname="true"
+  (1) disambiguate-add-names="true" disambiguate-add-givenname="true" (default by-cite rule)
+  (2) disambiguate-add-names="true"
+  (3) disambiguate-add-givenname="true"
 
-  This version is (3).
+This version is (3).
 
-  The result would be useless in this case, but it is what the style
-  has been set to deliver.
+The result would be useless in this case, but it is what the style
+has been set to deliver.
+<<===== DESCRIPTION =====<<
+  
 
 >>===== RESULT =====>>
 Smith et al. (1980); Smith et al. (1980)

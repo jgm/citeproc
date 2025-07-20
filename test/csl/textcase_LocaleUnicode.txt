@@ -2,10 +2,10 @@
 citation
 <<===== MODE =====<<
 
+>>===== DESCRIPTION =====>>
 Details here:
-
 https://forums.zotero.org/discussion/83567/uppercase-letter-problem-in-turkish
-
+<<===== DESCRIPTION =====<<
 
 >>===== RESULT =====>>
 IA AND IB EN
@@ -16,26 +16,26 @@ BAD LANGUAGE CODE THAT PASSES IN NODE.JS BUT FAILS IN SOME BROWSERS
 
 >>===== CITATION-ITEMS =====>>
 [
-  [
-    {
-      "id": "ITEM-1"
-    }
-  ],
-  [
-    {
-      "id": "ITEM-2"
-    }
-  ],
-  [
-    {
-      "id": "ITEM-3"
-    }
-  ],
-  [
-    {
-      "id": "ITEM-4"
-    }
-  ]
+    [
+        {
+            "id": "ITEM-1"
+        }
+    ],
+    [
+        {
+            "id": "ITEM-2"
+        }
+    ],
+    [
+        {
+            "id": "ITEM-3"
+        }
+    ],
+    [
+        {
+            "id": "ITEM-4"
+        }
+    ]
 ]
 <<===== CITATION-ITEMS =====<<
 
@@ -44,7 +44,7 @@ BAD LANGUAGE CODE THAT PASSES IN NODE.JS BUT FAILS IN SOME BROWSERS
 <style 
       xmlns="http://purl.org/net/xbiblio/csl"
       class="note"
-      default-locale="en">
+      default-locale="en"
       version="1.0">
   <info>
     <id />

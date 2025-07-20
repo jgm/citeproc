@@ -83,29 +83,6 @@ citation
       <term name="long-ordinal-08">όγδοος</term>
       <term name="long-ordinal-09">ένατος</term>
       <term name="long-ordinal-10">δέκατος</term>
-       <term name="anthropology">ανθρωπολογία</term>
-    <term name="astronomy">αστρονομία</term>
-    <term name="biology">βιολογία</term>
-    <term name="botany">βοτανική</term>
-    <term name="chemistry">χημεία</term>
-    <term name="engineering">μηχανική</term>
-    <term name="generic-base">γενική βάση</term>
-    <term name="geography">γεωγραφία</term>
-    <term name="geology">γεωλογία</term>
-    <term name="history">ιστορία</term>
-    <term name="humanities">ανθρωπιστικές σπουδές</term>
-    <term name="literature">λογοτεχνία</term>
-    <term name="math">μαθηματικά</term>
-    <term name="medicine">ιατρική</term>
-    <term name="philosophy">φιλοσοφία</term>
-    <term name="physics">φυσική</term>
-    <term name="psychology">ψυχολογία</term>
-    <term name="sociology">κοινωνιολογία</term>
-    <term name="science">θετικές επιστήμες</term>
-    <term name="political_science">πολιτικές επιστήμες</term>
-    <term name="social_science">κοινωνικές επιστήμες</term>
-    <term name="theology">θεολογία</term>
-    <term name="zoology">ζωολογία</term>
        <term name="book">
          <single>βιβλίο</single>
          <multiple>βιβλίο</multiple>
@@ -158,7 +135,7 @@ citation
          <single>τμήμα</single>
          <multiple>τμήματα</multiple>
       </term>
-      <term name="sub verbo">
+      <term name="sub-verbo">
          <single>λήμμα</single>
          <multiple>λήμματα</multiple>
       </term>
@@ -184,7 +161,7 @@ citation
      <term name="paragraph" form="short">παρ</term>
       <term name="part" form="short">μερ</term>
       <term name="section" form="short">τμ</term>
-      <term name="sub verbo" form="short">
+      <term name="sub-verbo" form="short">
          <single>λήμ</single>
          <multiple>λήμ</multiple>
       </term>
@@ -499,11 +476,11 @@ citation
         <choose>
           <if variable="author">
              <text variable="title"  prefix="«" suffix="»"/>
-<text term="sub verbo" text-case="lowercase" prefix=" (" suffix=")"/>
+<text term="sub-verbo" text-case="lowercase" prefix=" (" suffix=")"/>
           </if>
           <else>
             <text variable="title" prefix="«" suffix="»"/>
-            <text term="sub verbo" text-case="lowercase" prefix=" (" suffix=")"/>
+            <text term="sub-verbo" text-case="lowercase" prefix=" (" suffix=")"/>
           </else>
         </choose>
       </else-if>
@@ -511,11 +488,11 @@ citation
         <choose>
           <if variable="author">
        <text variable="title"  prefix="«" suffix="»"/>
-<text term="sub verbo" text-case="lowercase" prefix=" (" suffix=")"/>
+<text term="sub-verbo" text-case="lowercase" prefix=" (" suffix=")"/>
           </if>
           <else>
             <text variable="title" prefix="«" suffix="»"/>
-            <text term="sub verbo" text-case="lowercase" prefix=" (" suffix=")"/>
+            <text term="sub-verbo" text-case="lowercase" prefix=" (" suffix=")"/>
           </else>
         </choose>
       </else-if>
@@ -540,11 +517,11 @@ citation
         <choose>
           <if variable="author">
                <text variable="title"  prefix="«" suffix="»"/>
-<text term="sub verbo" text-case="lowercase" prefix=" (" suffix=")"/>
+<text term="sub-verbo" text-case="lowercase" prefix=" (" suffix=")"/>
           </if>
           <else>
             <text variable="title" prefix="«" suffix="»"/>
-            <text term="sub verbo" text-case="lowercase" prefix=" (" suffix=")"/>
+            <text term="sub-verbo" text-case="lowercase" prefix=" (" suffix=")"/>
           </else>
         </choose>
       </else-if>
@@ -552,11 +529,11 @@ citation
         <choose>
           <if variable="author">
            <text variable="title"  prefix="«" suffix="»"/>
-<text term="sub verbo" text-case="lowercase" prefix=" (" suffix=")"/>
+<text term="sub-verbo" text-case="lowercase" prefix=" (" suffix=")"/>
           </if>
           <else>
             <text variable="title" prefix="«" suffix="»"/>
-            <text term="sub verbo" text-case="lowercase" prefix=" (" suffix=")"/>
+            <text term="sub-verbo" text-case="lowercase" prefix=" (" suffix=")"/>
           </else>
         </choose>
       </else-if>

@@ -21,7 +21,7 @@ a
   </info>
   <citation>
     <layout>
-      <names>
+      <names variable="author">
         <substitute>
           <text value="a"/>
           <text value="b"/>

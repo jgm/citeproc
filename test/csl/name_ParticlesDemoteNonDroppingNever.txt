@@ -3,6 +3,33 @@ citation
 <<===== MODE =====<<
 
 
+>>===== DESCRIPTION =====>>
+This test depends on the particular way citeproc-js applies formatting to names and so may not pass
+for other CSL processors that nonetheless parse name particles correctly.
+
+Specifically, it expects bold and italic pseudo-HTML* to be applied separately to name particles
+before they are appended to the given or family name. For example, with a main family name of
+"George", this test would expect
+
+<b>St. George</b>
+<b>de</b> <b>George</b>
+
+identifying "de" as a non-dropping particle and "St." as part of the family name, not a particle.
+
+From a formatting perspective, however, these are the same
+
+<b>de George</b>
+<b>de</b> <b>George</b>
+
+and so CSL processors may reasonably prefer the former, causing this test to fail incorrectly.
+
+This test should be re-written so it doesn't depend on invisible formatting subtlies.
+
+* https://citeproc-js.readthedocs.io/en/latest/csl-json/markup.html#html-like-formatting-tags
+
+<<===== DESCRIPTION =====<<
+
+
 >>===== RESULT =====>>
 <b>Familyname</b>, <i>Givenname</i> <i>al</i>
 <b>Familyname</b>, <i>Givenname</i> <i>dos</i>

@@ -7,13 +7,13 @@ bibliography
 >>===== RESULT =====>>
 <div class="csl-bib-body">
   <div class="csl-entry">
-    <div class="csl-left-margin">[1]</div><div class="csl-right-inline"> J. Doe, “His Anonymous Article,” <i>Journal of Obscurity</i>, vol. 100, p. 15, June. 1965.</div>
+    <div class="csl-left-margin">[1]</div><div class="csl-right-inline"> J. Doe, “His Anonymous Article,” <i>Journal of Obscurity</i>, vol. 100, p. 15, Jun. 1965.</div>
   </div>
   <div class="csl-entry">
-    <div class="csl-left-margin">[2]</div><div class="csl-right-inline"> G. Everhardt, “His Anonymous Article,” <i>Journal of Obscurity</i>, vol. 100, p. 15, June. 1965.</div>
+    <div class="csl-left-margin">[2]</div><div class="csl-right-inline"> G. Everhardt, “His Anonymous Article,” <i>Journal of Obscurity</i>, vol. 100, p. 15, Jun. 1965.</div>
   </div>
   <div class="csl-entry">
-    <div class="csl-left-margin">[3]</div><div class="csl-right-inline"> J. Roe, “His Anonymous Article,” <i>Journal of Obscurity</i>, vol. 100, p. 15, June. 1965.</div>
+    <div class="csl-left-margin">[3]</div><div class="csl-right-inline"> J. Roe, “His Anonymous Article,” <i>Journal of Obscurity</i>, vol. 100, p. 15, Jun. 1965.</div>
   </div>
 </div>
 <<===== RESULT =====<<

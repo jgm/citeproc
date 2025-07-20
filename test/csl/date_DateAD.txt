@@ -11,7 +11,7 @@ citation
 
 
 >>===== CSL =====>>
-<style 
+<style
       xmlns="http://purl.org/net/xbiblio/csl"
       class="note"
       version="1.0">
@@ -54,4 +54,3 @@ citation
 >>===== VERSION =====>>
 1.0
 <<===== VERSION =====<<
-

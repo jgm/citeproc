@@ -3,6 +3,7 @@ citation
 <<===== MODE =====<<
 
 
+>>===== DESCRIPTION =====>>
 It may not be immediately apparent, but the spaces immediately
 inside the double angle quotes below are half-width no-break
 spaces ("narrow no-break space").
@@ -10,6 +11,8 @@ spaces ("narrow no-break space").
 See http://en.wikipedia.org/wiki/Space_(punctuation)#Breaking_and_non-breaking_spaces
 and http://forums.zotero.org/discussion/4933/localized-quotes/#Comment_88384
 for details.
+<<===== DESCRIPTION =====<<
+
 
 >>===== RESULT =====>>
 His « Anonymous » Life

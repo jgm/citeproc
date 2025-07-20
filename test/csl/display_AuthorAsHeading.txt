@@ -2,9 +2,11 @@
 bibliography
 <<===== MODE =====<<
 
+
+>>===== DESCRIPTION =====>>
 An illustration of how the class attribute could be used to support
 the grouping of authors in the AAA style bibliography format.
-
+<<===== DESCRIPTION =====<<
 
 
 >>===== RESULT =====>>

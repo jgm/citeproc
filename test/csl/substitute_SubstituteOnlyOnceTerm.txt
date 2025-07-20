@@ -27,7 +27,7 @@ Editor Term
   </locale>
   <citation>
     <layout>
-      <names>
+      <names variable="author">
         <substitute>
           <text term="editor"/>
           <text term="author"/>

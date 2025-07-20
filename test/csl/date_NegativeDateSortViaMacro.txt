@@ -9,7 +9,7 @@ bibliographies, they are always placed at the end of the sort
 (whether ascending or descending).
 
 >>===== RESULT =====>>
-100 BC-7-13, 44 BC-3-15, 54 AD-10-13, 68 AD-6-11
+100BC-7-13, 44BC-3-15, 54AD-10-13, 68AD-6-11
 <<===== RESULT =====<<
 
 
