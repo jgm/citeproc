@@ -2628,7 +2628,7 @@ eChoose ((match, conditions, els):rest) = do
            HasLocatorType t -> case label of
                                  Just "sub verbo" -> t == "sub-verbo"
                                  Just x -> toVariable x == t
-                                 Nothing -> t == "page"
+                                 Nothing -> False
            HasPosition pos -> pos `elem` positions
            WouldDisambiguate -> disambiguate
   let matched = (case match of

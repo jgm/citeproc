@@ -1,0 +1,93 @@
+>>===== MODE =====>>
+citation
+<<===== MODE =====<<
+
+
+
+
+>>===== RESULT =====>>
+no page locator; no chapter locator; no locator
+page locator present; no chapter locator; locator present
+no page locator; chapter locator present; locator present
+<<===== RESULT =====<<
+
+
+>>===== CSL =====>>
+<?xml version="1.0" encoding="utf-8"?>
+<?xml-model href="https://raw.githubusercontent.com/citation-style-language/schema/refs/heads/master/schemas/styles/csl.rnc"
+  type="application/relax-ng-compact-syntax" schematypens="http://relaxng.org/ns/compatibility/annotations/1.0"?>
+<?xml-model href="https://raw.githubusercontent.com/citation-style-language/schema/refs/heads/master/schemas/styles/csl.rnc"
+  type="application/relax-ng-compact-syntax" schematypens="http://purl.oclc.org/dsdl/schematron"?>
+<style class="note" version="1.0" xmlns="http://purl.org/net/xbiblio/csl">
+  <info>
+    <title>Locator test</title>
+    <id>http://www.zotero.org/styles/locator-test</id>
+    <link href="http://www.zotero.org/styles/locator-test" rel="self"/>
+    <updated>2025-05-20T00:00:00+00:00</updated>
+  </info>
+  <macro name="locator-test">
+    <group delimiter="; ">
+      <choose>
+        <if locator="page">
+          <text value="page locator present"/>
+        </if>
+        <else>
+          <text value="no page locator"/>
+        </else>
+      </choose>
+      <choose>
+        <if locator="chapter">
+          <text value="chapter locator present"/>
+        </if>
+        <else>
+          <text value="no chapter locator"/>
+        </else>
+      </choose>
+      <choose>
+        <if variable="locator">
+          <text value="locator present"/>
+        </if>
+        <else>
+          <text value="no locator"/>
+        </else>
+      </choose>
+    </group>
+  </macro>
+  <citation>
+    <layout>
+      <text macro="locator-test"/>
+    </layout>
+  </citation>
+  <bibliography>
+    <layout>
+      <text macro="locator-test"/>
+    </layout>
+  </bibliography>
+</style>
+<<===== CSL =====<<
+
+
+>>===== CITATION-ITEMS =====>>
+[ [ {"id":"test"} ]
+, [ {"id":"test", "locator": "123", "label": "page"} ]
+, [ {"id":"test", "locator": "456", "label": "chapter"} ]
+]
+<<===== CITATION-ITEMS =====<<
+
+
+
+>>===== INPUT =====>>
+[
+  {
+    "id": "test",
+    "type": "book",
+    "title": "Title"
+  }
+]
+<<===== INPUT =====<<
+
+
+>>===== VERSION =====>>
+1.0
+<<===== VERSION =====<<
+
