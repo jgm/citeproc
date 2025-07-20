@@ -12,7 +12,7 @@ nothing, and the layout suffix should be preserved.
 
 
 >>===== RESULT =====>>
-(Smith 325AD, 2000)
+(Smith 325 AD, 2000)
 <<===== RESULT =====<<
 
 >>===== CITATION-ITEMS =====>>

@@ -11,7 +11,7 @@ style. A CSL extension (note-in-text?) would cover that case.
 
 
 >>===== RESULT =====>>
-John Doe (ed. &#38; tran.)
+John Doe (ed. &#38; trans.)
 <<===== RESULT =====<<
 
 

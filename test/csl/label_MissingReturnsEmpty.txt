@@ -3,7 +3,7 @@ citation
 <<==== MODE ====<<
 
 >>==== RESULT ====>>
-Aalto, 23
+Aalto, number 23
 <<==== RESULT ====<<
 
 >>==== CITATION-ITEMS ====>>

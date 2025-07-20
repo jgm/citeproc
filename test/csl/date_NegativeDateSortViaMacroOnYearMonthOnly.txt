@@ -9,7 +9,7 @@ bibliographies, they are always placed at the end of the sort
 (whether ascending or descending).
 
 >>===== RESULT =====>>
-BookX (100BC-7-14), BookY (100BC-7-13), BookA (68AD-3-16), BookB (68AD-3-15)
+BookX (100 BC-7-14), BookY (100 BC-7-13), BookA (68 AD-3-16), BookB (68 AD-3-15)
 <<===== RESULT =====<<
 
 

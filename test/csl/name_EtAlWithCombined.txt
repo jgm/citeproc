@@ -8,7 +8,7 @@ bibliography
 >>===== RESULT =====>>
 <div class="csl-bib-body">
   <div class="csl-entry">John Doe。</div>
-  <div class="csl-entry">——著，Ziggy Zither等點校。</div>
+  <div class="csl-entry">——，Ziggy Zither等點校。</div>
   <div class="csl-entry">田中太郎, Yossarian Yoda, 等翻譯員。</div>
 </div>
 <<===== RESULT =====<<

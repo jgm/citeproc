@@ -4,7 +4,7 @@ bibliography
 
 >>==== RESULT ====>>
 <div class="csl-bib-body">
-  <div class="csl-entry">Bumke, Courtly Culture: Literature and Society in the High Middle Ages, Dunlap tran.</div>
+  <div class="csl-entry">Bumke, Courtly Culture: Literature and Society in the High Middle Ages, Dunlap trans.</div>
   <div class="csl-entry">-----, Höfische</div>
 </div>
 <<==== RESULT ====<<
