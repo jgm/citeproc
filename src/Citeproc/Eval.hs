@@ -105,9 +105,7 @@ evalStyle style mblang refs' citations =
   ((citationOs, bibliographyOs), warnings) = evalRWS go
      Context
       { contextLocale              = mergeLocales mblang style
-      , contextCollate             = \xs ys ->
-                                       compSortKeyValues (Unicode.comp mblang)
-                                       xs ys
+      , contextCollate             = compSortKeyValues (Unicode.comp mblang)
       , contextAbbreviations       = styleAbbreviations style
       , contextStyleOptions        = styleOptions style
       , contextLocator             = Nothing
