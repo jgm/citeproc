@@ -1196,6 +1196,7 @@ evalLayout layout (citationGroupNumber, citation) = do
               then (:[]) . getAuthors . formatted mempty
               else id)
         . (case citationItemPrefix item of
+             -- this handles the case where the prefix is a whole sentence:
              Just t | isNote
                     , ". " `T.isSuffixOf` toText t
                     , T.count " " (toText t) > 1 -- exclude single word
