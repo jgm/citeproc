@@ -39,6 +39,7 @@ bibliography
     </names>
   </macro>
   <citation>
+      <text macro="author"/>
     <layout>
     </layout>
   </citation>
