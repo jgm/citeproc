@@ -2124,19 +2124,11 @@ eSubstitute :: CiteprocOutput a
 eSubstitute els =
   case els of
     [] -> return []
-    (e@(Element (EChoose _) _):es) -> do -- see #159
-      res <- eElement e
-      let isName o = case o of
-                     Tagged (TagNames{}) _ -> True
-                     _ -> False
-      case dropWhile (not . isName) res of
-        [] -> eSubstitute es
-        (x:_) -> return [x]
     (e:es) -> do
       res <- eElement e
-      case filter (/= NullOutput) res of
+      case dropWhile (== NullOutput) res of
         [] -> eSubstitute es
-        xs -> return xs
+        (x:_) -> return [x]
 
 formatNames :: CiteprocOutput a
             => NamesFormat
