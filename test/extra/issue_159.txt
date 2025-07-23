@@ -4,7 +4,9 @@ bibliography
 
 
 >>===== RESULT =====>>
-<div class="csl-entry">Isabelle Ferreras, Julie Battilana, Dominique Méda</div>
+<div class="csl-bib-body">
+  <div class="csl-entry">Isabelle Ferreras, Julie Battilana, Dominique Méda</div>
+</div>
 <<===== RESULT =====<<
 
 
@@ -38,7 +40,6 @@ bibliography
   </macro>
   <citation>
     <layout>
-      <text macro="author"/>
     </layout>
   </citation>
   <bibliography>
