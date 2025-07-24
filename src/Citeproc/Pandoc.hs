@@ -252,7 +252,13 @@ caseTransform' f ils =
   go (Superscript zs) = return' $ Superscript zs
   go (Subscript zs) = return' $ Subscript zs
   go (Span attr@(_,classes,_) zs)
-      | "nocase" `elem` classes = return' $ Span attr zs
+      | "nocase" `elem` classes = do
+            st <- get
+            case st of
+              AfterWordChar | classes == ["nocase"]
+                   -- we need to apply g to update the state:
+                -> return' $ Span nullAttr zs
+              _ -> return' $ Span attr zs
       | otherwise = Span attr <$> mapM go zs
   go (Emph zs) = Emph <$> mapM go zs
   go (Underline zs) = Underline <$> mapM go zs
