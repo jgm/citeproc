@@ -63,6 +63,7 @@ instance CiteprocOutput Inlines where
       CapitalizeAll    -> caseTransform mblang withCapitalizeWords
       SentenceCase     -> caseTransform mblang withSentenceCase
       TitleCase        -> caseTransform mblang withTitleCase
+      PreserveCase     -> B.spanWith ("",["nocase"],[])
   addDisplay x          =
     case x of
       DisplayBlock       -> B.spanWith ("",["csl-block"],[])
@@ -256,7 +257,6 @@ caseTransform' f ils =
             st <- get
             case st of
               AfterWordChar | classes == ["nocase"]
-                   -- we need to apply g to update the state:
                 -> return' $ Span nullAttr zs
               _ -> return' $ Span attr zs
       | otherwise = Span attr <$> mapM go zs

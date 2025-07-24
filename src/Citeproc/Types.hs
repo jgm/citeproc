@@ -558,6 +558,7 @@ data TextCase =
    | CapitalizeAll
    | SentenceCase
    | TitleCase
+   | PreserveCase
    deriving (Show, Eq)
 
 data DisplayStyle =
@@ -1539,6 +1540,11 @@ renderOutput opts (Tagged (TagItem itemtype ident) x)
   | linkCitations opts
   , itemtype /= AuthorOnly
   = addHyperlink ("#ref-" <> unItemId ident) $ renderOutput opts x
+renderOutput opts (Tagged (TagNames _ _ ns) x)
+  -- a hack to ensure that names starting with lowercase don't get
+  -- capitalized in pandoc footnotes: see jgm/pandoc#10983
+  | any hasNonstandardCase ns
+  = addTextCase Nothing PreserveCase $ renderOutput opts x
 renderOutput opts (Tagged _ x) = renderOutput opts x
 renderOutput opts (Formatted f [Linked url xs])
   | linkBibliography opts
@@ -1563,6 +1569,16 @@ renderOutput opts (InNote x) = inNote $
   dropTextWhile isSpace $
   dropTextWhile (\c -> c == ',' || c == ';' || c == '.' || c == ':') $
   renderOutput opts x
+
+hasNonstandardCase :: Name -> Bool
+hasNonstandardCase name =
+  maybe False startsWithLowercase (nameGiven name) ||
+  maybe False startsWithLowercase (nameFamily name) ||
+  maybe False startsWithLowercase (nameLiteral name)
+ where
+  startsWithLowercase t = case T.uncons t of
+                            Just (c,_) -> isLower c
+                            _ -> False
 
 addDelimiters :: CiteprocOutput a => a -> [a] -> [a]
 addDelimiters delim =

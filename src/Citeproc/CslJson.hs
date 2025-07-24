@@ -137,6 +137,7 @@ instance CiteprocOutput (CslJson Text) where
       CapitalizeAll    -> caseTransform mblang withCapitalizeWords
       SentenceCase     -> caseTransform mblang withSentenceCase
       TitleCase        -> caseTransform mblang withTitleCase
+      PreserveCase     -> CslNoCase
   addDisplay x          =
     case x of
       DisplayBlock       -> CslDiv "block"
