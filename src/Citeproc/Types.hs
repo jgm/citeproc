@@ -308,11 +308,16 @@ instance ToJSON a => ToJSON (CitationItem a) where
 -- | A citation (which may include several items, e.g.
 -- in @(Smith 2000; Jones 2010, p. 30)@).
 data Citation a =
-  Citation { citationId         :: Maybe Text
-           , citationNoteNumber :: Maybe Int
-           , citationPrefix     :: Maybe a
-           , citationSuffix     :: Maybe a
-           , citationItems      :: [CitationItem a] }
+  Citation { citationId            :: Maybe Text
+           , citationResetPosition :: Bool -- ^ Reset the position information
+             -- that determines whether citation items are "subsequent."
+             -- Note that this affects all citation items, not just those
+             -- in this citation.
+           , citationNoteNumber    :: Maybe Int
+           , citationPrefix        :: Maybe a
+           , citationSuffix        :: Maybe a
+           , citationItems         :: [CitationItem a]
+           }
   deriving (Show, Eq, Ord)
 
 instance (FromJSON a, Eq a) => FromJSON (Citation a) where
@@ -322,28 +327,31 @@ instance (FromJSON a, Eq a) => FromJSON (Citation a) where
        case ary V.!? 0 of
          Just v' -> (withObject "Citation" $ \o
                       -> Citation <$> o .:? "citationID"
+                                  <*> o .:? "citationResetPosition" .!= False
                                   <*> ((o .: "properties"
                                              >>= (.: "noteIndex"))
                                       <|> pure Nothing)
                                   <*> o .:? "citationPrefix"
                                   <*> o .:? "citationSuffix"
                                   <*> o .: "citationItems") v'
-                  <|> Citation Nothing Nothing Nothing Nothing <$> parseJSON v'
+                  <|> Citation Nothing False Nothing Nothing Nothing <$> parseJSON v'
          Nothing -> fail "Empty array") v
    <|>
    withObject "Citation"
      (\o -> Citation <$> o .:? "citationID"
+                     <*> o .:? "citationResetPosition" .!= False
                      <*> o .:? "citationNoteNumber"
                      <*> o .:? "citationPrefix"
                      <*> o .:? "citationSuffix"
                      <*> o .: "citationItems") v
    <|>
-   (Citation Nothing Nothing Nothing Nothing <$> parseJSON v)
+   (Citation Nothing False Nothing Nothing Nothing <$> parseJSON v)
 
 instance ToJSON a => ToJSON (Citation a) where
  toJSON c =
    object $
      [ ("citationID", toJSON $ citationId c) | isJust (citationId c) ] ++
+     [ ("citationResetPosition", toJSON $ citationResetPosition c) ] ++
      [ ("citationPrefix", toJSON $ citationPrefix c) | isJust (citationPrefix c) ] ++
      [ ("citationSuffix", toJSON $ citationSuffix c) | isJust (citationSuffix c) ] ++
      [ ("citationItems" , toJSON $ citationItems c) ] ++

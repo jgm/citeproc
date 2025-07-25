@@ -152,6 +152,7 @@ addDivs ts = "<div class=\"csl-bib-body\">" : map addItemDiv ts ++ ["</div>"]
 referencesToCitation :: [Reference a] -> Citation a
 referencesToCitation rs =
   Citation { citationId = Nothing
+           , citationResetPosition = False
            , citationNoteNumber = Nothing
            , citationPrefix = Nothing
            , citationSuffix = Nothing
