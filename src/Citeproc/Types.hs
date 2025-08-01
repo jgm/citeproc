@@ -1577,8 +1577,10 @@ hasNonstandardCase name =
   maybe False startsWithLowercase (nameLiteral name)
  where
   startsWithLowercase t = case T.uncons t of
-                            Just (c,_) -> isLower c
-                            _ -> False
+                            Just (c,t')
+                              | isLetter c -> isLower c
+                              | otherwise -> startsWithLowercase t'
+                            Nothing -> False
 
 addDelimiters :: CiteprocOutput a => a -> [a] -> [a]
 addDelimiters delim =
