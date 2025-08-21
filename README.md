@@ -91,7 +91,8 @@ If the package is compiled with the `executable` flag, an
 executable `citeproc` will be built.  `citeproc` reads
 a JSON-encoded `Inputs` object from `stdin` (or from
 a file if a filename is provided) and writes
-a JSON-encoded `Result` object to `stdout`.  This executable
+a JSON-encoded `Result` object to `stdout`.  It does so by
+using `CslJson Text` underneath.  This executable
 can be used to add citation processing to non-Haskell projects.
 
 `citeproc --help` will summarize usage information.  See
