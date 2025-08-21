@@ -74,13 +74,19 @@ The types are parameterized on a `CiteprocOutput` instance `a`,
 which represents formatted content in your bibliographic
 fields (e.g. the title).  If you want a classic CSL processor,
 you can use `CslJson Text`.  But you can also use another type,
-such as a pandoc `Inlines`.  All you need to do is define
-an instance of `CiteprocOutput` for your type.
+such as a pandoc `Inlines`.  If you want to work with a type
+other than these, you need to define an instance of
+`CiteprocOutput` for your type. This tells citeproc how to
+apply various kinds of formatting transformations, such as
+adding emphasis, making things uppercase, and so on.  Note that
+the same type must be used for `Reference`s and `Citation`s; thus,
+for example, you can't process a list of `Citation Inlines`
+against references of type `Reference (CslJson Text)`.
 
 The signature of `parseStyle` may not be self-evident:
 the first argument is a function that takes a URL and
 retrieves the text from that URL.  This is used to fetch
-the "indendent parent" of a dependent style.  You can supply
+the "independent parent" of a dependent style.  You can supply
 whatever function you like: it can search your local file
 system or fetch the content via HTTP.  If you're not using
 dependent styles, you can get by with `\_ -> return mempty`.
@@ -91,7 +97,8 @@ If the package is compiled with the `executable` flag, an
 executable `citeproc` will be built.  `citeproc` reads
 a JSON-encoded `Inputs` object from `stdin` (or from
 a file if a filename is provided) and writes
-a JSON-encoded `Result` object to `stdout`.  This executable
+a JSON-encoded `Result` object to `stdout`.  (It does so using
+`CslJson Text` as the underlying type.) This executable
 can be used to add citation processing to non-Haskell projects.
 
 `citeproc --help` will summarize usage information.  See
