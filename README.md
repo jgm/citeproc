@@ -75,7 +75,8 @@ which represents formatted content in your bibliographic
 fields (e.g. the title).  If you want a classic CSL processor,
 you can use `CslJson Text`.  But you can also use another type,
 such as a pandoc `Inlines`.  All you need to do is define
-an instance of `CiteprocOutput` for your type.
+an instance of `CiteprocOutput` for your type (and also construct
+the `Reference`s and `Citation`s using your type).
 
 The signature of `parseStyle` may not be self-evident:
 the first argument is a function that takes a URL and
@@ -84,6 +85,23 @@ the "independent parent" of a dependent style.  You can supply
 whatever function you like: it can search your local file
 system or fetch the content via HTTP.  If you're not using
 dependent styles, you can get by with `\_ -> return mempty`.
+
+## How it works underneath
+
+This library understands CSL style files, and the formatting
+changes (stylistic choices) that they specify. The rules for
+making these changes are codified in the `CiteprocOutput`
+typeclass, which requires defining various formatting
+transformations for the parameterized type, such as adding
+bold emphasis, making things uppercase or lowercase, etc.
+This library can apply the CSL style file to `CslJson Text`
+and `Inlines`, because those types define a `CiteprocOutput`
+instance.
+
+In case it is not obvious, this library can only work with
+one parameterized type at a time. For example, it doesn't
+know how to read CSL JSON bibliography (`CslJson Text`) and
+produce `Result`s using `Inlines`.
 
 ## The citeproc executable
 
