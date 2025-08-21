@@ -80,7 +80,7 @@ an instance of `CiteprocOutput` for your type.
 The signature of `parseStyle` may not be self-evident:
 the first argument is a function that takes a URL and
 retrieves the text from that URL.  This is used to fetch
-the "indendent parent" of a dependent style.  You can supply
+the "independent parent" of a dependent style.  You can supply
 whatever function you like: it can search your local file
 system or fetch the content via HTTP.  If you're not using
 dependent styles, you can get by with `\_ -> return mempty`.
