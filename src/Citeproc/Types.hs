@@ -1724,7 +1724,7 @@ data Result a =
                     -- each a pair consisting of the item identifier and
                     -- the formatted entry
   , resultWarnings      :: [Text]       -- ^ Warnings from citation processing
-  } deriving (Show, Functor, Traversable, Foldable)
+  } deriving (Eq, Show, Functor, Traversable, Foldable)
 
 instance ToJSON a => ToJSON (Result a) where
   toJSON res = object
