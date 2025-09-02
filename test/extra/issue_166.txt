@@ -1,0 +1,85 @@
+>>===== MODE =====>>
+citation
+<<===== MODE =====<<
+
+
+
+>>===== RESULT =====>>
+numeric locator: 123
+numeric locator: 123
+numeric locator: 123a
+numeric locator: L123
+non-numeric locator: iv.123
+non-numeric locator: iv.123
+<<===== RESULT =====<<
+
+
+>>===== CITATIONS =====>>
+[[ { "id":"a", "locator": "123", "label": "page" } ]
+,[ { "id":"a", "locator": "123", "label": "chapter" } ]
+,[ { "id":"a", "locator": "123a", "label": "page" } ]
+,[ { "id":"a", "locator": "L123", "label": "page" } ]
+,[ { "id":"a", "locator": "iv.123", "label": "page" } ]
+,[ { "id":"a", "locator": "iv.123", "label": "chapter" } ]
+]
+<<===== CITATIONS =====<<
+
+
+
+
+>>===== CSL =====>>
+<?xml version="1.0" encoding="utf-8"?>
+<style class="note" version="1.0" xmlns="http://purl.org/net/xbiblio/csl">
+  <info>
+    <title>Numeric locator test</title>
+    <id>http://www.zotero.org/styles/locator-numeric</id>
+    <link href="http://www.zotero.org/styles/locator-numeric" rel="self"/>
+    <updated>2025-08-13T00:00:00+00:00</updated>
+  </info>
+  <citation>
+    <layout>
+      <group delimiter=" ">
+        <choose>
+          <if is-numeric="locator">
+            <text value="numeric locator: "/>
+          </if>
+          <else>
+            <text value="non-numeric locator: "/>
+          </else>
+        </choose>
+        <text variable="locator"/>
+      </group>
+    </layout>
+  </citation>
+</style>
+<<===== CSL =====<<
+
+
+>>===== INPUT =====>>
+[
+  {
+    "author": [
+      {
+        "family": "Dummy",
+        "given": "John"
+      }
+    ],
+    "id": "a",
+    "issued": {
+      "date-parts": [
+        [
+          2022
+        ]
+      ]
+    },
+    "title": "A dummy book",
+    "type": "book"
+  }
+]
+
+<<===== INPUT =====<<
+
+
+>>===== VERSION =====>>
+1.0
+<<===== VERSION =====<<
