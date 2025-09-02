@@ -2600,13 +2600,12 @@ eChoose ((match, conditions, els):rest) = do
   locator <- asks contextLocator
   let hasLocator = isJust locator
   let isNumericChunk t =
-        case T.dropWhile isLetter (T.dropWhileEnd isLetter t) of
+        case T.dropWhile isLetter (T.dropWhileEnd isLetter (T.strip t)) of
           t' | T.null t' -> False
              | T.all isDigit t' -> True
              | otherwise -> False
   let isNumeric t = all isNumericChunk
-        (T.split (\c -> c == ',' || c == '-' || c == '&') .
-         T.replace ", " "," . T.replace "& " "&" . T.replace ", " "," $ t)
+        (T.split (\c -> c == ',' || c == '-' || c == '&') t)
   let testCondition cond =
         case cond of
            HasVariable "locator" -> hasLocator

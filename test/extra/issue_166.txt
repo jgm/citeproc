@@ -9,6 +9,9 @@ numeric locator: 123
 numeric locator: 123
 numeric locator: 123a
 numeric locator: L123
+non-numeric locator: 123.55
+numeric locator: 123, 55
+numeric locator: 123, 55 &#38; 66
 non-numeric locator: iv.123
 non-numeric locator: iv.123
 <<===== RESULT =====<<
@@ -19,6 +22,9 @@ non-numeric locator: iv.123
 ,[ { "id":"a", "locator": "123", "label": "chapter" } ]
 ,[ { "id":"a", "locator": "123a", "label": "page" } ]
 ,[ { "id":"a", "locator": "L123", "label": "page" } ]
+,[ { "id":"a", "locator": "123.55", "label": "page" } ]
+,[ { "id":"a", "locator": "123, 55", "label": "page" } ]
+,[ { "id":"a", "locator": "123, 55 & 66", "label": "page" } ]
 ,[ { "id":"a", "locator": "iv.123", "label": "page" } ]
 ,[ { "id":"a", "locator": "iv.123", "label": "chapter" } ]
 ]
