@@ -1,5 +1,48 @@
 # citeproc changelog
 
+## 0.10
+
+  * Update locales from upstream (#161). A number of new locales, as well
+    as new terms, e.g. `number-of-volumes`, have been added.
+
+  * Add PreserveCase constructor to TextCase [API change].
+    Ensure that PreserveCase is added to names that begin
+    with a lowercase letter. See jgm/pandoc#10983. This will
+    block transformations like the addition of a capital letter
+    at the beginning of a note citation.
+
+  * Fix handling of `<substitute>` so it works with `<choose>` inside (#159).
+
+  * Put TagPrefix/TagSuffix tags only over prefix/suffix.
+    Previously they also enclosed the material being prefixed/suffixed.
+    This change has no effect on any citeproc or pandoc tests.
+
+  * Update CSL tests from upstream and adjust tests expected to pass.
+    Note that the expected test outputs in these tests seem out of
+    sync with the new locales...
+
+  * locator = "page" should not be true when there is no locator (#165).
+
+  * Add Citation prefix and suffix (#156).
+    This adds `citationPrefix`, `citationSuffix` fields to `Citation`
+    [API change].
+
+  * Fix sorting so that anything with a prefix or suffix is left in place (#155,
+    cf. #89). Motivating example: `blabla [e.g., @zeta2021;@alpha2020]` should
+    not render as (Alpha 2020, e.g., Zeta 2021).
+
+  * Fix entity-escaping of characters in the executable output (#153,
+    Daphne Preston-Kendal).
+
+  * Fix `is-numeric="locator"` (#164). Previously we weren't looking at the
+    locator in this case, but only at the variables defined in the Reference.
+
+  * Improve `is-numeric` detection.
+
+  * Add Eq typeclass instance for `Result a` (Linus Arver) [API change].
+
+  * Improve README (#167, building on suggestinos by @listx).
+
 ## 0.9.0.1
 
   * Fix `readAsInt` so it handles negative numbers in strings.
