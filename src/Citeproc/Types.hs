@@ -1,4 +1,5 @@
 {-# LANGUAGE StrictData #-}
+{-# LANGUAGE ScopedTypeVariables #-}
 {-# LANGUAGE LambdaCase #-}
 {-# LANGUAGE DeriveTraversable #-}
 {-# LANGUAGE MultiParamTypeClasses #-}
@@ -898,10 +899,11 @@ parseReference rawmap =
             return $ M.insert k v' m
           NumberVariable -> do
             v' <- case v of
-                    String{} -> parseJSON v
-                    Number{} -> T.pack . show <$> (parseJSON v :: Parser Int)
+                    String{} -> FancyVal <$> parseJSON v
+                    Number{} -> (NumVal <$> parseJSON v) <|>
+                                (FancyVal <$> parseJSON v)
                     _        -> typeMismatch "String or Number" v
-            return $ M.insert k (TextVal v') m
+            return $ M.insert k v' m
           DateVariable -> do
             v' <- parseJSON v
             return $ M.insert k (DateVal v') m

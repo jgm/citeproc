@@ -1758,6 +1758,7 @@ eLabel var termform pluralize formatting = do
                          ContextualPluralize ->
                           case x of
                             TextVal t   -> determinePlural t
+                            NumVal n   -> determinePlural (T.pack (show n))
                             FancyVal w  -> determinePlural (toText w)
                             NamesVal ns -> if length ns > 1
                                               then Plural

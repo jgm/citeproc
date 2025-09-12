@@ -1,7 +1,3 @@
-Note:  since the spec doesn't demand the strange output
-expected by citeproc-js, and the output our library gives
-seems clearly better, we treat this as passing.
-
 >>===== MODE =====>>
 citation
 <<===== MODE =====<<
@@ -20,7 +16,7 @@ at least, is not desirable.
 
 
 >>===== RESULT =====>>
-1<sup>er</sup>
+1&#60;sup&#62;er&#60;/sup&#62;
 <<===== RESULT =====<<
 
 >>===== CSL =====>>

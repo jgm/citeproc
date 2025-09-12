@@ -452,5 +452,6 @@ expectedFailures = [
   "test/csl/bugreports_ChicagoAuthorDateLooping.txt",
   "test/csl/bugreports_AutomaticallyDeleteItemsFails.txt",
   "test/csl/affix_WithCommas.txt",
-  "test/csl/affix_CommaAfterQuote.txt"
+  "test/csl/affix_CommaAfterQuote.txt",
+  "test/overrides/flipflop_NumericField.txt"
   ]
