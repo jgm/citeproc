@@ -91,14 +91,14 @@ runTest test = do
                         (nubOrdOn referenceId (input test))
                 Just cs -> cs
   let doError err = do
-        modify $ \st -> st{ errored = category test : errored st }
+        modify $ \st -> st{ errored = (category test, path test) : errored st }
         liftIO $ do
           TIO.putStrLn $ "[ERRORED]  " <> T.pack (path test)
           TIO.putStrLn $ T.pack $ show err
           TIO.putStrLn ""
         return $ Errored err
   let doSkip reason = do
-        modify $ \st -> st{ skipped = category test : skipped st }
+        modify $ \st -> st{ skipped = (category test, path test) : skipped st }
         liftIO $ do
           TIO.putStrLn $ "[SKIPPED]  " <> T.pack (path test)
           -- TIO.putStrLn $ T.strip reason
@@ -184,12 +184,12 @@ compareTest test actual = do
                     else result test
   if actual == expected
      then do
-       modify $ \st -> st{ passed = category test : passed st }
+       modify $ \st -> st{ passed = (category test, path test) : passed st }
        -- suppress PASSED messages
        -- liftIO $ TIO.putStrLn $ "[PASSED]   " <> path test
        return Passed
      else do
-       modify $ \st -> st{ failed = category test : failed st }
+       modify $ \st -> st{ failed = (category test, path test) : failed st }
        liftIO $ do
          TIO.putStrLn $ "[FAILED]   " <> T.pack (path test)
          showDiff expected actual
@@ -319,10 +319,10 @@ main = do
                ("ERROR" :: String)
                ("SKIP" :: String)
   let resultsFor cat = do
-        let p = length . filter (== cat) . passed $ counts
-        let f = length . filter (== cat) . failed $ counts
-        let e = length . filter (== cat) . errored $ counts
-        let s = length . filter (== cat) . skipped $ counts
+        let p = length . filter ((== cat) . fst) . passed $ counts
+        let f = length . filter ((== cat) . fst) . failed $ counts
+        let e = length . filter ((== cat) . fst) . errored $ counts
+        let s = length . filter ((== cat) . fst) . skipped $ counts
         let percent = (fromIntegral p / fromIntegral (p + f + e) :: Double)
         putStrLn $ printf "%-15s %6d %6d %6d %6d    |%-20s|"
                      (T.unpack cat) p f e s
@@ -340,19 +340,34 @@ main = do
                (length (failed counts))
                (length (errored counts))
                (length (skipped counts))
-  case length (failed counts) + length (errored counts) of
-    0 -> exitSuccess
-    n | n <= 68 -> do
-         putStrLn "We have passed all the CSL tests we expect to..."
-         exitSuccess
-      | otherwise -> exitWith $ ExitFailure n
+  let unexpectedFailures =
+        filter ((`notElem` expectedFailures) . snd) (failed counts)
+  let unexpectedPasses =
+        filter ((`elem` expectedFailures) . snd) (passed counts)
+  unless (null unexpectedFailures) $ do
+    putStrLn ""
+    putStrLn "Unexpected failures"
+    putStrLn "-------------------"
+    mapM_ (putStrLn . snd) unexpectedFailures
+    putStrLn ""
+  unless (null unexpectedPasses) $ do
+    putStrLn ""
+    putStrLn "Unexpected passes"
+    putStrLn "-----------------"
+    mapM_ (putStrLn . snd) unexpectedPasses
+    putStrLn ""
+  case length unexpectedFailures + length (errored counts) of
+    0 -> do
+      putStrLn "(All failures were expected failures.)"
+      exitSuccess
+    n -> exitWith $ ExitFailure n
 
 data Counts  =
     Counts
-    { failed   :: [Text]
-    , errored  :: [Text]
-    , passed   :: [Text]
-    , skipped  :: [Text]
+    { failed   :: [(Text,FilePath)]  -- category, filepath
+    , errored  :: [(Text,FilePath)]
+    , passed   :: [(Text,FilePath)]
+    , skipped  :: [(Text,FilePath)]
     } deriving (Show)
 
 showDiff :: Text -> Text -> IO ()
@@ -368,3 +383,74 @@ showDiff expected actual = do
     (Pretty.text . T.unpack . unnumber)
     $ getContextDiff Nothing (T.lines expected) (T.lines actual)
 
+expectedFailures :: [FilePath]
+expectedFailures = [
+  "test/csl/bugreports_OverwriteCitationItems.txt",
+  "test/csl/bugreports_SingleQuoteXml.txt",
+  "test/csl/bugreports_SmallCapsEscape.txt",
+  "test/csl/bugreports_SortedIeeeItalicsFail.txt",
+  "test/csl/bugreports_ikeyOne.txt",
+  "test/csl/collapse_AuthorCollapseNoDateSorted.txt",
+  "test/csl/date_NegativeDateSort.txt",
+  "test/csl/date_NegativeDateSortViaMacro.txt",
+  "test/csl/date_NegativeDateSortViaMacroOnYearMonthOnly.txt",
+  "test/csl/date_YearSuffixImplicitWithNoDate.txt",
+  "test/csl/date_YearSuffixWithNoDate.txt",
+  "test/csl/disambiguate_DifferentSpacingInInitials.txt",
+  "test/csl/disambiguate_DisambiguationHang.txt",
+  "test/csl/disambiguate_IncrementalExtraText.txt",
+  "test/csl/disambiguate_InitializeWithButNoDisambiguation.txt",
+  "test/csl/disambiguate_PrimaryNameWithNonDroppingParticle.txt",
+  "test/csl/disambiguate_PrimaryNameWithParticle.txt",
+  "test/csl/disambiguate_YearCollapseWithInstitution.txt",
+  "test/csl/disambiguate_YearSuffixAtTwoLevels.txt",
+  "test/csl/disambiguate_YearSuffixWithEtAlSubequent.txt",
+  "test/csl/disambiguate_YearSuffixWithEtAlSubsequent.txt",
+  "test/csl/flipflop_LeadingMarkupWithApostrophe.txt",
+  "test/csl/flipflop_OrphanQuote.txt",
+  "test/overrides/fullstyles_ABdNT.txt",
+  "test/csl/fullstyles_ChicagoAuthorDateSimple.txt",
+  "test/csl/integration_FirstReferenceNoteNumberPositionChange.txt",
+  "test/csl/integration_IbidOnInsert.txt",
+  "test/csl/label_EditorTranslator1.txt",
+  "test/csl/magic_CapitalizeFirstOccurringTerm.txt",
+  "test/csl/magic_PunctuationInQuoteNested.txt",
+  "test/csl/magic_SubsequentAuthorSubstituteNotFooled.txt",
+  "test/csl/magic_TermCapitalizationWithPrefix.txt",
+  "test/csl/name_CiteGroupDelimiterWithYearSuffixCollapse2.txt",
+  "test/csl/name_DelimiterAfterInverted.txt",
+  "test/csl/name_EtAlWithCombined.txt",
+  "test/csl/name_HebrewAnd.txt",
+  "test/csl/name_InTextMarkupInitialize.txt",
+  "test/csl/name_InTextMarkupNormalizeInitials.txt",
+  "test/csl/number_OrdinalSpacing.txt",
+  "test/csl/number_PlainHyphenOrEnDashAlwaysPlural.txt",
+  "test/csl/position_FirstTrueOnlyOnce.txt",
+  "test/csl/position_IbidInText.txt",
+  "test/csl/position_IbidSeparateCiteSameNote.txt",
+  "test/csl/position_IbidWithLocator.txt",
+  "test/csl/position_IbidWithMultipleSoloCitesInBackref.txt",
+  "test/csl/position_IfIbidWithLocatorIsTrueThenIbidIsTrue.txt",
+  "test/csl/position_NearNoteSameNote.txt",
+  "test/csl/position_ResetNoteNumbers.txt",
+  "test/csl/punctuation_FullMontyQuotesIn.txt",
+  "test/csl/quotes_QuotesUnderQuotesFalse.txt",
+  "test/csl/sort_BibliographyCitationNumberDescending.txt",
+  "test/csl/sort_BibliographyCitationNumberDescendingViaCompositeMacro.txt",
+  "test/csl/sort_BibliographyCitationNumberDescendingViaMacro.txt",
+  "test/csl/sort_ChicagoYearSuffix1.txt",
+  "test/csl/sort_ChicagoYearSuffix2.txt",
+  "test/csl/sort_LeadingApostropheOnNameParticle.txt",
+  "test/csl/sort_OmittedBibRefMixedNumericStyle.txt",
+  "test/csl/sort_OmittedBibRefNonNumericStyle.txt",
+  "test/csl/sort_RangeUnaffected.txt",
+  "test/csl/substitute_SubstituteOnlyOnceTermEmpty.txt",
+  "test/csl/bugreports_NoCaseEscape.txt",
+  "test/csl/bugreports_LegislationCrash.txt",
+  "test/csl/bugreports_EnvAndUrb.txt",
+  "test/csl/bugreports_DemoPageFullCiteCruftOnSubsequent.txt",
+  "test/csl/bugreports_ChicagoAuthorDateLooping.txt",
+  "test/csl/bugreports_AutomaticallyDeleteItemsFails.txt",
+  "test/csl/affix_WithCommas.txt",
+  "test/csl/affix_CommaAfterQuote.txt"
+  ]
