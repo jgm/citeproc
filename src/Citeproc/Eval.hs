@@ -1655,11 +1655,11 @@ eText (TextVariable varForm v) = do
         res <- case mbv of
                  Just (TextVal x)
                    | v == "page" -> pageRange x
-                   | otherwise   -> return $ Literal $ fromText x
+                   | otherwise   -> return $ Tagged (TagNames v (NamesFormat Nothing Nothing Nothing False) []) $ Literal $ fromText x
                  Just (FancyVal x)
                    | v == "page" -> pageRange (toText x)
-                   | otherwise   -> return $ Literal x
-                 Just (NumVal x) -> return $ Literal
+                   | otherwise   -> return $ Tagged (TagNames v (NamesFormat Nothing Nothing Nothing False) []) $ Literal x
+                 Just (NumVal x) -> return $ Tagged (TagNames v (NamesFormat Nothing Nothing Nothing False) []) $ Literal
                                            $ fromText (T.pack (show x))
                  _ -> return NullOutput
         unless (isNothing mbv) $ deleteSubstitutedVariables [v]

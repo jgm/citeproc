@@ -79,6 +79,7 @@ instance CiteprocOutput Inlines where
           go x       = x
   addHyperlink t        = B.link t ""
   localizeQuotes        = convertQuotes
+  addVariableClass var  = B.spanWith ("", [fromVariable var], [])
 
 -- localized quotes
 convertQuotes :: Locale -> Inlines -> Inlines

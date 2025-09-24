@@ -208,6 +208,7 @@ class (Semigroup a, Monoid a, Show a, Eq a, Ord a) => CiteprocOutput a where
   mapText                     :: (Text -> Text) -> a -> a
   addHyperlink                :: Text -> a -> a
   localizeQuotes              :: Locale -> a -> a
+  addVariableClass            :: Variable -> a -> a
 
 addFormatting :: CiteprocOutput a => Formatting -> a -> a
 addFormatting f x =
@@ -1547,6 +1548,12 @@ renderOutput opts (Tagged (TagNames _ _ ns) x)
   -- capitalized in pandoc footnotes: see jgm/pandoc#10983
   | any hasNonstandardCase ns
   = addTextCase Nothing PreserveCase $ renderOutput opts x
+-- added for semantic tagging
+renderOutput opts (Tagged (TagNames var _ _) x)
+  = addVariableClass var $ renderOutput opts x
+-- added for semantic tagging of dates
+renderOutput opts (Tagged (TagDate date) x)
+  = addVariableClass "date" $ renderOutput opts x
 renderOutput opts (Tagged _ x) = renderOutput opts x
 renderOutput opts (Formatted f [Linked url xs])
   | linkBibliography opts
