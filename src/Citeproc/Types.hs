@@ -485,8 +485,10 @@ data NameFormat =
 combineNameFormat :: NameFormat -> NameFormat -> NameFormat
 combineNameFormat a b =
   NameFormat
-  { nameGivenFormatting          = nameGivenFormatting a <|> nameGivenFormatting b
-  , nameFamilyFormatting         = nameFamilyFormatting a <|> nameFamilyFormatting b
+  { nameGivenFormatting          = nameGivenFormatting a
+                                     <|> nameGivenFormatting b
+  , nameFamilyFormatting         = nameFamilyFormatting a
+                                     <|> nameFamilyFormatting b
   , nameAndStyle                 = nameAndStyle a <|> nameAndStyle b
   , nameDelimiter                = nameDelimiter a <|> nameDelimiter b
   , nameDelimiterPrecedesEtAl    = nameDelimiterPrecedesEtAl a
@@ -497,11 +499,13 @@ combineNameFormat a b =
   , nameEtAlUseFirst             = nameEtAlUseFirst a <|> nameEtAlUseFirst b
   , nameEtAlSubsequentUseFirst   = nameEtAlSubsequentUseFirst a
                                      <|> nameEtAlSubsequentUseFirst b
-  , nameEtAlSubsequentMin        = nameEtAlSubsequentMin a <|> nameEtAlSubsequentMin b
+  , nameEtAlSubsequentMin        = nameEtAlSubsequentMin a
+                                     <|> nameEtAlSubsequentMin b
   , nameEtAlUseLast              = nameEtAlUseLast a <|> nameEtAlUseLast b
   , nameForm                     = nameForm a <|> nameForm b
   , nameInitialize               = nameInitialize a <|> nameInitialize b
-  , nameInitializeWith           = nameInitializeWith a <|> nameInitializeWith b
+  , nameInitializeWith           = nameInitializeWith a
+                                     <|> nameInitializeWith b
   , nameAsSortOrder              = nameAsSortOrder a <|> nameAsSortOrder b
   , nameSortSeparator            = nameSortSeparator a <|> nameSortSeparator b
   }
@@ -636,7 +640,7 @@ data SortDirection =
 
 data SortKey a =
      SortKeyVariable SortDirection Variable
-   | SortKeyMacro SortDirection NameFormat [Element a]
+   | SortKeyMacro SortDirection NameFormat Text
   deriving (Show, Eq)
 
 data SortKeyValue =
@@ -739,6 +743,7 @@ data Style a =
   , styleBibliography  :: Maybe (Layout a)
   , styleLocales       :: [Locale]
   , styleAbbreviations :: Maybe Abbreviations
+  , styleMacros        :: M.Map Text [Element a]
   } deriving (Show, Eq)
 -- Note: no macros section, because we
 -- expand these after parsing the CSL.

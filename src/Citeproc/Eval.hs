@@ -42,6 +42,7 @@ data Context a =
   , contextCollate             :: [SortKeyValue] -> [SortKeyValue] -> Ordering
   , contextAbbreviations       :: Maybe Abbreviations
   , contextStyleOptions        :: StyleOptions
+  , contextMacros              :: M.Map Text [Element a]
   , contextLocator             :: Maybe Text
   , contextLabel               :: Maybe Text
   , contextPosition            :: [Position]
@@ -109,6 +110,7 @@ evalStyle style mblang refs' citations =
       , contextCollate             = compSortKeyValues (Unicode.comp mblang)
       , contextAbbreviations       = styleAbbreviations style
       , contextStyleOptions        = styleOptions style
+      , contextMacros              = styleMacros style
       , contextLocator             = Nothing
       , contextLabel               = Nothing
       , contextPosition            = []
@@ -195,11 +197,7 @@ evalStyle style mblang refs' citations =
               case layoutSortKeys biblayout of
                 (SortKeyVariable Descending "citation-number":_)
                   -> reverse sortedIds
-                (SortKeyMacro Descending _
-                  (Element (ENumber "citation-number" _) _:_) : _)
-                  -> reverse sortedIds
-                (SortKeyMacro Descending _
-                  (Element (EText (TextVariable _ "citation-number")) _:_): _)
+                (SortKeyMacro Descending _ _:_)
                   -> reverse sortedIds
                 _ -> sortedIds
             let bibCitations = map (\ident ->
@@ -1007,21 +1005,28 @@ evalSortKeys :: CiteprocOutput a
              -> ItemId
              -> Eval a [SortKeyValue]
 evalSortKeys layout citeId =
-  withRWST (\ctx st -> (ctx{ contextInSortKey = True }, st)) $
+  withRWST (\ctx st -> (ctx{ contextInSortKey = True
+                           , contextNameFormat =
+                               layoutNameFormat (layoutOptions layout)
+                            }, st)) $
     mapM (evalSortKey citeId) (layoutSortKeys layout)
 
 evalSortKey :: CiteprocOutput a
             => ItemId
             -> SortKey a
             -> Eval a SortKeyValue
-evalSortKey citeId (SortKeyMacro sortdir nameformat elts) = do
+evalSortKey citeId (SortKeyMacro sortdir nameformat macroname) = do
+  macros <- asks contextMacros
+  elts <- case M.lookup macroname macros of
+            Nothing -> [] <$ warn ("undefined macro " <> macroname)
+            Just els -> pure els
   refmap <- gets stateRefMap
   case lookupReference citeId refmap of
     Nothing  -> return $ SortKeyValue sortdir Nothing
     Just ref -> do
         k <- normalizeSortKey . toText .
               renderOutput defaultCiteprocOptions . grouped
-              <$> withRWS newContext (mconcat <$> mapM eElement elts)
+              <$> withRWS newContext (eElements elts)
         return $ SortKeyValue sortdir (Just k)
      where
       newContext oldContext s =
@@ -1238,7 +1243,7 @@ evalItem layout (position, item) = do
           , stateUsedIdentifier = False
           , stateUsedTitle = False
           }))
-        $ do xs <- mconcat <$> mapM eElement (layoutElements layout)
+        $ do xs <- eElements (layoutElements layout)
 
              -- find identifiers that can be used to hyperlink the title
              let mbident =
@@ -1405,9 +1410,17 @@ getPosition groupNum mbNoteNum item posInGroup = do
                else id)
           $ [Subsequent]
 
+eElements :: CiteprocOutput a => [Element a] -> Eval a [Output a]
+eElements els = mconcat <$> mapM eElement els
+
 eElement :: CiteprocOutput a => Element a -> Eval a [Output a]
 eElement (Element etype formatting) =
   case etype of
+    EText (TextMacro name) -> do
+      macros <- asks contextMacros
+      case M.lookup name macros of
+        Nothing -> [] <$ warn ("undefined macro " <> name)
+        Just els -> eElement (Element (EGroup True els) formatting)
     EText textType ->
       (:[]) <$> withFormatting formatting (eText textType)
     ENumber var nform ->
@@ -1606,7 +1619,7 @@ eText (TextVariable varForm v) = do
     "year-suffix" -> do
         disamb <- gets (referenceDisambiguation . stateReference)
         case disamb >>= disambYearSuffix of
-          Just x ->
+          Just x -> do
             -- we don't update var count here; this doesn't
             -- count as a variable
             return $ Tagged (TagYearSuffix x)
@@ -1690,7 +1703,7 @@ eText (TextVariable varForm v) = do
             let url = identifierToURL (identConstr t)
             return $ Linked url [Literal $ fromText t]
 eText (TextMacro name) = do
-  warn $ "encountered unexpanded macro " <> name
+  warn ("unexpanded macro " <> name)
   return NullOutput
 eText (TextValue t) = return $ Literal $ fromText t
 eText (TextTerm term) = do
@@ -2591,7 +2604,7 @@ eGroup isMacro formatting els = do
   -- calls at least one variable but all of the variables
   -- it calls are empty.
   VarCount oldVars oldNonempty <- gets stateVarCount
-  xs <- mconcat <$> mapM eElement els
+  xs <- eElements els
   VarCount newVars newNonempty <- gets stateVarCount
   let isempty = newVars /= oldVars && newNonempty == oldNonempty
 
@@ -2655,7 +2668,7 @@ eChoose ((match, conditions, els):rest) = do
                    MatchAny  -> any testCondition
                    MatchNone -> not . any testCondition) conditions
   if matched
-     then mconcat <$> mapM eElement els
+     then eElements els
      else eChoose rest
 
 

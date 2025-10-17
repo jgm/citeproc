@@ -97,15 +97,15 @@ pStyle :: Maybe Lang -> X.Element -> ElementParser (Style a)
 pStyle defaultLocale node = do
   let attr = getAttributes node
   let nameformat = getInheritableNameFormat attr
-  macroMap <- M.fromList <$> mapM pMacro (getChildren "macro" node)
+  macros <- M.fromList <$> mapM pMacro (getChildren "macro" node)
   (cattr, citations)
       <- case getChildren "citation" node of
-                 [n] -> (getAttributes n,) <$> pLayout macroMap n
+                 [n] -> (getAttributes n,) <$> pLayout n
                  []  -> parseFailure "No citation element present"
                  _   -> parseFailure "More than one citation element present"
   (battr, bibliography) <- case getChildren "bibliography" node of
                     [n] -> (\z -> (getAttributes n, Just z))
-                              <$> pLayout macroMap n
+                              <$> pLayout n
                     []  -> return (mempty, Nothing)
                     _   -> parseFailure
                              "More than one bibliography element present"
@@ -131,17 +131,17 @@ pStyle defaultLocale node = do
              Just "true"
         }
 
-  let hasYearSuffixVariable
-        (Element (EText (TextVariable _ "year-suffix")) _) = True
-      hasYearSuffixVariable
-        (Element (EGroup _ es) _) = any hasYearSuffixVariable es
-      hasYearSuffixVariable
-        (Element (EChoose []) _) = False
-      hasYearSuffixVariable
-        (Element (EChoose ((_,_,es):conds)) f) =
-          any hasYearSuffixVariable es ||
-            hasYearSuffixVariable (Element (EChoose conds) f)
-      hasYearSuffixVariable _ = False
+  let hasYearSuffixVariable (Element e f) =
+        case e of
+          EText (TextVariable _ "year-suffix") -> True
+          EText (TextMacro macroname)
+            | Just es' <- M.lookup macroname macros ->
+                 any hasYearSuffixVariable es'
+          EGroup _ es -> any hasYearSuffixVariable es
+          EChoose [] -> False
+          EChoose ((_,_,es):conds) -> any hasYearSuffixVariable es ||
+              hasYearSuffixVariable (Element (EChoose conds) f)
+          _ -> False
   let usesYearSuffixVariable =
         any hasYearSuffixVariable $
           layoutElements citations ++ maybe [] layoutElements bibliography
@@ -222,9 +222,8 @@ pStyle defaultLocale node = do
            , styleBibliography   = bibliography
            , styleLocales        = locales
            , styleAbbreviations  = Nothing
+           , styleMacros         = macros
            }
-
-
 
 pElement :: X.Element -> ElementParser (Element a)
 pElement node =
@@ -399,18 +398,15 @@ pName node = do
                Just "contextual"          -> Just PrecedesContextual
                _                          -> Nothing
          , nameEtAlMin                =
-           (lookupAttribute "names-min" attr <|>
-            lookupAttribute "et-al-min" attr) >>= readAsInt
+            lookupAttribute "et-al-min" attr >>= readAsInt
          , nameEtAlUseFirst           =
-           (lookupAttribute "names-use-first" attr <|>
-            lookupAttribute "et-al-use-first" attr) >>= readAsInt
+            lookupAttribute "et-al-use-first" attr >>= readAsInt
          , nameEtAlSubsequentUseFirst =
              lookupAttribute "et-al-subsequent-use-first" attr >>= readAsInt
          , nameEtAlSubsequentMin      =
              lookupAttribute "et-al-subsequent-min" attr >>= readAsInt
          , nameEtAlUseLast            =
-             case lookupAttribute "names-use-last" attr <|>
-                  lookupAttribute "et-al-use-last" attr of
+             case lookupAttribute "et-al-use-last" attr of
                Just "true" -> Just True
                Just "false" -> Just False
                _           -> Nothing
@@ -465,9 +461,7 @@ pText node = do
            Just var -> return $ EText (TextVariable varform (toVariable var))
            Nothing ->
              case lookupAttribute "macro" attr of
-               Just _ -> do
-                 elements <- mapM pElement (allChildren node)
-                 return $ EGroup True elements
+               Just macroname -> return $ EText (TextMacro macroname)
                Nothing ->
                  case lookupAttribute "term" attr of
                    Just termname ->
@@ -487,12 +481,13 @@ pText node = do
                          parseFailure "text element lacks needed attribute"
   return $ Element elt formatting
 
-pMacro :: X.Element -> ElementParser (Text, [X.Element])
+pMacro :: X.Element -> ElementParser (Text, [Element a])
 pMacro node = do
   name <- case lookupAttribute "name" (getAttributes node) of
             Just t  -> return t
             Nothing -> parseFailure "macro element missing name attribute"
-  return (name, allChildren node)
+  elts <- mapM pElement (allChildren node)
+  return (name, elts)
 
 getInheritableNameFormat :: Attributes -> NameFormat
 getInheritableNameFormat attr =
@@ -556,12 +551,11 @@ getInheritableNameFormat attr =
              lookupAttribute "sort-separator" attr
          }
 
-pLayout :: M.Map Text [X.Element] -> X.Element -> ElementParser (Layout a)
-pLayout macroMap node = do
+pLayout :: X.Element -> ElementParser (Layout a)
+pLayout node = do
   let attr = getAttributes node
   let nameformat = getInheritableNameFormat attr
-  node' <- expandMacros macroMap node
-  let layouts = getChildren "layout" node'
+  let layouts = getChildren "layout" node
   -- In case there are multiple layouts (as CSL-M allows), we raise an error
   let elname = T.unpack $ X.nameLocalName $ X.elementName node
   layout <- case layouts of
@@ -569,7 +563,7 @@ pLayout macroMap node = do
               [l] -> return l
               (_:_) -> parseFailure $ "Multiple layout elements present in " <> elname
   let formatting = getFormatting . getAttributes $ layout
-  let sorts   = getChildren "sort" node'
+  let sorts   = getChildren "sort" node
   elements <- mapM pElement $ allChildren layout
   let opts = LayoutOptions
              { layoutCollapse =
@@ -611,48 +605,19 @@ pSortKey node = do
   -- et-al-use-first/et-al-subsequent-use-first and et-al-use-last
   -- attributes, and affect all names generated via macros called by
   -- cs:key.
-  let keyChange "name-min" = "et-al-min"
+  let keyChange "names-min" = "et-al-min"
       keyChange "names-use-first" = "et-al-use-first"
+      keyChange "names-use-last" = "et-al-use-last"
       keyChange "names-subsequent-min" = "et-al-subsequent-min"
       keyChange "names-subsequent-use-first" = "et-al-subsequent-use-first"
       keyChange x = x
   let nameformat = getInheritableNameFormat
                      (Attributes (M.mapKeys keyChange attr'))
   case lookupAttribute "macro" attr of
-      Just _ -> -- should already be expanded
-        SortKeyMacro direction nameformat <$> mapM pElement (allChildren node)
+      Just macroname -> return $ SortKeyMacro direction nameformat macroname
       Nothing   -> return $ SortKeyVariable direction
                      (toVariable $ fromMaybe mempty $
                        lookupAttribute "variable" attr)
-
-attname :: Text -> X.Name
-attname t = X.Name t Nothing Nothing
-
-expandMacros :: M.Map Text [X.Element]
-             -> X.Element
-             -> ElementParser X.Element
-expandMacros macroMap el =
-  case X.nameLocalName (X.elementName el) of
-    n | n == "text" ||
-        n == "key" ->
-      case M.lookup (attname "macro") (X.elementAttributes el) of
-        Nothing -> do
-           els' <- mapM expandNode (X.elementNodes el)
-           return $ el{ X.elementNodes = els' }
-        Just macroName ->
-          case M.lookup macroName macroMap of
-            Nothing ->
-              parseFailure $ "macro " <> T.unpack macroName <> " not found"
-            Just els -> do
-              -- the expansion may contain further macros:
-              els' <- mapM (fmap X.NodeElement . expandMacros macroMap) els
-              return $ el{ X.elementNodes = els' }
-    _ -> do
-      els' <- mapM expandNode (X.elementNodes el)
-      return $ el{ X.elementNodes = els' }
- where
-  expandNode (X.NodeElement el') = X.NodeElement <$> expandMacros macroMap el'
-  expandNode x                   = return x
 
 splitVars :: Text -> [Variable]
 splitVars = map toVariable . T.words . T.strip
