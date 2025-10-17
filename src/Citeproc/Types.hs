@@ -1,6 +1,7 @@
 {-# LANGUAGE StrictData #-}
 {-# LANGUAGE ScopedTypeVariables #-}
 {-# LANGUAGE LambdaCase #-}
+{-# LANGUAGE DeriveGeneric #-}
 {-# LANGUAGE DeriveTraversable #-}
 {-# LANGUAGE MultiParamTypeClasses #-}
 {-# LANGUAGE GeneralizedNewtypeDeriving #-}
@@ -34,6 +35,7 @@ module Citeproc.Types
   , TextType(..)
   , NameFormat(..)
   , defaultNameFormat
+  , combineNameFormat
   , NameAsSortOrder(..)
   , NamesFormat(..)
   , NameForm(..)
@@ -116,6 +118,7 @@ import Control.Monad (foldM, guard, mzero)
 import Control.Applicative ((<|>), optional)
 import Data.Char (isLower, isDigit, isLetter, isSpace)
 import Data.Text (Text)
+import GHC.Generics (Generic)
 import qualified Data.Text as T
 import Data.List (elemIndex)
 import Data.Maybe
@@ -462,40 +465,66 @@ data NameFormat =
   { nameGivenFormatting        :: Maybe Formatting
   , nameFamilyFormatting       :: Maybe Formatting
   , nameAndStyle               :: Maybe TermForm
-  , nameDelimiter              :: Text
-  , nameDelimiterPrecedesEtAl  :: DelimiterPrecedes
-  , nameDelimiterPrecedesLast  :: DelimiterPrecedes
+  , nameDelimiter              :: Maybe Text
+  , nameDelimiterPrecedesEtAl  :: Maybe DelimiterPrecedes
+  , nameDelimiterPrecedesLast  :: Maybe DelimiterPrecedes
   , nameEtAlMin                :: Maybe Int
   , nameEtAlUseFirst           :: Maybe Int
   , nameEtAlSubsequentUseFirst :: Maybe Int
   , nameEtAlSubsequentMin      :: Maybe Int
-  , nameEtAlUseLast            :: Bool
-  , nameForm                   :: NameForm
-  , nameInitialize             :: Bool
+  , nameEtAlUseLast            :: Maybe Bool
+  , nameForm                   :: Maybe NameForm
+  , nameInitialize             :: Maybe Bool
   , nameInitializeWith         :: Maybe Text
   , nameAsSortOrder            :: Maybe NameAsSortOrder
-  , nameSortSeparator          :: Text
-  } deriving (Show, Eq)
+  , nameSortSeparator          :: Maybe Text
+  } deriving (Show, Eq, Generic)
+
+-- | Combine two NameFormats, with the second argument used to
+-- fill Nothing values in the first.
+combineNameFormat :: NameFormat -> NameFormat -> NameFormat
+combineNameFormat a b =
+  NameFormat
+  { nameGivenFormatting          = nameGivenFormatting a <|> nameGivenFormatting b
+  , nameFamilyFormatting         = nameFamilyFormatting a <|> nameFamilyFormatting b
+  , nameAndStyle                 = nameAndStyle a <|> nameAndStyle b
+  , nameDelimiter                = nameDelimiter a <|> nameDelimiter b
+  , nameDelimiterPrecedesEtAl    = nameDelimiterPrecedesEtAl a
+                                     <|> nameDelimiterPrecedesEtAl b
+  , nameDelimiterPrecedesLast    = nameDelimiterPrecedesLast a
+                                     <|> nameDelimiterPrecedesLast b
+  , nameEtAlMin                  = nameEtAlMin a <|> nameEtAlMin b
+  , nameEtAlUseFirst             = nameEtAlUseFirst a <|> nameEtAlUseFirst b
+  , nameEtAlSubsequentUseFirst   = nameEtAlSubsequentUseFirst a
+                                     <|> nameEtAlSubsequentUseFirst b
+  , nameEtAlSubsequentMin        = nameEtAlSubsequentMin a <|> nameEtAlSubsequentMin b
+  , nameEtAlUseLast              = nameEtAlUseLast a <|> nameEtAlUseLast b
+  , nameForm                     = nameForm a <|> nameForm b
+  , nameInitialize               = nameInitialize a <|> nameInitialize b
+  , nameInitializeWith           = nameInitializeWith a <|> nameInitializeWith b
+  , nameAsSortOrder              = nameAsSortOrder a <|> nameAsSortOrder b
+  , nameSortSeparator            = nameSortSeparator a <|> nameSortSeparator b
+  }
 
 defaultNameFormat :: NameFormat
 defaultNameFormat =
   NameFormat
   { nameGivenFormatting          = Nothing
-  , nameFamilyFormatting         =  Nothing
+  , nameFamilyFormatting         = Nothing
   , nameAndStyle                 = Nothing
-  , nameDelimiter                = ", "
-  , nameDelimiterPrecedesEtAl    = PrecedesContextual
-  , nameDelimiterPrecedesLast    = PrecedesContextual
+  , nameDelimiter                = Nothing
+  , nameDelimiterPrecedesEtAl    = Nothing
+  , nameDelimiterPrecedesLast    = Nothing
   , nameEtAlMin                  = Nothing
   , nameEtAlUseFirst             = Nothing
   , nameEtAlSubsequentUseFirst   = Nothing
   , nameEtAlSubsequentMin        = Nothing
-  , nameEtAlUseLast              = False
-  , nameForm                     = LongName
-  , nameInitialize               = True
+  , nameEtAlUseLast              = Nothing
+  , nameForm                     = Nothing
+  , nameInitialize               = Nothing
   , nameInitializeWith           = Nothing
   , nameAsSortOrder              = Nothing
-  , nameSortSeparator            = ", "
+  , nameSortSeparator            = Nothing
   }
 
 data NameAsSortOrder =
@@ -607,7 +636,7 @@ data SortDirection =
 
 data SortKey a =
      SortKeyVariable SortDirection Variable
-   | SortKeyMacro SortDirection [Element a]
+   | SortKeyMacro SortDirection NameFormat [Element a]
   deriving (Show, Eq)
 
 data SortKeyValue =
@@ -627,6 +656,7 @@ data LayoutOptions =
   { layoutCollapse               :: Maybe Collapsing
   , layoutYearSuffixDelimiter    :: Maybe Text
   , layoutAfterCollapseDelimiter :: Maybe Text
+  , layoutNameFormat             :: NameFormat
   } deriving (Show, Eq)
 
 data Collapsing =
@@ -674,6 +704,7 @@ data StyleOptions =
   , styleSecondFieldAlign           :: Maybe SecondFieldAlign
   , styleSubsequentAuthorSubstitute :: Maybe SubsequentAuthorSubstitute
   , styleUsesYearSuffixVariable     :: Bool
+  , styleNameFormat                 :: NameFormat
   } deriving (Show, Eq)
 
 data SubsequentAuthorSubstitute =

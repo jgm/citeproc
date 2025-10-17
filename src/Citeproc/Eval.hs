@@ -49,6 +49,7 @@ data Context a =
   , contextInSortKey           :: Bool
   , contextInBibliography      :: Bool
   , contextSubstituteNamesForm :: Maybe NamesFormat
+  , contextNameFormat          :: NameFormat
   }
 
 -- used internally for group elements, which
@@ -115,6 +116,7 @@ evalStyle style mblang refs' citations =
       , contextInSortKey           = False
       , contextInBibliography      = False
       , contextSubstituteNamesForm = Nothing
+      , contextNameFormat          = styleNameFormat (styleOptions style)
       }
       EvalState
       { stateVarCount = VarCount 0 0
@@ -193,10 +195,10 @@ evalStyle style mblang refs' citations =
               case layoutSortKeys biblayout of
                 (SortKeyVariable Descending "citation-number":_)
                   -> reverse sortedIds
-                (SortKeyMacro Descending
+                (SortKeyMacro Descending _
                   (Element (ENumber "citation-number" _) _:_) : _)
                   -> reverse sortedIds
-                (SortKeyMacro Descending
+                (SortKeyMacro Descending _
                   (Element (EText (TextVariable _ "citation-number")) _:_): _)
                   -> reverse sortedIds
                 _ -> sortedIds
@@ -1012,7 +1014,7 @@ evalSortKey :: CiteprocOutput a
             => ItemId
             -> SortKey a
             -> Eval a SortKeyValue
-evalSortKey citeId (SortKeyMacro sortdir elts) = do
+evalSortKey citeId (SortKeyMacro sortdir nameformat elts) = do
   refmap <- gets stateRefMap
   case lookupReference citeId refmap of
     Nothing  -> return $ SortKeyValue sortdir Nothing
@@ -1023,7 +1025,9 @@ evalSortKey citeId (SortKeyMacro sortdir elts) = do
         return $ SortKeyValue sortdir (Just k)
      where
       newContext oldContext s =
-        (oldContext, s{ stateReference = ref })
+        (oldContext{ contextNameFormat = combineNameFormat
+                       nameformat (contextNameFormat oldContext)},
+         s{ stateReference = ref })
 evalSortKey citeId (SortKeyVariable sortdir var) = do
   refmap <- gets stateRefMap
   SortKeyValue sortdir <$>
@@ -1107,7 +1111,11 @@ evalLayout :: CiteprocOutput a
             => Layout a
             -> (Int, Citation a)
             -> Eval a (Output a)
-evalLayout layout (citationGroupNumber, citation) = do
+evalLayout layout (citationGroupNumber, citation) = local
+               (\ctx -> ctx{ contextNameFormat =
+                             combineNameFormat
+                              (layoutNameFormat (layoutOptions layout))
+                              (contextNameFormat ctx) } ) $ do
   -- this is a hack to ensure that "ibid" detection will work
   -- correctly in a citation starting with an author-only:
   -- the combination AuthorOnly [SuppressAuthor] should not
@@ -2032,8 +2040,12 @@ eNames :: CiteprocOutput a
         -> [Element a]
         -> Formatting
         -> Eval a (Output a)
-eNames vars namesFormat' subst formatting = do
+eNames vars namesFormat' subst formatting' = do
   substituteNamesForm <- asks contextSubstituteNamesForm
+  cNameFormat <- asks contextNameFormat
+  let formatting = formatting'{ formatDelimiter =
+                                formatDelimiter formatting' <|>
+                                nameDelimiter cNameFormat }
   inSortKey <- asks contextInSortKey
   let namesFormat =
         case substituteNamesForm of
@@ -2076,7 +2088,9 @@ eNames vars namesFormat' subst formatting = do
               else return vars
   inSubstitute <- asks contextInSubstitute
   let (nameFormat, nameFormatting') =
-        fromMaybe (defaultNameFormat, mempty) (namesName namesFormat)
+         case namesName namesFormat of
+           Nothing -> (cNameFormat, mempty)
+           Just (nf,f) -> (combineNameFormat nf cNameFormat, f)
   let nameFormatting = nameFormatting' <>
                        formatting{ formatPrefix = Nothing
                                  , formatSuffix = Nothing
@@ -2111,7 +2125,7 @@ eNames vars namesFormat' subst formatting = do
 
         return $
           case nameForm nameFormat of
-             CountName -> Literal $ fromText $ T.pack $ show $ length
+             Just CountName -> Literal $ fromText $ T.pack $ show $ length
                [name
                  | Tagged (TagName name) _ <- concatMap universe xs]
              _ -> formatted mempty{ formatPrefix = formatPrefix formatting
@@ -2150,8 +2164,8 @@ formatNames namesFormat nameFormat formatting (var, Just (NamesVal names)) =
   inSortKey <- asks contextInSortKey
   disamb <- gets (referenceDisambiguation . stateReference)
   names' <- zipWithM (formatName nameFormat formatting) [1..] names
-  let delim' = fromMaybe (nameDelimiter nameFormat) $
-                 formatDelimiter formatting
+  let delim' = fromMaybe ", " $
+                 (formatDelimiter formatting <|> nameDelimiter nameFormat)
   let delim = case (beginsWithSpace <$> formatSuffix formatting,
                     endsWithSpace <$> formatPrefix formatting) of
                     (Just True, Just True) -> T.strip delim'
@@ -2176,7 +2190,7 @@ formatNames namesFormat nameFormat formatting (var, Just (NamesVal names)) =
                   Nothing -> return Nothing
   let finalNameIsOthers = (lastMay names >>= nameLiteral) == Just "others"
         -- bibtex conversions often have this, and we want to render it "et al"
-  let etAlUseLast = nameEtAlUseLast nameFormat
+  let etAlUseLast = fromMaybe False $ nameEtAlUseLast nameFormat
   let etAlThreshold = case etAlMin of
                         Just x | numnames >= x
                           -> case (disamb >>= disambEtAlNames, etAlUseFirst) of
@@ -2189,7 +2203,8 @@ formatNames namesFormat nameFormat formatting (var, Just (NamesVal names)) =
         case mbAndTerm of
           Nothing -> delim
           Just _ ->
-             case nameDelimiterPrecedesLast nameFormat of
+             case fromMaybe PrecedesContextual
+                    (nameDelimiterPrecedesLast nameFormat) of
                 PrecedesContextual
                   | numnames > 2          -> delim
                   | otherwise             -> ""
@@ -2217,7 +2232,8 @@ formatNames namesFormat nameFormat formatting (var, Just (NamesVal names)) =
                        Just t | endsWithSpace t -> ""
                        _ -> " "
   let beforeEtAl =
-        case nameDelimiterPrecedesEtAl nameFormat of
+        case fromMaybe PrecedesContextual
+               (nameDelimiterPrecedesEtAl nameFormat) of
             PrecedesContextual
               | numnames > 2
               , etAlThreshold > Just 1 -> delim
@@ -2284,18 +2300,18 @@ formatName nameFormat formatting order name = do
         case M.lookup name . disambNameMap =<< disamb of
           Nothing -> nameFormat
           Just AddInitials
-            -> nameFormat{ nameForm = LongName }
+            -> nameFormat{ nameForm = Just LongName }
           Just AddInitialsIfPrimary
-            | order == 1  -> nameFormat{ nameForm = LongName }
+            | order == 1  -> nameFormat{ nameForm = Just LongName }
             | otherwise -> nameFormat
           Just AddGivenName ->
-            nameFormat{ nameForm = LongName
-                      , nameInitialize = False
+            nameFormat{ nameForm = Just LongName
+                      , nameInitialize = Just False
                       }
           Just AddGivenNameIfPrimary
             | order == 1 ->
-               nameFormat{ nameForm = LongName
-                         , nameInitialize = False
+               nameFormat{ nameForm = Just LongName
+                         , nameInitialize = Just False
                          }
             | otherwise -> nameFormat
   Tagged (TagName name) <$>
@@ -2422,11 +2438,11 @@ getDisplayName nameFormat formatting order name = do
               Just initializeWith ->
                 initialize
                 mblang
-                (nameInitialize nameFormat)
+                (fromMaybe True (nameInitialize nameFormat))
                 initializeWithHyphen
                 initializeWith
               Nothing -> id
-  let separator = nameSortSeparator nameFormat
+  let separator = fromMaybe ", " $ nameSortSeparator nameFormat
   let x <+> NullOutput = x
       NullOutput <+> x = x
       Literal x <+> y =
@@ -2497,7 +2513,7 @@ getDisplayName nameFormat formatting order name = do
   return $ formatted formatting . (:[]) $
     if isByzantineName name
        then
-         case nameForm nameFormat of
+         case fromMaybe LongName (nameForm nameFormat) of
               LongName
                 | demoteNonDroppingParticle == DemoteNever
                 , inSortKey || nameAsSort ->
@@ -2557,7 +2573,7 @@ getDisplayName nameFormat formatting order name = do
                         family ]
               CountName -> NullOutput
        else
-         case nameForm nameFormat of
+         case fromMaybe LongName (nameForm nameFormat) of
               LongName  -> grouped
                 [ familyAffixes
                   [ family ]

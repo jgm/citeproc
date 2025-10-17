@@ -18,7 +18,6 @@ import qualified Data.Map as M
 import Data.Maybe (fromMaybe, isNothing)
 import Data.Default (def)
 import qualified Data.Text.Lazy as TL
-import Control.Monad.Trans.Reader (local)
 
 -- | Merge the locale specified by the first parameter, if any,
 -- with the default locale of the style and locale definitions
@@ -96,134 +95,134 @@ parseStyle getIndependentParent t =
 
 pStyle :: Maybe Lang -> X.Element -> ElementParser (Style a)
 pStyle defaultLocale node = do
-  let attrmap = getInheritableNameAttributes node
-  local (<> attrmap) $ do
-    let attr = getAttributes node
-    macroMap <- M.fromList <$> mapM pMacro (getChildren "macro" node)
-    (cattr, citations)
-        <- case getChildren "citation" node of
-                   [n] -> (getAttributes n,) <$> pLayout macroMap n
-                   []  -> parseFailure "No citation element present"
-                   _   -> parseFailure "More than one citation element present"
-    (battr, bibliography) <- case getChildren "bibliography" node of
-                      [n] -> (\z -> (getAttributes n, Just z))
-                                <$> pLayout macroMap n
-                      []  -> return (mempty, Nothing)
-                      _   -> parseFailure
-                               "More than one bibliography element present"
+  let attr = getAttributes node
+  let nameformat = getInheritableNameFormat attr
+  macroMap <- M.fromList <$> mapM pMacro (getChildren "macro" node)
+  (cattr, citations)
+      <- case getChildren "citation" node of
+                 [n] -> (getAttributes n,) <$> pLayout macroMap n
+                 []  -> parseFailure "No citation element present"
+                 _   -> parseFailure "More than one citation element present"
+  (battr, bibliography) <- case getChildren "bibliography" node of
+                    [n] -> (\z -> (getAttributes n, Just z))
+                              <$> pLayout macroMap n
+                    []  -> return (mempty, Nothing)
+                    _   -> parseFailure
+                             "More than one bibliography element present"
 
-    let disambiguateGivenNameRule =
-          case lookupAttribute "givenname-disambiguation-rule" cattr of
-            Just "all-names" -> AllNames
-            Just "all-names-with-initials" -> AllNamesWithInitials
-            Just "primary-name" -> PrimaryName
-            Just "primary-name-with-initials" -> PrimaryNameWithInitials
-            _ -> ByCite
+  let disambiguateGivenNameRule =
+        case lookupAttribute "givenname-disambiguation-rule" cattr of
+          Just "all-names" -> AllNames
+          Just "all-names-with-initials" -> AllNamesWithInitials
+          Just "primary-name" -> PrimaryName
+          Just "primary-name-with-initials" -> PrimaryNameWithInitials
+          _ -> ByCite
 
-    let disambigStrategy =
-          DisambiguationStrategy
-          { disambiguateAddNames =
-              lookupAttribute "disambiguate-add-names" cattr == Just "true"
-          , disambiguateAddGivenNames =
-              case lookupAttribute "disambiguate-add-givenname" cattr of
-                Just "true" -> Just disambiguateGivenNameRule
-                _           -> Nothing
-          , disambiguateAddYearSuffix =
-             lookupAttribute "disambiguate-add-year-suffix" cattr ==
-               Just "true"
-          }
+  let disambigStrategy =
+        DisambiguationStrategy
+        { disambiguateAddNames =
+            lookupAttribute "disambiguate-add-names" cattr == Just "true"
+        , disambiguateAddGivenNames =
+            case lookupAttribute "disambiguate-add-givenname" cattr of
+              Just "true" -> Just disambiguateGivenNameRule
+              _           -> Nothing
+        , disambiguateAddYearSuffix =
+           lookupAttribute "disambiguate-add-year-suffix" cattr ==
+             Just "true"
+        }
 
-    let hasYearSuffixVariable
-          (Element (EText (TextVariable _ "year-suffix")) _) = True
-        hasYearSuffixVariable
-          (Element (EGroup _ es) _) = any hasYearSuffixVariable es
-        hasYearSuffixVariable
-          (Element (EChoose []) _) = False
-        hasYearSuffixVariable
-          (Element (EChoose ((_,_,es):conds)) f) =
-            any hasYearSuffixVariable es ||
-              hasYearSuffixVariable (Element (EChoose conds) f)
-        hasYearSuffixVariable _ = False
-    let usesYearSuffixVariable =
-          any hasYearSuffixVariable $
-            layoutElements citations ++ maybe [] layoutElements bibliography
+  let hasYearSuffixVariable
+        (Element (EText (TextVariable _ "year-suffix")) _) = True
+      hasYearSuffixVariable
+        (Element (EGroup _ es) _) = any hasYearSuffixVariable es
+      hasYearSuffixVariable
+        (Element (EChoose []) _) = False
+      hasYearSuffixVariable
+        (Element (EChoose ((_,_,es):conds)) f) =
+          any hasYearSuffixVariable es ||
+            hasYearSuffixVariable (Element (EChoose conds) f)
+      hasYearSuffixVariable _ = False
+  let usesYearSuffixVariable =
+        any hasYearSuffixVariable $
+          layoutElements citations ++ maybe [] layoutElements bibliography
 
-    let sOpts = StyleOptions
-                 { styleIsNoteStyle =
-                     case lookupAttribute "class" attr of
-                       Just "note" -> True
-                       Nothing     -> True
-                       _           -> False
-                 , styleDefaultLocale = defaultLocale
-                 , styleDemoteNonDroppingParticle =
-                     case lookupAttribute "demote-non-dropping-particle" attr of
-                       Just "never"     -> DemoteNever
-                       Just "sort-only" -> DemoteSortOnly
-                       _                -> DemoteDisplayAndSort
-                 , styleInitializeWithHyphen =
-                   maybe True (== "true") $
-                     lookupAttribute "initialize-with-hyphen" attr
-                 , stylePageRangeFormat =
-                     case lookupAttribute "page-range-format" attr of
-                       Just "chicago"     -> Just PageRangeChicago15
-                       -- chicago is an alias for chicago-15, but this
-                       -- will change to chicago-16 in v1.1
-                       Just "chicago-15"  -> Just PageRangeChicago15
-                       Just "chicago-16"  -> Just PageRangeChicago16
-                       Just "expanded"    -> Just PageRangeExpanded
-                       Just "minimal"     -> Just PageRangeMinimal
-                       Just "minimal-two" -> Just PageRangeMinimalTwo
-                       _                  -> Nothing
-                 , stylePageRangeDelimiter =
-                     lookupAttribute "page-range-delimiter" attr
-                 , styleDisambiguation = disambigStrategy
-                 , styleNearNoteDistance =
-                     lookupAttribute "near-note-distance" attr >>= readAsInt
-                 , styleCiteGroupDelimiter =
-                     lookupAttribute "cite-group-delimiter" cattr <|>
-                     (", " <$ lookupAttribute "collapse" cattr)
-                 , styleLineSpacing =
-                     lookupAttribute "line-spacing" battr >>= readAsInt
-                 , styleEntrySpacing =
-                     lookupAttribute "entry-spacing" battr >>= readAsInt
-                 , styleHangingIndent =
-                     lookupAttribute "hanging-indent" battr == Just "true"
-                 , styleSecondFieldAlign =
-                     case lookupAttribute "second-field-align" battr of
-                       Just "flush" -> Just SecondFieldAlignFlush
-                       Just "margin" -> Just SecondFieldAlignMargin
-                       _ -> Nothing
-                 , styleSubsequentAuthorSubstitute =
-                     case lookupAttribute "subsequent-author-substitute"
-                          battr of
-                       Nothing -> Nothing
-                       Just t  -> Just $
-                         SubsequentAuthorSubstitute t
-                         $ case lookupAttribute
-                             "subsequent-author-substitute-rule" battr of
-                               Just "complete-each" -> CompleteEach
-                               Just "partial-each" -> PartialEach
-                               Just "partial-first" -> PartialFirst
-                               _  -> CompleteAll
-                 , styleUsesYearSuffixVariable = usesYearSuffixVariable
-                 }
-    locales <- mapM pLocale (getChildren "locale" node)
-    let cslVersion = case lookupAttribute "version" attr of
-                       Nothing -> (0,0,0)
-                       Just t  ->
-                         case map readAsInt (T.splitOn "." t) of
-                           (Just x : Just y : Just z :_) -> (x,y,z)
-                           (Just x : Just y : _)         -> (x,y,0)
-                           (Just x : _)                  -> (x,0,0)
-                           _                             -> (0,0,0)
-    return $ Style
-             { styleCslVersion     = cslVersion
-             , styleOptions        = sOpts
-             , styleCitation       = citations
-             , styleBibliography   = bibliography
-             , styleLocales        = locales
-             , styleAbbreviations  = Nothing
-             }
+  let sOpts = StyleOptions
+               { styleIsNoteStyle =
+                   case lookupAttribute "class" attr of
+                     Just "note" -> True
+                     Nothing     -> True
+                     _           -> False
+               , styleDefaultLocale = defaultLocale
+               , styleDemoteNonDroppingParticle =
+                   case lookupAttribute "demote-non-dropping-particle" attr of
+                     Just "never"     -> DemoteNever
+                     Just "sort-only" -> DemoteSortOnly
+                     _                -> DemoteDisplayAndSort
+               , styleInitializeWithHyphen =
+                 maybe True (== "true") $
+                   lookupAttribute "initialize-with-hyphen" attr
+               , stylePageRangeFormat =
+                   case lookupAttribute "page-range-format" attr of
+                     Just "chicago"     -> Just PageRangeChicago15
+                     -- chicago is an alias for chicago-15, but this
+                     -- will change to chicago-16 in v1.1
+                     Just "chicago-15"  -> Just PageRangeChicago15
+                     Just "chicago-16"  -> Just PageRangeChicago16
+                     Just "expanded"    -> Just PageRangeExpanded
+                     Just "minimal"     -> Just PageRangeMinimal
+                     Just "minimal-two" -> Just PageRangeMinimalTwo
+                     _                  -> Nothing
+               , stylePageRangeDelimiter =
+                   lookupAttribute "page-range-delimiter" attr
+               , styleDisambiguation = disambigStrategy
+               , styleNearNoteDistance =
+                   lookupAttribute "near-note-distance" attr >>= readAsInt
+               , styleCiteGroupDelimiter =
+                   lookupAttribute "cite-group-delimiter" cattr <|>
+                   (", " <$ lookupAttribute "collapse" cattr)
+               , styleLineSpacing =
+                   lookupAttribute "line-spacing" battr >>= readAsInt
+               , styleEntrySpacing =
+                   lookupAttribute "entry-spacing" battr >>= readAsInt
+               , styleHangingIndent =
+                   lookupAttribute "hanging-indent" battr == Just "true"
+               , styleSecondFieldAlign =
+                   case lookupAttribute "second-field-align" battr of
+                     Just "flush" -> Just SecondFieldAlignFlush
+                     Just "margin" -> Just SecondFieldAlignMargin
+                     _ -> Nothing
+               , styleSubsequentAuthorSubstitute =
+                   case lookupAttribute "subsequent-author-substitute"
+                        battr of
+                     Nothing -> Nothing
+                     Just t  -> Just $
+                       SubsequentAuthorSubstitute t
+                       $ case lookupAttribute
+                           "subsequent-author-substitute-rule" battr of
+                             Just "complete-each" -> CompleteEach
+                             Just "partial-each" -> PartialEach
+                             Just "partial-first" -> PartialFirst
+                             _  -> CompleteAll
+               , styleUsesYearSuffixVariable = usesYearSuffixVariable
+               , styleNameFormat = nameformat -- TODO
+               }
+  locales <- mapM pLocale (getChildren "locale" node)
+  let cslVersion = case lookupAttribute "version" attr of
+                     Nothing -> (0,0,0)
+                     Just t  ->
+                       case map readAsInt (T.splitOn "." t) of
+                         (Just x : Just y : Just z :_) -> (x,y,z)
+                         (Just x : Just y : _)         -> (x,y,0)
+                         (Just x : _)                  -> (x,0,0)
+                         _                             -> (0,0,0)
+  return $ Style
+           { styleCslVersion     = cslVersion
+           , styleOptions        = sOpts
+           , styleCitation       = citations
+           , styleBibliography   = bibliography
+           , styleLocales        = locales
+           , styleAbbreviations  = Nothing
+           }
 
 
 
@@ -322,7 +321,7 @@ pLabel node = do
 
 pNames :: X.Element -> ElementParser (Element a)
 pNames node = do
-  attr <- getNameAttributes node
+  let attr = getAttributes node
   let formatting = getFormatting attr
   let variables = maybe [] splitVars $ lookupAttribute "variable" attr
   let pChild (nf,subst) n =
@@ -362,7 +361,7 @@ pEtAl node = do
 
 pName :: X.Element -> ElementParser (NameFormat, Formatting)
 pName node = do
-  attr <- getNameAttributes node
+  let attr = getAttributes node
   let formatting = getFormatting attr
   let nameParts = map getAttributes $ getChildren "name-part" node
   let nameformat = NameFormat
@@ -384,19 +383,21 @@ pName node = do
                Just "symbol" -> Just Symbol
                _             -> Nothing
          , nameDelimiter              =
-             fromMaybe ", " $ lookupAttribute "delimiter" attr
+             lookupAttribute "delimiter" attr
          , nameDelimiterPrecedesEtAl  =
              case lookupAttribute "delimiter-precedes-et-al" attr of
-               Just "after-inverted-name" -> PrecedesAfterInvertedName
-               Just "always"              -> PrecedesAlways
-               Just "never"               -> PrecedesNever
-               _                          -> PrecedesContextual
+               Just "after-inverted-name" -> Just PrecedesAfterInvertedName
+               Just "always"              -> Just PrecedesAlways
+               Just "never"               -> Just PrecedesNever
+               Just "contextual"          -> Just PrecedesContextual
+               _                          -> Nothing
          , nameDelimiterPrecedesLast  =
              case lookupAttribute "delimiter-precedes-last" attr of
-               Just "after-inverted-name" -> PrecedesAfterInvertedName
-               Just "always"              -> PrecedesAlways
-               Just "never"               -> PrecedesNever
-               _                          -> PrecedesContextual
+               Just "after-inverted-name" -> Just PrecedesAfterInvertedName
+               Just "always"              -> Just PrecedesAlways
+               Just "never"               -> Just PrecedesNever
+               Just "contextual"          -> Just PrecedesContextual
+               _                          -> Nothing
          , nameEtAlMin                =
            (lookupAttribute "names-min" attr <|>
             lookupAttribute "et-al-min" attr) >>= readAsInt
@@ -410,17 +411,20 @@ pName node = do
          , nameEtAlUseLast            =
              case lookupAttribute "names-use-last" attr <|>
                   lookupAttribute "et-al-use-last" attr of
-               Just "true" -> True
-               _           -> False
+               Just "true" -> Just True
+               Just "false" -> Just False
+               _           -> Nothing
          , nameForm                   =
              case lookupAttribute "form" attr of
-               Just "short"  -> ShortName
-               Just "count"  -> CountName
-               _             -> LongName
+               Just "short"  -> Just ShortName
+               Just "count"  -> Just CountName
+               Just "long"   -> Just LongName
+               _             -> Nothing
          , nameInitialize             =
              case lookupAttribute "initialize" attr of
-               Just "false" -> False
-               _            -> True
+               Just "false" -> Just False
+               Just "true" -> Just True
+               _            -> Nothing
          , nameInitializeWith         =
              lookupAttribute "initialize-with" attr
          , nameAsSortOrder            =
@@ -429,7 +433,7 @@ pName node = do
                Just "first" -> Just NameAsSortOrderFirst
                _            -> Nothing
          , nameSortSeparator          =
-             fromMaybe ", " $ lookupAttribute "sort-separator" attr
+             lookupAttribute "sort-separator" attr
          }
   return (nameformat, formatting)
 
@@ -490,96 +494,136 @@ pMacro node = do
             Nothing -> parseFailure "macro element missing name attribute"
   return (name, allChildren node)
 
--- these name and names attributes are inheritable from a parent style
--- citation or bibliography element.  We use a map because
--- sometimes the name is different (e.g. name-form and form).
-inheritableNameAttributes :: M.Map X.Name X.Name
-inheritableNameAttributes = M.fromList $
-  map (\(x,y) -> (attname x, attname y))
-  [ ("and", "and")
-  , ("delimiter-precedes-et-al", "delimiter-precedes-et-al")
-  , ("delimiter-precedes-last", "delimiter-precedes-last")
-  , ("et-al-min", "et-al-min")
-  , ("et-al-use-first", "et-al-use-first")
-  , ("et-al-use-last", "et-al-use-last")
-  , ("et-al-subsequent-min", "et-al-subsequent-min")
-  , ("et-al-subsequent-use-first", "et-al-subsequent-use-first")
-  , ("initialize", "initialize")
-  , ("initialize-with", "initialize-with")
-  , ("name-as-sort-order", "name-as-sort-order")
-  , ("sort-separator", "sort-separator")
-  , ("name-form", "form")
-  , ("name-delimiter", "delimiter")
-  , ("names-delimiter", "delimiter")
-  , ("names-min", "names-min")
-  , ("names-use-first", "names-use-first")
-  , ("names-use-last", "names-use-last")
-  ]
-
-getInheritableNameAttributes :: X.Element -> M.Map X.Name Text
-getInheritableNameAttributes elt =
-  M.foldrWithKey
-    (\k v m -> case M.lookup k inheritableNameAttributes of
-                   Just k' -> M.insert k' v m
-                   Nothing -> m) M.empty (X.elementAttributes elt)
+getInheritableNameFormat :: Attributes -> NameFormat
+getInheritableNameFormat attr =
+  NameFormat
+         { nameGivenFormatting = Nothing
+         , nameFamilyFormatting = Nothing
+         , nameAndStyle =
+             case lookupAttribute "and" attr of
+               Just "text"   -> Just Long
+               Just "symbol" -> Just Symbol
+               _             -> Nothing
+         , nameDelimiter =
+             lookupAttribute "name-delimiter" attr <|>
+             lookupAttribute "names-delimiter" attr
+         , nameDelimiterPrecedesEtAl  =
+             case lookupAttribute "delimiter-precedes-et-al" attr of
+               Just "after-inverted-name" -> Just PrecedesAfterInvertedName
+               Just "always"              -> Just PrecedesAlways
+               Just "never"               -> Just PrecedesNever
+               Just "contextual"          -> Just PrecedesContextual
+               _                          -> Nothing
+         , nameDelimiterPrecedesLast  =
+             case lookupAttribute "delimiter-precedes-last" attr of
+               Just "after-inverted-name" -> Just PrecedesAfterInvertedName
+               Just "always"              -> Just PrecedesAlways
+               Just "never"               -> Just PrecedesNever
+               Just "contextual"          -> Just PrecedesContextual
+               _                          -> Nothing
+         , nameEtAlMin                =
+           lookupAttribute "et-al-min" attr >>= readAsInt
+         , nameEtAlUseFirst           =
+            lookupAttribute "et-al-use-first" attr >>= readAsInt
+         , nameEtAlSubsequentUseFirst =
+             lookupAttribute "et-al-subsequent-use-first" attr >>= readAsInt
+         , nameEtAlSubsequentMin      =
+             lookupAttribute "et-al-subsequent-min" attr >>= readAsInt
+         , nameEtAlUseLast            =
+             case lookupAttribute "et-al-use-last" attr of
+               Just "true" -> Just True
+               Just "false" -> Just False
+               _           -> Nothing
+         , nameForm                   =
+             case lookupAttribute "name-form" attr of
+               Just "short"  -> Just ShortName
+               Just "count"  -> Just CountName
+               Just "long"   -> Just LongName
+               _             -> Nothing
+         , nameInitialize             =
+             case lookupAttribute "initialize" attr of
+               Just "false" -> Just False
+               Just "true" -> Just True
+               _            -> Nothing
+         , nameInitializeWith         =
+             lookupAttribute "initialize-with" attr
+         , nameAsSortOrder            =
+             case lookupAttribute "name-as-sort-order" attr of
+               Just "all"   -> Just NameAsSortOrderAll
+               Just "first" -> Just NameAsSortOrderFirst
+               _            -> Nothing
+         , nameSortSeparator          =
+             lookupAttribute "sort-separator" attr
+         }
 
 pLayout :: M.Map Text [X.Element] -> X.Element -> ElementParser (Layout a)
 pLayout macroMap node = do
-  let attrmap = getInheritableNameAttributes node
   let attr = getAttributes node
-  local (<> attrmap) $ do
-    node' <- expandMacros macroMap node
-    let layouts = getChildren "layout" node'
-    -- In case there are multiple layouts (as CSL-M allows), we raise an error
-    let elname = T.unpack $ X.nameLocalName $ X.elementName node
-    layout <- case layouts of
-                [] -> parseFailure $ "No layout element present in " <> elname
-                [l] -> return l
-                (_:_) -> parseFailure $ "Multiple layout elements present in " <> elname
-    let formatting = getFormatting . getAttributes $ layout
-    let sorts   = getChildren "sort" node'
-    elements <- mapM pElement $ allChildren layout
-    let opts = LayoutOptions
-               { layoutCollapse =
-                   case lookupAttribute "collapse" attr of
-                     Just "citation-number" -> Just CollapseCitationNumber
-                     Just "year"            -> Just CollapseYear
-                     Just "year-suffix"     -> Just CollapseYearSuffix
-                     Just "year-suffix-ranged"
-                                            -> Just CollapseYearSuffixRanged
-                     _                      -> Nothing
-               , layoutYearSuffixDelimiter =
-                   lookupAttribute "year-suffix-delimiter" attr <|>
-                     -- technically the spec doesn't say this, but
-                     -- this seems to be what the test suites want?:
-                     lookupAttribute "cite-group-delimiter" attr <|>
-                     formatDelimiter formatting
-               , layoutAfterCollapseDelimiter =
-                   lookupAttribute "after-collapse-delimiter" attr <|>
-                     formatDelimiter formatting
-               }
-    sortKeys <- mapM pSortKey (concatMap (getChildren "key") sorts)
-    return $ Layout { layoutOptions  = opts
-                    , layoutFormatting = formatting{
-                                           formatAffixesInside = True }
-                    , layoutElements = elements
-                    , layoutSortKeys = sortKeys
-                    }
+  let nameformat = getInheritableNameFormat attr
+  node' <- expandMacros macroMap node
+  let layouts = getChildren "layout" node'
+  -- In case there are multiple layouts (as CSL-M allows), we raise an error
+  let elname = T.unpack $ X.nameLocalName $ X.elementName node
+  layout <- case layouts of
+              [] -> parseFailure $ "No layout element present in " <> elname
+              [l] -> return l
+              (_:_) -> parseFailure $ "Multiple layout elements present in " <> elname
+  let formatting = getFormatting . getAttributes $ layout
+  let sorts   = getChildren "sort" node'
+  elements <- mapM pElement $ allChildren layout
+  let opts = LayoutOptions
+             { layoutCollapse =
+                 case lookupAttribute "collapse" attr of
+                   Just "citation-number" -> Just CollapseCitationNumber
+                   Just "year"            -> Just CollapseYear
+                   Just "year-suffix"     -> Just CollapseYearSuffix
+                   Just "year-suffix-ranged"
+                                          -> Just CollapseYearSuffixRanged
+                   _                      -> Nothing
+             , layoutYearSuffixDelimiter =
+                 lookupAttribute "year-suffix-delimiter" attr <|>
+                   -- technically the spec doesn't say this, but
+                   -- this seems to be what the test suites want?:
+                   lookupAttribute "cite-group-delimiter" attr <|>
+                   formatDelimiter formatting
+             , layoutAfterCollapseDelimiter =
+                 lookupAttribute "after-collapse-delimiter" attr <|>
+                   formatDelimiter formatting
+             , layoutNameFormat = nameformat
+             }
+  sortKeys <- mapM pSortKey (concatMap (getChildren "key") sorts)
+  return $ Layout { layoutOptions  = opts
+                  , layoutFormatting = formatting{
+                                         formatAffixesInside = True }
+                  , layoutElements = elements
+                  , layoutSortKeys = sortKeys
+                  }
 
 pSortKey :: X.Element -> ElementParser (SortKey a)
 pSortKey node = do
-  let attrmap = getInheritableNameAttributes node
-  local (<> attrmap) $ do
-    let attr = getAttributes node
-    let direction = case lookupAttribute "sort" attr of
-                      Just "descending" -> Descending
-                      _                 -> Ascending
-    case lookupAttribute "macro" attr of
-        Just _ -> -- should already be expanded
-          SortKeyMacro direction <$> mapM pElement (allChildren node)
-        Nothing   -> return $ SortKeyVariable direction
-                       (toVariable $ fromMaybe mempty $
-                         lookupAttribute "variable" attr)
+  let attr@(Attributes attr') = getAttributes node
+  let direction = case lookupAttribute "sort" attr of
+                    Just "descending" -> Descending
+                    _                 -> Ascending
+  -- The attributes names-min, names-use-first, and names-use-last may
+  -- be used to override the values of the corresponding
+  -- et-al-min/et-al-subsequent-min,
+  -- et-al-use-first/et-al-subsequent-use-first and et-al-use-last
+  -- attributes, and affect all names generated via macros called by
+  -- cs:key.
+  let keyChange "name-min" = "et-al-min"
+      keyChange "names-use-first" = "et-al-use-first"
+      keyChange "names-subsequent-min" = "et-al-subsequent-min"
+      keyChange "names-subsequent-use-first" = "et-al-subsequent-use-first"
+      keyChange x = x
+  let nameformat = getInheritableNameFormat
+                     (Attributes (M.mapKeys keyChange attr'))
+  case lookupAttribute "macro" attr of
+      Just _ -> -- should already be expanded
+        SortKeyMacro direction nameformat <$> mapM pElement (allChildren node)
+      Nothing   -> return $ SortKeyVariable direction
+                     (toVariable $ fromMaybe mempty $
+                       lookupAttribute "variable" attr)
 
 attname :: Text -> X.Name
 attname t = X.Name t Nothing Nothing

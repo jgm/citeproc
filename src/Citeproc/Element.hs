@@ -11,7 +11,6 @@ module Citeproc.Element
   , getChildren
   , allChildren
   , getAttributes
-  , getNameAttributes
   , getFormatting
   , getTextContent
   )
@@ -23,9 +22,7 @@ import qualified Data.Map as M
 import qualified Text.XML as X
 import Data.Text (Text)
 import qualified Data.Text as T
-import Control.Monad.Trans.Reader
 import Control.Monad.Trans.Except
-import Control.Monad.Trans.Class (lift)
 
 newtype Attributes = Attributes (M.Map Text Text)
   deriving (Show, Semigroup, Monoid, Eq)
@@ -33,13 +30,13 @@ newtype Attributes = Attributes (M.Map Text Text)
 lookupAttribute :: Text -> Attributes -> Maybe Text
 lookupAttribute key (Attributes kvs) = M.lookup key kvs
 
-type ElementParser = ReaderT (M.Map X.Name Text) (Except CiteprocError)
+type ElementParser = Except CiteprocError
 
 runElementParser :: ElementParser a -> Either CiteprocError a
-runElementParser p = runExcept (runReaderT p mempty)
+runElementParser = runExcept
 
 parseFailure :: String -> ElementParser a
-parseFailure s = lift $ throwE (CiteprocParseError $ T.pack s)
+parseFailure s = throwE (CiteprocParseError $ T.pack s)
 
 getChildren :: Text -> X.Element -> [X.Element]
 getChildren name el = [e | X.NodeElement e <- X.elementNodes el
@@ -51,13 +48,6 @@ allChildren el = [e | X.NodeElement e <- X.elementNodes el]
 getAttributes :: X.Element -> Attributes
 getAttributes =
   Attributes . M.mapKeys X.nameLocalName . X.elementAttributes
-
--- Like getAttributes but incorporates inheritable attributes.
-getNameAttributes :: X.Element -> ElementParser Attributes
-getNameAttributes node = do
-  nameattr <- ask
-  let xattr = X.elementAttributes node <> nameattr
-  return $ Attributes $ M.mapKeys X.nameLocalName xattr
 
 getFormatting :: Attributes -> Formatting
 getFormatting attr =
