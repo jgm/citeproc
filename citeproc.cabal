@@ -1,6 +1,6 @@
 cabal-version:       2.2
 name:                citeproc
-version:             0.10
+version:             0.11
 synopsis:            Generates citations and bibliography from CSL styles.
 description:         citeproc parses CSL style files and uses them to
                      generate a list of formatted citations and bibliography

@@ -1,5 +1,38 @@
 # citeproc changelog
 
+## 0.11
+
+  * Expand macros in evaluation rather than style parsing (#172).
+    This fixes a serious performance issue in styles with heavy
+    use of macros, such as the new chicago styles. With this change,
+    memory use goes down by more than a factor of ten with these styles.
+
+  * All fields in NameFormat are now Maybe values, so we can tell what
+    has been explicitly set [API change].
+
+  * A new function `combineNameFormat` allows filling Nothing values
+    in the first argument with Just values in the second [API change].
+    The old defaults that were used for the non-Maybe values are
+    now set at the appropriate place in Citeproc.Eval.
+
+  * Add `styleNameFormat` field to Style [API change].
+
+  * Add `layoutNameFormat` to Layout [API change].
+
+  * Add parameter for a NameFormat to SortKeyMacro constructor on SortKey
+    [API change].
+
+  * CSL JSON: allow formatting in numeric fields (#170).
+    There's a catch, though. Currently the number splitting code
+    (`splitNums`) has to convert everything to text, so the
+    formatting will be lost. Still, this is better than treating
+    the formatting code as plain text which will then be escaped
+    in the output.  So, for example, we get
+    `1er` instead of `1&#60;sup&#62;er&#60;/sup&#62;` for
+    CSL JSON `1<sup>er</sup>`.
+
+  * Improve test suite so that expected failures are tracked.
+
 ## 0.10
 
   * Update locales from upstream (#161). A number of new locales, as well
