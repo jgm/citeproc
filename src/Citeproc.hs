@@ -37,13 +37,13 @@ citeproc opts style mblang refs citations =
   rCitations = map ( trimR
                    . localizeQuotes locale
                    . movePunct
-                   . renderOutput opts
+                   . renderOutput opts locale
                    ) citationOs
   rBibliography = map (second
                          ( trimR
                          . localizeQuotes locale
                          . movePunct
-                         . renderOutput opts{ linkCitations = False } ))
+                         . renderOutput opts{ linkCitations = False } locale ))
                       bibliographyOs
   locale = mergeLocales mblang style
   trimR = dropTextWhileEnd (== ' ')

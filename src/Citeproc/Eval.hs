@@ -1024,8 +1024,9 @@ evalSortKey citeId (SortKeyMacro sortdir nameformat macroname) = do
   case lookupReference citeId refmap of
     Nothing  -> return $ SortKeyValue sortdir Nothing
     Just ref -> do
+        locale <- asks contextLocale
         k <- normalizeSortKey . toText .
-              renderOutput defaultCiteprocOptions . grouped
+              renderOutput defaultCiteprocOptions locale . grouped
               <$> withRWS newContext (eElements elts)
         return $ SortKeyValue sortdir (Just k)
      where
@@ -1489,34 +1490,34 @@ lookupTerm' term = lookupTerm term >>= f
        Verb      -> lookupTerm' term{ termForm = Long }
        Short     -> lookupTerm' term{ termForm = Long }
        _         -> return NullOutput
-   f ((_,t):_) = return $ if T.null t
-                             then NullOutput
-                             else Literal $ fromText t
+   f ((_,t):_) = if T.null t
+                    then return NullOutput
+                    else do
+                      locale <- asks contextLocale
+                      return $ Literal $ parseCslJson locale t
 
 pageRange :: CiteprocOutput a => Text -> Eval a (Output a)
 pageRange x = do
-  pageDelim <- lookupTerm'
-                  emptyTerm{ termName = "page-range-delimiter" }
+  delimTerms <- lookupTerm emptyTerm{ termName = "page-range-delimiter" }
+  let pageDelim = case delimTerms of
+                         (_,d):_ -> d
+                         _ -> ""
   mbPageRangeFormat <- asks (stylePageRangeFormat . contextStyleOptions)
   let ranges = map T.strip $ T.groupBy
                (\c d -> not (c == ',' || c == '&' || d == ',' || d == '&'))
                x
   return $ formatted mempty{ formatDelimiter = Just " " }
-         $ map (formatPageRange mbPageRangeFormat
-            (case pageDelim of
-               NullOutput -> literal $ T.singleton enDash
-               delim      -> delim)) ranges
+         $ map (literal . formatPageRange mbPageRangeFormat pageDelim) ranges
 
 enDash :: Char
 enDash = '\x2013'
 
-formatPageRange :: CiteprocOutput a
-                => Maybe PageRangeFormat
-                -> Output a
+formatPageRange :: Maybe PageRangeFormat
                 -> Text
-                -> Output a
-formatPageRange _ _ "&" = literal "&"
-formatPageRange _ _ "," = literal ","
+                -> Text
+                -> Text
+formatPageRange _ _ "&" = "&"
+formatPageRange _ _ "," = ","
 formatPageRange mbPageRangeFormat delim t =
   let isDash '-' = True
       isDash '\x2013' = True
@@ -1525,9 +1526,9 @@ formatPageRange mbPageRangeFormat delim t =
                       then [T.replace "\\-" "-" t]
                       else map T.strip $ T.split isDash t
       inRange pref xs
-        | T.null pref = grouped (intersperse delim (map literal xs))
-        | otherwise = grouped
-            (literal pref : intersperse delim (map literal xs))
+        | T.null pref = mconcat (intersperse delim xs)
+        | otherwise = mconcat
+            (pref : intersperse delim xs)
       changedDigits xs ys =
         length $ filter not $ zipWith (==) (xs ++ repeat ' ') ys
       minimal threshold pref x y =
@@ -1538,8 +1539,8 @@ formatPageRange mbPageRangeFormat delim t =
                     else inRange pref [x, resty]
              _ -> inRange pref [x, y]
    in case rangeParts of
-        []     -> NullOutput
-        [w]    -> literal w
+        []     -> ""
+        [w]    -> w
         [w,v]
           | Nothing <- mbPageRangeFormat -> inRange mempty [w,v]
           | Just fmt <- mbPageRangeFormat -> do
@@ -1578,7 +1579,7 @@ formatPageRange mbPageRangeFormat delim t =
                    PageRangeMinimal -> minimal 1 pref x y'
                    PageRangeMinimalTwo -> minimal 2 pref x y'
                else inRange mempty [w,v]
-        _ -> literal t
+        _ -> t
 
 eText :: CiteprocOutput a => TextType -> Eval a (Output a)
 eText (TextVariable varForm v) = do
@@ -1611,9 +1612,10 @@ eText (TextVariable varForm v) = do
                       Tagged TagLocator <$> pageRange x
                  | otherwise -> do
                       updateVarCount 1 1
+                      locale <- asks contextLocale
                       return $ Tagged TagLocator $
-                                formatPageRange Nothing
-                                (literal $ T.singleton enDash) x
+                                Literal . parseCslJson locale $
+                                formatPageRange Nothing (T.singleton enDash) x
           Nothing -> NullOutput <$ updateVarCount 1 0
 
     "year-suffix" -> do
@@ -1705,7 +1707,9 @@ eText (TextVariable varForm v) = do
 eText (TextMacro name) = do
   warn ("unexpanded macro " <> name)
   return NullOutput
-eText (TextValue t) = return $ Literal $ fromText t
+eText (TextValue t) = do
+  locale <- asks contextLocale
+  return . Literal $ parseCslJson locale t
 eText (TextTerm term) = do
   t' <- lookupTerm' term
   t'' <- if termName term == "no date"
@@ -2701,9 +2705,10 @@ evalNumber form mbGender (NumVal i) = do
       res <- (if i > 99
                  then filter (\(t,_) -> termMatch t /= Just WholeNumber)
                  else id) <$> lookupTerm twomatch
+      locale <- asks contextLocale
       case res of
         ((_,suff):_) ->
-          return $ Literal $ fromText (dectext <> suff)
+          return $ Literal $ fromText dectext <> parseCslJson locale suff
         [] -> do -- not an exact match
           res' <- (if i > 10
                       then filter (\(t,_) ->
@@ -2712,12 +2717,12 @@ evalNumber form mbGender (NumVal i) = do
                       else id) <$> lookupTerm onematch
           case res' of
             ((_,suff):_) ->
-              return $ Literal $ fromText (dectext <> suff)
+              return $ Literal $ fromText dectext <> parseCslJson locale suff
             [] -> do
               res'' <- lookupTerm fallback
               case res'' of
                 ((_,suff):_) ->
-                  return $ Literal $ fromText (dectext <> suff)
+                  return $ Literal $ fromText dectext <> parseCslJson locale suff
                 [] -> do
                   warn $ "no ordinal suffix found for " <> dectext
                   return $ Literal $ fromText (T.pack (show i))

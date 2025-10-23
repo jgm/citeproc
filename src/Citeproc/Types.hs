@@ -107,6 +107,9 @@ module Citeproc.Types
   , lookupAbbreviation
   , Result(..)
   , Inputs(..)
+  , parseCslJson
+  , lookupQuotes
+  , superscriptChars
   )
 where
 import qualified Data.Set as Set
@@ -116,7 +119,7 @@ import qualified Data.Scientific as S
 import qualified Data.CaseInsensitive as CI
 import Control.Monad (foldM, guard, mzero)
 import Control.Applicative ((<|>), optional)
-import Data.Char (isLower, isDigit, isLetter, isSpace)
+import Data.Char (isLower, isDigit, isLetter, isSpace, isAlphaNum, isAscii)
 import Data.Text (Text)
 import GHC.Generics (Generic)
 import qualified Data.Text as T
@@ -212,8 +215,8 @@ class (Semigroup a, Monoid a, Show a, Eq a, Ord a) => CiteprocOutput a where
   addHyperlink                :: Text -> a -> a
   localizeQuotes              :: Locale -> a -> a
 
-addFormatting :: CiteprocOutput a => Formatting -> a -> a
-addFormatting f x =
+addFormatting :: CiteprocOutput a => Locale -> Formatting -> a -> a
+addFormatting locale f x =
   if T.null (toText x)  -- TODO inefficient
      then mempty
      else
@@ -231,10 +234,10 @@ addFormatting f x =
        $ x
  where
   addPrefix z = case formatPrefix f of
-                  Just s   -> mconcat $ fixPunct [fromText s, z]
+                  Just s   -> mconcat $ fixPunct [parseCslJson locale s, z]
                   Nothing  -> z
   addSuffix z = case formatSuffix f of
-                  Just s   -> mconcat $ fixPunct [z, fromText s]
+                  Just s   -> mconcat $ fixPunct [z, parseCslJson locale s]
                   Nothing  -> z
   affixesInside = formatAffixesInside f
 
@@ -1575,42 +1578,42 @@ outputToText (Formatted _ xs) = T.unwords $ map outputToText xs
 outputToText (Linked _ xs) = T.unwords $ map outputToText xs
 outputToText (InNote x)   = outputToText x
 
-renderOutput :: CiteprocOutput a => CiteprocOptions -> Output a -> a
-renderOutput _ NullOutput = mempty
-renderOutput _ (Literal x) = x
-renderOutput opts (Tagged (TagItem itemtype ident) x)
+renderOutput :: CiteprocOutput a => CiteprocOptions -> Locale -> Output a -> a
+renderOutput _ _ NullOutput = mempty
+renderOutput _ _ (Literal x) = x
+renderOutput opts locale (Tagged (TagItem itemtype ident) x)
   | linkCitations opts
   , itemtype /= AuthorOnly
-  = addHyperlink ("#ref-" <> unItemId ident) $ renderOutput opts x
-renderOutput opts (Tagged (TagNames _ _ ns) x)
+  = addHyperlink ("#ref-" <> unItemId ident) $ renderOutput opts locale x
+renderOutput opts locale (Tagged (TagNames _ _ ns) x)
   -- a hack to ensure that names starting with lowercase don't get
   -- capitalized in pandoc footnotes: see jgm/pandoc#10983
   | any hasNonstandardCase ns
-  = addTextCase Nothing PreserveCase $ renderOutput opts x
-renderOutput opts (Tagged _ x) = renderOutput opts x
-renderOutput opts (Formatted f [Linked url xs])
+  = addTextCase Nothing PreserveCase $ renderOutput opts locale x
+renderOutput opts locale (Tagged _ x) = renderOutput opts locale x
+renderOutput opts locale (Formatted f [Linked url xs])
   | linkBibliography opts
   , url == prefix <> anchor
   -- ensure correct handling of link prefixes like (https://doi.org/)
   -- when a link's prefix+anchor=target, ensure the link includes the prefix
   -- (see pandoc#6723 and citeproc#88)
-  = renderOutput opts $ Linked url [Formatted f xs]
+  = renderOutput opts locale $ Linked url [Formatted f xs]
   where
     anchor = mconcat (map outputToText xs)
     prefix = fromMaybe "" (formatPrefix f)
-renderOutput opts (Formatted formatting xs) =
-  addFormatting formatting . mconcat . fixPunct .
+renderOutput opts locale (Formatted formatting xs) =
+  addFormatting locale formatting . mconcat . fixPunct .
     (case formatDelimiter formatting of
        Just d  -> addDelimiters (fromText d)
-       Nothing -> id) . filter (/= mempty) $ map (renderOutput opts) xs
-renderOutput opts (Linked url xs)
+       Nothing -> id) . filter (/= mempty) $ map (renderOutput opts locale) xs
+renderOutput opts locale (Linked url xs)
   = (if linkBibliography opts
        then addHyperlink url
-       else id) . mconcat . fixPunct $ map (renderOutput opts) xs
-renderOutput opts (InNote x) = inNote $
+       else id) . mconcat . fixPunct $ map (renderOutput opts locale) xs
+renderOutput opts locale (InNote x) = inNote $
   dropTextWhile isSpace $
   dropTextWhile (\c -> c == ',' || c == ';' || c == '.' || c == ':') $
-  renderOutput opts x
+  renderOutput opts locale x
 
 hasNonstandardCase :: Name -> Bool
 hasNonstandardCase name =
@@ -1814,3 +1817,227 @@ instance (FromJSON a, Eq a) => FromJSON (Inputs a) where
                          Left _     -> return Nothing
                          Right lang -> return $ Just lang)
 
+parseCslJson :: CiteprocOutput a => Locale -> Text -> a
+parseCslJson locale t =
+  case P.parseOnly
+         (P.many' (pCslJson locale) <* P.endOfInput) t of
+    Left _   -> fromText t
+    Right xs -> mconcat xs
+
+pCslJson :: CiteprocOutput a => Locale -> P.Parser a
+pCslJson locale = P.choice
+  [ pCslText
+  , pCslQuoted
+  , pCslItalic
+  , pCslBold
+  , pCslUnderline
+  , pCslNoDecoration
+  , pCslSmallCaps
+  , pCslSup
+  , pCslSub
+  , pCslBaseline
+  , pCslNoCase
+  , pCslSymbol
+  ]
+ where
+  ((outerOpenQuote, outerCloseQuote), (innerOpenQuote, innerCloseQuote)) =
+     lookupQuotes locale
+  isSpecialChar c = c == '<' || c == '>' || c == '\'' || c == '"' ||
+       c == '’' || (not (isAscii c) && (isQuoteChar c || isSuperscriptChar c))
+  isQuoteChar = P.inClass
+       (T.unpack (outerOpenQuote <> outerCloseQuote <>
+                 innerOpenQuote <> innerCloseQuote))
+  isApostrophe '\'' = True
+  isApostrophe '’'  = True
+  isApostrophe _    = False
+  pCsl = pCslJson locale
+  notFollowedBySpace =
+    P.peekChar' >>= guard . not . isSpaceChar
+  isSpaceChar = P.inClass [' ','\t','\n','\r']
+  pOpenQuote = (("\"" <$ P.char '"')
+                <|> ("'" <$ P.char '\'')
+                <|> (outerCloseQuote <$ P.string outerOpenQuote)
+                <|> (innerCloseQuote <$ P.string innerOpenQuote))
+                 <* notFollowedBySpace
+  pSpace = P.skipWhile isSpaceChar
+  pCslText = fromText . addNarrowSpace <$>
+    (  do t <- P.takeWhile1 (\c -> isAlphaNum c && not (isSpecialChar c))
+          -- apostrophe
+          P.option t $ do _ <- P.satisfy isApostrophe
+                          t' <- P.takeWhile1 isAlphaNum
+                          return (t <> "’" <> t')
+    <|>
+      P.takeWhile1 (\c -> not (isAlphaNum c || isSpecialChar c)) )
+  pCslQuoted = addQuotes <$>
+    do cl <- pOpenQuote
+       mbc <- P.peekChar
+       case mbc of
+         Just c  | T.singleton c == cl -> fail "unexpected close quote"
+         _ -> return ()
+       mconcat <$> P.manyTill' pCsl (P.string cl)
+  pCslSymbol = do
+    c <- P.satisfy isSpecialChar
+    return $
+       if isApostrophe c
+          then fromText "’"
+          else fromText $ T.singleton c
+  pCslItalic = addFontStyle ItalicFont . mconcat <$>
+    (P.string "<i>" *> P.manyTill' pCsl (P.string "</i>"))
+  pCslBold = addFontWeight BoldWeight . mconcat <$>
+    (P.string "<b>" *> P.manyTill' pCsl (P.string "</b>"))
+  pCslUnderline = addTextDecoration UnderlineDecoration . mconcat <$>
+    (P.string "<u>" *> P.manyTill' pCsl (P.string "</u>"))
+  pCslNoDecoration = addTextDecoration NoDecoration . mconcat <$>
+    (P.string "<span" *> pSpace *>
+     P.string "class=\"nodecor\"" *> pSpace *> P.char '>' *>
+     P.manyTill' pCsl (P.string "</span>"))
+  pCslSup = addVerticalAlign SupAlign . mconcat <$>
+    (P.string "<sup>" *> P.manyTill' pCsl (P.string "</sup>"))
+  pCslSub = addVerticalAlign SubAlign . mconcat <$>
+    (P.string "<sub>" *> P.manyTill' pCsl (P.string "</sub>"))
+  pCslBaseline = addVerticalAlign BaselineAlign . mconcat <$>
+    (P.string "<span" *> pSpace *> P.string "style=\"baseline\">" *>
+      P.manyTill' pCsl (P.string "</span>"))
+  pCslSmallCaps = addFontVariant SmallCapsVariant . mconcat <$>
+    ((P.string "<span" *> pSpace *>
+      P.string "style=\"font-variant:" *> pSpace *>
+      P.string "small-caps;" *> pSpace *> P.char '"' *>
+      pSpace *> P.char '>' *> P.manyTill' pCsl (P.string "</span>"))
+    <|>
+     (P.string "<sc>" *> P.manyTill' pCsl (P.string "</sc>")))
+  pCslNoCase = addTextCase (localeLanguage locale) PreserveCase . mconcat <$>
+    (P.string "<span" *> pSpace *>
+     P.string "class=\"nocase\"" *> pSpace *> P.char '>' *>
+     P.manyTill' pCsl (P.string "</span>"))
+  addNarrowSpace =
+    T.replace " ;" "\x202F;" .
+    T.replace " ?" "\x202F?" .
+    T.replace " !" "\x202F!" .
+    T.replace " »" "\x202F»" .
+    T.replace "« " "«\x202F"
+
+lookupLocaleTerm :: Locale -> Text -> Maybe Text
+lookupLocaleTerm locale termname = do
+  let terms = localeTerms locale
+  case M.lookup termname terms of
+     Just ((_,t):_) -> Just t
+     _              -> Nothing
+
+lookupQuotes :: Locale -> ((Text, Text), (Text, Text))
+lookupQuotes locale = ((outerOpen, outerClose), (innerOpen, innerClose))
+ where
+  outerOpen = fromMaybe "\x201C" $ lookupLocaleTerm locale "open-quote"
+  outerClose = fromMaybe "\x201D" $ lookupLocaleTerm locale "close-quote"
+  innerOpen = fromMaybe "\x2018" $ lookupLocaleTerm locale "open-inner-quote"
+  innerClose = fromMaybe "\x2019" $ lookupLocaleTerm locale "close-inner-quote"
+
+isSuperscriptChar :: Char -> Bool
+isSuperscriptChar c = M.member c superscriptChars
+
+superscriptChars :: M.Map Char Text
+superscriptChars = M.fromList
+  [ ('\x00AA' , "\x0061")
+  , ('\x00B2' , "\x0032")
+  , ('\x00B3' , "\x0033")
+  , ('\x00B9' , "\x0031")
+  , ('\x00BA' , "\x006F")
+  , ('\x02B0' , "\x0068")
+  , ('\x02B1' , "\x0266")
+  , ('\x02B2' , "\x006A")
+  , ('\x02B3' , "\x0072")
+  , ('\x02B4' , "\x0279")
+  , ('\x02B5' , "\x027B")
+  , ('\x02B6' , "\x0281")
+  , ('\x02B7' , "\x0077")
+  , ('\x02B8' , "\x0079")
+  , ('\x02E0' , "\x0263")
+  , ('\x02E1' , "\x006C")
+  , ('\x02E2' , "\x0073")
+  , ('\x02E3' , "\x0078")
+  , ('\x02E4' , "\x0295")
+  , ('\x1D2C' , "\x0041")
+  , ('\x1D2D' , "\x00C6")
+  , ('\x1D2E' , "\x0042")
+  , ('\x1D30' , "\x0044")
+  , ('\x1D31' , "\x0045")
+  , ('\x1D32' , "\x018E")
+  , ('\x1D33' , "\x0047")
+  , ('\x1D34' , "\x0048")
+  , ('\x1D35' , "\x0049")
+  , ('\x1D36' , "\x004A")
+  , ('\x1D37' , "\x004B")
+  , ('\x1D38' , "\x004C")
+  , ('\x1D39' , "\x004D")
+  , ('\x1D3A' , "\x004E")
+  , ('\x1D3C' , "\x004F")
+  , ('\x1D3D' , "\x0222")
+  , ('\x1D3E' , "\x0050")
+  , ('\x1D3F' , "\x0052")
+  , ('\x1D40' , "\x0054")
+  , ('\x1D41' , "\x0055")
+  , ('\x1D42' , "\x0057")
+  , ('\x1D43' , "\x0061")
+  , ('\x1D44' , "\x0250")
+  , ('\x1D45' , "\x0251")
+  , ('\x1D46' , "\x1D02")
+  , ('\x1D47' , "\x0062")
+  , ('\x1D48' , "\x0064")
+  , ('\x1D49' , "\x0065")
+  , ('\x1D4A' , "\x0259")
+  , ('\x1D4B' , "\x025B")
+  , ('\x1D4C' , "\x025C")
+  , ('\x1D4D' , "\x0067")
+  , ('\x1D4F' , "\x006B")
+  , ('\x1D50' , "\x006D")
+  , ('\x1D51' , "\x014B")
+  , ('\x1D52' , "\x006F")
+  , ('\x1D53' , "\x0254")
+  , ('\x1D54' , "\x1D16")
+  , ('\x1D55' , "\x1D17")
+  , ('\x1D56' , "\x0070")
+  , ('\x1D57' , "\x0074")
+  , ('\x1D58' , "\x0075")
+  , ('\x1D59' , "\x1D1D")
+  , ('\x1D5A' , "\x026F")
+  , ('\x1D5B' , "\x0076")
+  , ('\x1D5C' , "\x1D25")
+  , ('\x1D5D' , "\x03B2")
+  , ('\x1D5E' , "\x03B3")
+  , ('\x1D5F' , "\x03B4")
+  , ('\x1D60' , "\x03C6")
+  , ('\x1D61' , "\x03C7")
+  , ('\x2070' , "\x0030")
+  , ('\x2071' , "\x0069")
+  , ('\x2074' , "\x0034")
+  , ('\x2075' , "\x0035")
+  , ('\x2076' , "\x0036")
+  , ('\x2077' , "\x0037")
+  , ('\x2078' , "\x0038")
+  , ('\x2079' , "\x0039")
+  , ('\x207A' , "\x002B")
+  , ('\x207B' , "\x2212")
+  , ('\x207C' , "\x003D")
+  , ('\x207D' , "\x0028")
+  , ('\x207E' , "\x0029")
+  , ('\x207F' , "\x006E")
+  , ('\x2120' , "\x0053\x004D")
+  , ('\x2122' , "\x0054\x004D")
+  , ('\x3192' , "\x4E00")
+  , ('\x3193' , "\x4E8C")
+  , ('\x3194' , "\x4E09")
+  , ('\x3195' , "\x56DB")
+  , ('\x3196' , "\x4E0A")
+  , ('\x3197' , "\x4E2D")
+  , ('\x3198' , "\x4E0B")
+  , ('\x3199' , "\x7532")
+  , ('\x319A' , "\x4E59")
+  , ('\x319B' , "\x4E19")
+  , ('\x319C' , "\x4E01")
+  , ('\x319D' , "\x5929")
+  , ('\x319E' , "\x5730")
+  , ('\x319F' , "\x4EBA")
+  , ('\x02C0' , "\x0294")
+  , ('\x02C1' , "\x0295")
+  , ('\x06E5' , "\x0648")
+  , ('\x06E6' , "\x064A")
+  ]

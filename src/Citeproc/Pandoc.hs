@@ -17,7 +17,6 @@ import Citeproc.Types
 import Citeproc.CaseTransform
 import Control.Monad.Trans.State.Strict as S
 import Control.Monad (unless, when)
-import Citeproc.Locale (lookupQuotes)
 import Data.Functor.Reverse
 import Data.Char (isSpace, isPunctuation, isAlphaNum)
 

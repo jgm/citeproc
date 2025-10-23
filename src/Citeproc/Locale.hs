@@ -3,15 +3,13 @@
 module Citeproc.Locale
   ( parseLocale,
     getLocale,
-    getPrimaryDialect,
-    lookupQuotes
+    getPrimaryDialect
   )
 where
 import Citeproc.Types
 import Citeproc.Element (runElementParser, pLocale)
 import Citeproc.Data (localeFiles)
 import qualified Data.Map as M
-import Data.Maybe (fromMaybe)
 import Data.Text (Text)
 import qualified Text.XML as X
 import System.FilePath (takeExtension, dropExtension)
@@ -107,19 +105,4 @@ getLocale lang =
                (\l -> M.lookup (toCode l) locales)) of
         Just loc -> loc
         Nothing  -> Left $ CiteprocLocaleNotFound $ renderLang lang
-
-lookupTerm :: Locale -> Text -> Maybe Text
-lookupTerm locale termname = do
-  let terms = localeTerms locale
-  case M.lookup termname terms of
-     Just ((_,t):_) -> Just t
-     _              -> Nothing
-
-lookupQuotes :: Locale -> ((Text, Text), (Text, Text))
-lookupQuotes locale = ((outerOpen, outerClose), (innerOpen, innerClose))
- where
-  outerOpen = fromMaybe "\x201C" $ lookupTerm locale "open-quote"
-  outerClose = fromMaybe "\x201D" $ lookupTerm locale "close-quote"
-  innerOpen = fromMaybe "\x2018" $ lookupTerm locale "open-inner-quote"
-  innerClose = fromMaybe "\x2019" $ lookupTerm locale "close-inner-quote"
 
