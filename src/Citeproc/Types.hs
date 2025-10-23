@@ -931,6 +931,9 @@ parseReference rawmap =
     | otherwise   = Reference i t d <$>
         case variableType k of
           StringVariable -> do
+            v' <- TextVal <$> readString v
+            return $ M.insert k v' m
+          StandardVariable -> do
             v' <- FancyVal <$> parseJSON v <|> TextVal <$> readString v
             return $ M.insert k v' m
           NumberVariable -> do
@@ -946,7 +949,7 @@ parseReference rawmap =
           NameVariable -> do
             v' <- parseJSON v
             return $ M.insert k (NamesVal v') m
-          UnknownVariable -> -- treat as string variable if possible
+          UnknownVariable -> -- treat as standard variable if possible
             case v of
               String{}  -> (\x -> M.insert k x m) <$>
                     (FancyVal <$> parseJSON v <|> TextVal <$> readString v)
@@ -996,6 +999,7 @@ data VariableType =
   | NameVariable
   | NumberVariable
   | StringVariable
+  | StandardVariable
   | UnknownVariable
   deriving (Show, Eq)
 
@@ -1052,53 +1056,53 @@ variableType "section" = NumberVariable
 variableType "supplement-number" = NumberVariable
 variableType "version" = NumberVariable
 variableType "volume" = NumberVariable
-variableType "abstract" = StringVariable
-variableType "annote" = StringVariable
-variableType "archive" = StringVariable
-variableType "archive_collection"  = StringVariable
-variableType "archive_location" = StringVariable
-variableType "archive-place" = StringVariable
-variableType "authority" = StringVariable
-variableType "call-number" = StringVariable
-variableType "citation-key" = StringVariable
-variableType "citation-label" = StringVariable
-variableType "collection-title" = StringVariable
-variableType "container-title" = StringVariable
-variableType "container-title-short" = StringVariable
-variableType "dimensions" = StringVariable
-variableType "division" = StringVariable
+variableType "abstract" = StandardVariable
+variableType "annote" = StandardVariable
+variableType "archive" = StandardVariable
+variableType "archive_collection"  = StandardVariable
+variableType "archive_location" = StandardVariable
+variableType "archive-place" = StandardVariable
+variableType "authority" = StandardVariable
+variableType "call-number" = StandardVariable
+variableType "citation-key" = StandardVariable
+variableType "citation-label" = StandardVariable
+variableType "collection-title" = StandardVariable
+variableType "container-title" = StandardVariable
+variableType "container-title-short" = StandardVariable
+variableType "dimensions" = StandardVariable
+variableType "division" = StandardVariable
 variableType "DOI" = StringVariable
-variableType "event" = StringVariable
-variableType "event-place" = StringVariable
-variableType "event-title" = StringVariable --(new name for "event" to avoid confusion with new "event" type) 
-variableType "genre" = StringVariable
+variableType "event" = StandardVariable
+variableType "event-place" = StandardVariable
+variableType "event-title" = StandardVariable --(new name for "event" to avoid confusion with new "event" type) 
+variableType "genre" = StandardVariable
 variableType "ISBN" = StringVariable
 variableType "ISSN" = StringVariable
-variableType "jurisdiction" = StringVariable
-variableType "keyword" = StringVariable
-variableType "language" = StringVariable
-variableType "license" = StringVariable
-variableType "medium" = StringVariable
-variableType "note" = StringVariable
-variableType "original-publisher" = StringVariable
-variableType "original-publisher-place" = StringVariable
-variableType "original-title" = StringVariable
-variableType "part-title" = StringVariable
+variableType "jurisdiction" = StandardVariable
+variableType "keyword" = StandardVariable
+variableType "language" = StandardVariable
+variableType "license" = StandardVariable
+variableType "medium" = StandardVariable
+variableType "note" = StandardVariable
+variableType "original-publisher" = StandardVariable
+variableType "original-publisher-place" = StandardVariable
+variableType "original-title" = StandardVariable
+variableType "part-title" = StandardVariable
 variableType "PMID" = StringVariable
 variableType "PMCID" = StringVariable
-variableType "publisher" = StringVariable
-variableType "publisher-place" = StringVariable
-variableType "references" = StringVariable
-variableType "reviewed-genre" = StringVariable
-variableType "reviewed-title" = StringVariable
-variableType "scale" = StringVariable
-variableType "source" = StringVariable
-variableType "status" = StringVariable
-variableType "title" = StringVariable
-variableType "title-short" = StringVariable
+variableType "publisher" = StandardVariable
+variableType "publisher-place" = StandardVariable
+variableType "references" = StandardVariable
+variableType "reviewed-genre" = StandardVariable
+variableType "reviewed-title" = StandardVariable
+variableType "scale" = StandardVariable
+variableType "source" = StandardVariable
+variableType "status" = StandardVariable
+variableType "title" = StandardVariable
+variableType "title-short" = StandardVariable
 variableType "URL" = StringVariable
-variableType "volume-title" = StringVariable
-variableType "year-suffix" = StringVariable
+variableType "volume-title" = StandardVariable
+variableType "year-suffix" = StandardVariable
 variableType _ = UnknownVariable
 
 newtype (ReferenceMap a) =
