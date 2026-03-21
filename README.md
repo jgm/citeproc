@@ -28,11 +28,6 @@ over pandoc-citeproc:
 
 - it is more flexible, not being tied to pandoc's types.
 
-Unlike pandoc-citeproc, this library does not provide an
-executable.  It will be used in pandoc itself to provide
-integrated citation support and bibliography format conversion
-(so the pandoc-citeproc filter will no longer be necessary).
-
 [CSL]: https://docs.citationstyles.org/en/stable/specification.html
 
 ## How to use it
@@ -93,13 +88,13 @@ dependent styles, you can get by with `\_ -> return mempty`.
 
 ## The citeproc executable
 
-If the package is compiled with the `executable` flag, an
-executable `citeproc` will be built.  `citeproc` reads
-a JSON-encoded `Inputs` object from `stdin` (or from
-a file if a filename is provided) and writes
-a JSON-encoded `Result` object to `stdout`.  (It does so using
-`CslJson Text` as the underlying type.) This executable
-can be used to add citation processing to non-Haskell projects.
+If the package is compiled with the `executable` flag
+(`cabal build -fexecutable`), a command-line program `citeproc`
+will be built. `citeproc` reads a JSON-encoded `Inputs` object
+from `stdin` (or from a file if a filename is provided) and
+writes a JSON-encoded `Result` object to `stdout`. (It does so
+using `CslJson Text` as the underlying type.) This executable can
+be used to add citation processing to non-Haskell projects.
 
 `citeproc --help` will summarize usage information.  See
 the [man page](man/citeproc.1.md) for more information.
