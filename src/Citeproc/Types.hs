@@ -119,7 +119,9 @@ import qualified Data.Scientific as S
 import qualified Data.CaseInsensitive as CI
 import Control.Monad (foldM, guard, mzero)
 import Control.Applicative ((<|>), optional)
-import Data.Char (isLower, isDigit, isLetter, isSpace, isAlphaNum, isAscii)
+import Data.Char (GeneralCategory(FinalQuote),
+                  generalCategory, isLower, isDigit,
+                  isLetter, isSpace, isAlphaNum, isAscii)
 import Data.Text (Text)
 import GHC.Generics (Generic)
 import qualified Data.Text as T
@@ -1693,10 +1695,30 @@ fixPunct (x:y:zs) =
  where
   xText = toText x
   yText = toText y
-  xEnd = if T.null xText then '\xFFFD' else T.last xText
-  yStart = if T.null yText then '\xFFFD' else T.head yText
+  yStart = fromMaybe '\xFFFD' (firstChar yText)
+  -- see #179
+  xEnd =
+     if yStart == '.'
+       then fromMaybe xLast (terminalCharBeforeQuote xText)
+       else xLast
+  xLast = fromMaybe '\xFFFD' (lastChar xText)
   xTrimmed = dropTextWhileEnd (== xEnd) x
   yTrimmed = dropTextWhile (== yStart) y
+  firstChar = fmap fst . T.uncons
+  lastChar = fmap snd . T.unsnoc
+  terminalCharBeforeQuote t =
+    let trimmed = T.dropWhileEnd isSpace t
+    in case T.unsnoc trimmed of
+         Just (_, q) | isQuoteLike q ->
+           lastChar (T.dropWhileEnd isTrailingCloser trimmed)
+         _ -> Nothing
+  isQuoteLike c =
+       c == '"'
+    || c == '\''
+    || generalCategory c == FinalQuote
+  isTrailingCloser c =
+       isSpace c
+    || isQuoteLike c
   keepFirst = if yTrimmed == y -- see #49
                  then x : fixPunct (y : zs)
                  else fixPunct $ x : yTrimmed : zs
