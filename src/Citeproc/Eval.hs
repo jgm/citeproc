@@ -2169,7 +2169,7 @@ eSubstitute els =
         [] -> eSubstitute es
         (x:_) -> return [x]
 
-formatNames :: CiteprocOutput a
+formatNames :: forall a . CiteprocOutput a
             => NamesFormat
             -> NameFormat
             -> Formatting
@@ -2177,8 +2177,13 @@ formatNames :: CiteprocOutput a
             -> Eval a (Output a)
 formatNames namesFormat nameFormat formatting (var, Just (NamesVal names)) =
   do
+  abbreviations <- asks contextAbbreviations
   isSubsequent <- (Subsequent `elem`) <$> asks contextPosition
   isInBibliography <- asks contextInBibliography
+  let abbreviateLiteralName name = fromMaybe name $ do
+        t <- nameLiteral name
+        TextVal abbr <- abbreviations >>= lookupAbbreviation var (TextVal t :: Val a)
+        return name{ nameLiteral = Just abbr }
   let (etAlMin, etAlUseFirst) =
         if not isInBibliography && isSubsequent
            then (nameEtAlSubsequentMin nameFormat <|> nameEtAlMin nameFormat,
@@ -2187,7 +2192,11 @@ formatNames namesFormat nameFormat formatting (var, Just (NamesVal names)) =
            else (nameEtAlMin nameFormat, nameEtAlUseFirst nameFormat)
   inSortKey <- asks contextInSortKey
   disamb <- gets (referenceDisambiguation . stateReference)
-  names' <- zipWithM (formatName nameFormat formatting) [1..] names
+  let namesForRendering =
+        if nameForm nameFormat == Just ShortName
+           then map abbreviateLiteralName names
+           else names
+  names' <- zipWithM (formatName nameFormat formatting) [1..] namesForRendering
   let delim' = fromMaybe ", " $
                  (formatDelimiter formatting <|> nameDelimiter nameFormat)
   let delim = case (beginsWithSpace <$> formatSuffix formatting,
@@ -2304,17 +2313,18 @@ formatNames namesFormat nameFormat formatting (var, Just (NamesVal names)) =
   let names'' = zipWith addNameAndDelim names' [1..]
   -- we set delimiter to Nothing because we're handling delim
   -- manually, to allow for things like "and" and no final comma
-  return $ Tagged (TagNames var namesFormat names)
+  return $ Tagged (TagNames var namesFormat namesForRendering)
          $ grouped $
            if namesLabelBeforeName namesFormat
               then label ++ names''
               else names'' ++ label
 
+formatNames _ _ _ (_, Nothing) = return NullOutput
+
 formatNames _ _ _ (var, Just x) = do
   when (x /= SubstitutedVal) $
     warn $ "ignoring non-name value for variable " <> fromVariable var
   return NullOutput
-formatNames _ _ _ (_, Nothing) = return NullOutput
 
 formatName :: CiteprocOutput a
            => NameFormat -> Formatting -> Int -> Name -> Eval a (Output a)
