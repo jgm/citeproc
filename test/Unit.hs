@@ -32,7 +32,7 @@ main = do
     putStrLn $ "  expected: " <> expected
     putStrLn $ "  actual:   " <> actual
 
--- dropTextWhileEnd on pandoc Inlines:
+-- dropTextWhile/dropTextWhileEnd on pandoc Inlines:
 inlineCases :: [(String, Inlines, Inlines)]
 inlineCases =
   -- dropTextWhileEnd must trim from the *last* Str of a trailing
@@ -43,19 +43,26 @@ inlineCases =
   -- a Space that doesn't match the predicate must stop the trimming:
   , ("dropTextWhileEnd: stops at non-matching Space",
      dropTextWhileEnd (== '.') (fromList [Str "etc.", Space, Str "."]),
-     fromList [Str "etc.", Space, Str ""])
+     fromList [Str "etc.", Space])
   -- as long as everything so far has been dropped, trimming continues
   -- past nesting boundaries:
   , ("dropTextWhileEnd: continues across nesting while dropping",
      dropTextWhileEnd (== '.') (fromList [Emph [Str "a.", Str "."], Str "."]),
-     fromList [Emph [Str "a", Str ""], Str ""])
+     fromList [Emph [Str "a"]])
   -- trailing space trimming (the trimR use case in Citeproc.hs):
   , ("dropTextWhileEnd: drops a trailing Space",
      dropTextWhileEnd (== ' ') (fromList [Str "hi", Space]),
-     fromList [Str "hi", Str ""])
+     fromList [Str "hi"])
   , ("dropTextWhileEnd: single Str inside trailing nested inline",
      dropTextWhileEnd (== '.') (fromList [Str "x ", Emph [Str "Title."]]),
      fromList [Str "x ", Emph [Str "Title"]])
+  -- fully-dropped Strs and Spaces leave no empty Strs behind:
+  , ("dropTextWhile: drops a leading Str and Space entirely",
+     dropTextWhile (== '.') (fromList [Str ".", Str ".a"]),
+     fromList [Str "a"])
+  , ("dropTextWhile: drops a leading Space",
+     dropTextWhile (== ' ') (fromList [Space, Str "hi"]),
+     fromList [Str "hi"])
   ]
 
 -- flip-flop formatting state in cslJsonToJson's JSON output:

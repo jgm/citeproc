@@ -147,8 +147,13 @@ endWithPunct onlyFinal xs@(_:_) =
              | otherwise         -> False
   where isEndPunct c = c `elem` (".,;:!?" :: String)
 
+-- Trimming can reduce a Str, Space, or SoftBreak to an empty Str;
+-- remove these leftovers, at all nesting levels.
+removeEmptyStrs :: Inlines -> Inlines
+removeEmptyStrs = B.fromList . walk (filter (/= Str "")) . B.toList
+
 dropTextWhile' :: (Char -> Bool) -> Inlines -> Inlines
-dropTextWhile' f ils = evalState (walkM go ils) True
+dropTextWhile' f ils = removeEmptyStrs $ evalState (walkM go ils) True
  where
   go x = do
     atStart <- get
@@ -176,7 +181,7 @@ dropTextWhile' f ils = evalState (walkM go ils) True
 -- children of nested inlines are also processed from right to left.
 dropTextWhileEnd' :: (Char -> Bool) -> Inlines -> Inlines
 dropTextWhileEnd' f ils =
-  evalState (fmap B.fromList . goList . B.toList $ ils) True
+  removeEmptyStrs $ evalState (fmap B.fromList . goList . B.toList $ ils) True
  where
   goList :: [Inline] -> State Bool [Inline]
   goList = fmap reverse . mapM go . reverse
