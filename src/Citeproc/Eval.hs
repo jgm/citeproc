@@ -2434,7 +2434,7 @@ initialize mblang makeInitials useHyphen initializeWith =
                  | isUpper d  -- see test/csl/name_LongAbbreviation.txt
                  , not (T.null t'')
                  , T.all isLower t''
-                 -> T.singleton c <> T.toLower (T.singleton d)
+                 -> T.singleton c <> Unicode.toLower mblang (T.singleton d)
                _ -> T.singleton c
          _ -> t
    initializeWord (Left t) -- Left values already initialized

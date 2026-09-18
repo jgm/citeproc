@@ -1,0 +1,51 @@
+>>===== MODE =====>>
+citation
+<<===== MODE =====<<
+
+Initialization of a name like "MIsak" abbreviates to the first two
+letters (cf. name_LongAbbreviation), lowercasing the second.  With a
+Turkish locale, "I" must lowercase to dotless "ı", not "i".
+
+>>===== RESULT =====>>
+Mı. Yılmaz
+<<===== RESULT =====<<
+
+>>===== CSL =====>>
+<style
+      xmlns="http://purl.org/net/xbiblio/csl"
+      class="in-text"
+      version="1.0"
+      default-locale="tr-TR">
+  <info>
+    <id />
+    <title />
+    <updated>2009-08-10T04:49:00+09:00</updated>
+  </info>
+  <citation>
+    <layout>
+      <names variable="author">
+        <name initialize-with=". "/>
+      </names>
+    </layout>
+  </citation>
+</style>
+<<===== CSL =====<<
+
+>>===== INPUT =====>>
+[
+    {
+        "id": "ITEM-1",
+        "author": [
+            {
+                "family": "Yılmaz",
+                "given": "MIsak"
+            }
+        ],
+        "type": "book"
+    }
+]
+<<===== INPUT =====<<
+
+>>===== VERSION =====>>
+1.0
+<<===== VERSION =====<<
