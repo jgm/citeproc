@@ -137,6 +137,8 @@ test-suite unit
   build-depends:       base >= 4.8 && < 5
                      , citeproc
                      , pandoc-types
+                     , aeson
+                     , text
   ghc-options:         -Wall
   default-language:    Haskell2010
 

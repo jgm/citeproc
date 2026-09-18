@@ -1,31 +1,39 @@
 {-# LANGUAGE OverloadedStrings #-}
 -- | Unit tests for backend functions not covered by the file-based
--- CSL test suite (which only exercises the CslJson backend).
+-- CSL test suite (which only exercises the CslJson backend's HTML
+-- rendering).
 module Main (main) where
 import Citeproc.Types (CiteprocOutput(..))
+import Citeproc.CslJson (cslJsonToJson, parseCslJson)
 import Citeproc.Pandoc ()
 import Text.Pandoc.Builder
+import Data.Aeson (Value(..), object, toJSON)
+import Data.Text (Text)
+import Data.Maybe (mapMaybe)
 import System.Exit (exitFailure, exitSuccess)
 import Text.Printf (printf)
 
 main :: IO ()
 main = do
-  let failures = [ c | c@(_, actual, expected) <- testCases
-                     , actual /= expected ]
+  let failures = mapMaybe check inlineCases ++ mapMaybe check jsonCases
+  let total = length inlineCases + length jsonCases
   mapM_ report failures
-  printf "%d of %d unit tests passed.\n"
-    (length testCases - length failures) (length testCases)
+  printf "%d of %d unit tests passed.\n" (total - length failures) total
   if null failures
      then exitSuccess
      else exitFailure
  where
-  report (name, actual, expected) = do
+  check (name, actual, expected)
+    | actual == expected = Nothing
+    | otherwise          = Just (name, show expected, show actual)
+  report (name, expected, actual) = do
     putStrLn $ "[FAILED] " <> name
-    putStrLn $ "  expected: " <> show (toList expected)
-    putStrLn $ "  actual:   " <> show (toList actual)
+    putStrLn $ "  expected: " <> expected
+    putStrLn $ "  actual:   " <> actual
 
-testCases :: [(String, Inlines, Inlines)]
-testCases =
+-- dropTextWhileEnd on pandoc Inlines:
+inlineCases :: [(String, Inlines, Inlines)]
+inlineCases =
   -- dropTextWhileEnd must trim from the *last* Str of a trailing
   -- nested inline, not the first:
   [ ("dropTextWhileEnd: trims last Str inside trailing nested inline",
@@ -48,3 +56,33 @@ testCases =
      dropTextWhileEnd (== '.') (fromList [Str "x ", Emph [Str "Title."]]),
      fromList [Str "x ", Emph [Str "Title"]])
   ]
+
+-- flip-flop formatting state in cslJsonToJson's JSON output:
+jsonCases :: [(String, [Value], [Value])]
+jsonCases =
+  [ ("cslJsonToJson: bold flip-flops in nested bold",
+     jsonOf "<b>One <b>Two <b>Three</b></b></b>",
+     [fmt "bold" [String "One ",
+        fmt "no-bold" [String "Two ",
+          fmt "bold" [String "Three"]]]])
+  , ("cslJsonToJson: bold state unaffected by italic context",
+     jsonOf "<i>One <b>Two</b></i>",
+     [fmt "italics" [String "One ", fmt "bold" [String "Two"]]])
+  , ("cslJsonToJson: italics flip-flop in nested italics",
+     jsonOf "<i>One <i>Two <i>Three</i></i></i>",
+     [fmt "italics" [String "One ",
+        fmt "no-italics" [String "Two ",
+          fmt "italics" [String "Three"]]]])
+  , ("cslJsonToJson: small-caps flip-flop in nested small-caps",
+     jsonOf "<span style=\"font-variant:small-caps;\">One \
+            \<span style=\"font-variant:small-caps;\">Two \
+            \<span style=\"font-variant:small-caps;\">Three\
+            \</span></span></span>",
+     [fmt "small-caps" [String "One ",
+        fmt "no-small-caps" [String "Two ",
+          fmt "small-caps" [String "Three"]]]])
+  ]
+ where
+  jsonOf = cslJsonToJson . parseCslJson mempty
+  fmt :: Text -> [Value] -> Value
+  fmt f xs = object [("format", String f), ("contents", toJSON xs)]
