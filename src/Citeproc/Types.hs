@@ -66,6 +66,7 @@ module Citeproc.Types
   , TermNumber(..)
   , TermForm(..)
   , Term(..)
+  , termMatches
   , emptyTerm
   , SortDirection(..)
   , SortKey(..)
@@ -799,9 +800,12 @@ data Term =
 emptyTerm :: Term
 emptyTerm = Term mempty Long Nothing Nothing Nothing Nothing
 
-instance Ord Term where
-   (<=)(Term name1 form1 num1 gen1 gf1 match1)
-       (Term name2 form2 num2 gen2 gf2 match2) =
+-- | True if the first term matches the second. Name and form must
+-- be identical; for the other attributes, a 'Nothing' on either side
+-- functions as a wildcard.
+termMatches :: Term -> Term -> Bool
+termMatches (Term name1 form1 num1 gen1 gf1 match1)
+            (Term name2 form2 num2 gen2 gf2 match2) =
      name1 == name2 &&
      form1 == form2 &&
      (isNothing num1   || isNothing num2   || num1 == num2) &&

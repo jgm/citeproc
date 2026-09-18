@@ -1477,7 +1477,7 @@ lookupTerm term = do
   case M.lookup (termName term') terms of
      Just ts -> return $ [ (term'',t)
                          | (term'',t) <- ts
-                         , term' <= term''
+                         , term' `termMatches` term''
                          ]
      Nothing -> return []
 
