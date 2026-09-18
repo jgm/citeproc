@@ -4,7 +4,7 @@
 -- rendering).
 module Main (main) where
 import Citeproc.Types (CiteprocOutput(..))
-import Citeproc.CslJson (cslJsonToJson, parseCslJson)
+import Citeproc.CslJson (CslJson(..), cslJsonToJson, parseCslJson)
 import Citeproc.Pandoc ()
 import Text.Pandoc.Builder
 import Data.Aeson (Value(..), object, toJSON)
@@ -16,7 +16,8 @@ import Text.Printf (printf)
 main :: IO ()
 main = do
   let failures = mapMaybe check inlineCases ++ mapMaybe check jsonCases
-  let total = length inlineCases + length jsonCases
+                   ++ mapMaybe check quoteCases
+  let total = length inlineCases + length jsonCases + length quoteCases
   mapM_ report failures
   printf "%d of %d unit tests passed.\n" (total - length failures) total
   if null failures
@@ -86,3 +87,21 @@ jsonCases =
   jsonOf = cslJsonToJson . parseCslJson mempty
   fmt :: Text -> [Value] -> Value
   fmt f xs = object [("format", String f), ("contents", toJSON xs)]
+
+-- punctuation moving (punctuation-in-quote) on the CslJson backend:
+quoteCases :: [(String, CslJson Text, CslJson Text)]
+quoteCases =
+  -- the basic case: movable punctuation after a quoted span moves inside:
+  [ ("punctuationInsideQuotes: moves comma following a quote inside",
+     movePunctuationInsideQuotes
+       (CslQuoted (CslText "Hi") <> CslText ", she said"),
+     CslQuoted (CslText "Hi" <> CslText ",") <> CslText " she said")
+  -- when the text after a quoted span starts with something unmovable,
+  -- punctuation moving must still be applied *inside* the quoted span:
+  , ("punctuationInsideQuotes: processes nested content of a quote",
+     movePunctuationInsideQuotes
+       (CslQuoted (CslQuoted (CslText "inner") <> CslText ", outer")
+          <> CslText " rest"),
+     CslQuoted (CslQuoted (CslText "inner" <> CslText ",") <> CslText " outer")
+       <> CslText " rest")
+  ]
