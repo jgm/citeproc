@@ -2375,13 +2375,14 @@ getNamePartSortOrder name = do
 literal :: CiteprocOutput a => Text -> Output a
 literal = Literal . fromText
 
+-- 1 = a, 26 = z, 27 = aa, 702 = zz, 703 = aaa, ... (bijective base 26)
 showYearSuffix :: Int -> Text
-showYearSuffix x
-  | x < 27    = T.singleton $ chr $ ord 'a' + (x - 1)
-  | otherwise =
-      let x' = x - 1
-       in T.pack [chr (ord 'a' - 1 + (x' `div` 26)),
-                  chr (ord 'a' + (x' `mod` 26))]
+showYearSuffix = T.pack . go ""
+ where
+  go s x
+    | x < 1     = s
+    | otherwise = let (q, r) = (x - 1) `divMod` 26
+                   in go (chr (ord 'a' + r) : s) q
 
 initialize :: Maybe Lang
            -> Bool       -- ^ initialize
