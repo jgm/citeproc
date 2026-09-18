@@ -337,11 +337,11 @@ cslJsonToJson = go (RenderContext True True True True)
         | otherwise      -> [ object
                                [ ("format", "no-italics")
                                , ("contents", toJSON $
-                                    go ctx{ useItalics = False } x)
+                                    go ctx{ useItalics = True } x)
                                ]
                             ]
       CslBold x
-        | useItalics ctx -> [ object
+        | useBold ctx    -> [ object
                                [ ("format", "bold")
                                , ("contents", toJSON $
                                     go ctx{ useBold = False } x)
@@ -350,7 +350,7 @@ cslJsonToJson = go (RenderContext True True True True)
         | otherwise      -> [ object
                                [ ("format", "no-bold")
                                , ("contents", toJSON $
-                                    go ctx{ useBold = False } x)
+                                    go ctx{ useBold = True } x)
                                ]
                             ]
       CslUnderline x     -> [ object
@@ -373,7 +373,7 @@ cslJsonToJson = go (RenderContext True True True True)
         | otherwise      -> [ object
                                [ ("format", "no-small-caps")
                                , ("contents", toJSON $
-                                    go ctx{ useSmallCaps = False } x)
+                                    go ctx{ useSmallCaps = True } x)
                                ]
                             ]
       CslSup x           -> [ object
