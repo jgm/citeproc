@@ -1,10 +1,15 @@
 {-# LANGUAGE OverloadedStrings #-}
 -- | Benchmark for citation processing dominated by disambiguation.
--- Generates n synthetic references whose authors and years collide
--- heavily (so that add-names, add-givenname, and year-suffix
--- disambiguation all kick in), cites them all in clusters of three,
--- and times 'citeproc'.  Reference data repeats with period 24, so
--- every reference has many exact duplicates.
+-- Generates n synthetic references, cites them all in clusters of
+-- three, and times 'citeproc', in two scenarios:
+--
+-- * dense: every reference's authors and years collide heavily (so
+--   that add-names, add-givenname, and year-suffix disambiguation all
+--   kick in); reference data repeats with period 24, so every
+--   reference has many exact duplicates.
+--
+-- * sparse: only every 20th reference collides; the rest have unique
+--   authors.  This is the realistic case for large bibliographies.
 --
 -- Run with, e.g.:
 --   cabal bench --benchmark-options="800 1600 3200"
@@ -30,14 +35,20 @@ main = do
   style <- case parseResult of
              Left err  -> print err >> exitFailure
              Right sty -> return (sty :: Style (CslJson Text))
-  forM_ sizes $ \n -> do
-    refs <- either fail return $ mapM refFromValue $ mkRefValues n
-    let result = citeproc defaultCiteprocOptions style Nothing refs
-                   (mkCitations n)
-    (t, outlen) <- timeItT $ evaluate $ T.length $ T.concat
-                     $ map (renderCslJson False mempty)
-                     $ resultCitations result
-    printf "n = %5d   %8.3f s   (%d chars of output)\n" n t outlen
+  let scenarios = [ ("dense",  const True)
+                  , ("sparse", \i -> i `mod` 20 == 0)
+                  ] :: [(String, Int -> Bool)]
+  forM_ scenarios $ \(scenario, collides) ->
+      forM_ sizes $ \n -> do
+        refs <- either fail return $ mapM refFromValue
+                  $ mkRefValues collides n
+        let result = citeproc defaultCiteprocOptions style Nothing refs
+                       (mkCitations n)
+        (t, outlen) <- timeItT $ evaluate $ T.length $ T.concat
+                         $ map (renderCslJson False mempty)
+                         $ resultCitations result
+        printf "%-6s  n = %5d   %8.3f s   (%d chars of output)\n"
+               scenario n t outlen
 
 refFromValue :: Aeson.Value -> Either String (Reference (CslJson Text))
 refFromValue v =
@@ -45,8 +56,8 @@ refFromValue v =
     Aeson.Success r -> Right r
     Aeson.Error e   -> Left e
 
-mkRefValues :: Int -> [Aeson.Value]
-mkRefValues n = map mkRef [1..n]
+mkRefValues :: (Int -> Bool) -> Int -> [Aeson.Value]
+mkRefValues collides n = map mkRef [1..n]
  where
   mkRef :: Int -> Aeson.Value
   mkRef i = object
@@ -54,7 +65,11 @@ mkRefValues n = map mkRef [1..n]
     , "type" .= ("book" :: Text)
     , "title" .= ("Title " <> T.pack (show i))
     , "issued" .= object ["date-parts" .= [[2000 + i `mod` 4]]]
-    , "author" .= map (mkAuthor i) [0 .. i `mod` 3]
+    , "author" .=
+        if collides i
+           then map (mkAuthor i) [0 .. i `mod` 3]
+           else [object [ "family" .= ("Unique" <> T.pack (show i))
+                        , "given"  .= ("Author" :: Text) ]]
     ]
   mkAuthor i j = object
     [ "family" .= families !! ((i + j) `mod` length families)
