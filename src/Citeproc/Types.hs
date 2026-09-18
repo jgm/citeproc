@@ -1441,31 +1441,28 @@ rawDateISO raw = do
                            then return (True, T.drop 1 t')
                            else return (False, t')
         let t''' = T.takeWhile (not . isSpecial) t''
+        let readYear y' = do
+              guard $ T.length y' == 4 || hasY && T.length y' >= 4
+              (if isNeg
+                  then (\x -> (x * (-1)) - 1) -- EDTF -0001 = 2 BC
+                  else (\x -> if x == 0 then -1 else x)) -- EDTF 0000 = 1 BC
+                <$> readAsInt y'
         case T.split (=='-') t''' of
           [""]         -> return $ DateParts [0]
           [y', m', d'] -> do
-            guard $ T.length y' == 4 || hasY && T.length y' >= 4
             guard $ T.length m' == 2
             guard $ T.length d' == 2
-            y <- (if isNeg
-                     then (\x -> (x * (-1)) - 1) -- 0 = 1 BC
-                     else id) <$> readAsInt y'
+            y <- readYear y'
             m <- readAsInt m'
             d <- readAsInt d'
             return $ DateParts [y, m, d]
           [y', m'] -> do
-            guard $ T.length y' == 4 || hasY && T.length y' >= 4
             guard $ T.length m' == 2
-            y <- (if isNeg
-                     then (\x -> (x * (-1)) - 1) -- 0 = 1 BC
-                     else id) <$> readAsInt y'
+            y <- readYear y'
             m <- readAsInt m'
             return $ DateParts [y, m]
           [y'] -> do
-            guard $ T.length y' == 4 || hasY && T.length y' >= 4
-            y <- (if isNeg
-                     then (\x -> (x * (-1)) - 1) -- 0 = 1 BC
-                     else id) <$> readAsInt y'
+            y <- readYear y'
             return $ DateParts [y]
           _ -> mzero
   dps <- mapM dparts ranges
