@@ -2830,8 +2830,13 @@ citationLabel ref = TextVal trigraph
                   T.pack (printf "%02d" $ x `mod` 100)
                 _ -> ""
 
+-- | Collapse each run of spaces to a single space.
 removeDoubleSpaces :: Text -> Text
-removeDoubleSpaces = T.replace "  " " "
+removeDoubleSpaces t =
+  let t' = T.replace "  " " " t
+   in if t' == t
+         then t
+         else removeDoubleSpaces t'
 
 endsWithSpace :: Text -> Bool
 endsWithSpace t = not (T.null t) && isSpace (T.last t)
