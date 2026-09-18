@@ -17,7 +17,6 @@ import Citeproc.Types
 import Citeproc.CaseTransform
 import Control.Monad.Trans.State.Strict as S
 import Control.Monad (unless, when)
-import Data.Functor.Reverse
 import Data.Char (isSpace, isPunctuation, isAlphaNum)
 
 instance CiteprocOutput Inlines where
@@ -171,10 +170,17 @@ dropTextWhile' f ils = evalState (walkM go ils) True
        else return x
 
 
+-- The state records whether we are still at the end, i.e. have not
+-- yet encountered a character that shouldn't be dropped.  We need an
+-- explicit traversal (rather than walkM over Reverse) so that the
+-- children of nested inlines are also processed from right to left.
 dropTextWhileEnd' :: (Char -> Bool) -> Inlines -> Inlines
 dropTextWhileEnd' f ils =
-  getReverse $ evalState (walkM go $ Reverse ils) True
+  evalState (fmap B.fromList . goList . B.toList $ ils) True
  where
+  goList :: [Inline] -> State Bool [Inline]
+  goList = fmap reverse . mapM go . reverse
+  go :: Inline -> State Bool Inline
   go x = do
     atEnd <- get
     if atEnd
@@ -185,9 +191,25 @@ dropTextWhileEnd' f ils =
              unless (T.null t') $
                put False
              return $ Str t'
-           _ | x == Space || x == SoftBreak
-             , f ' ' -> return $ Str ""
-             | otherwise -> return x
+           Space
+             | f ' '     -> return $ Str ""
+             | otherwise -> put False >> return x
+           SoftBreak
+             | f ' '     -> return $ Str ""
+             | otherwise -> put False >> return x
+           Emph xs -> Emph <$> goList xs
+           Underline xs -> Underline <$> goList xs
+           Strong xs -> Strong <$> goList xs
+           Strikeout xs -> Strikeout <$> goList xs
+           Superscript xs -> Superscript <$> goList xs
+           Subscript xs -> Subscript <$> goList xs
+           SmallCaps xs -> SmallCaps <$> goList xs
+           Quoted qt xs -> Quoted qt <$> goList xs
+           Cite cs xs -> Cite cs <$> goList xs
+           Span attr xs -> Span attr <$> goList xs
+           Link attr xs t -> (\xs' -> Link attr xs' t) <$> goList xs
+           Image attr xs t -> (\xs' -> Image attr xs' t) <$> goList xs
+           _ -> return x
        else return x
 
 -- taken from Text.Pandoc.Shared:
