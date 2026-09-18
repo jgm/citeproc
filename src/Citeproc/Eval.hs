@@ -416,6 +416,23 @@ data DisambData =
   , ddRendered   :: Text
   } deriving (Eq, Ord, Show)
 
+-- | Position-tracking state ('stateLastCitedMap', 'stateNoteMap') in
+-- effect just before a citation is rendered.
+type PositionState =
+  ( M.Map ItemId (Int, Maybe Int, Int, Bool, Maybe Text, Maybe Text)
+  , M.Map Int (Set.Set ItemId) )
+
+-- | A rendered citation, together with the position-tracking state in
+-- effect just before it was rendered (which allows re-rendering it in
+-- isolation) and the disambiguation-relevant data extracted from the
+-- rendering (lazily, so it is only computed when needed).
+data RenderedCitation a =
+  RenderedCitation
+  { rcPositionState :: PositionState
+  , rcOutput        :: Output a
+  , rcDisambData    :: [DisambData]
+  }
+
 disambiguateCitations :: forall a . CiteprocOutput a
                       => Style a
                       -> M.Map ItemId [SortKeyValue]
@@ -424,11 +441,13 @@ disambiguateCitations :: forall a . CiteprocOutput a
 disambiguateCitations style bibSortKeyMap citations = do
   refs <- unReferenceMap <$> gets stateRefMap
   let refIds = M.keys refs
-  let ghostItems = [ ident
-                   | ident <- refIds
-                   ]
-                   -- we add additional references for EVERY citation,
-                   -- even those we have already, to handle cases like #116
+  -- we add "ghost" citations for EVERY reference in the database,
+  -- even those we have already cited, to handle cases like #116.
+  -- Each ghost is a separate citation so that it can be re-rendered
+  -- individually when its reference's disambiguation data changes.
+  let ghostCitations =
+        [ Citation Nothing False Nothing Nothing Nothing [basicItem ident]
+        | ident <- refIds ]
 
   -- for purposes of disambiguation, we remove prefixes and
   -- suffixes and locators, and we convert author-in-text to normal citation.
@@ -446,15 +465,14 @@ disambiguateCitations style bibSortKeyMap citations = do
 
   -- note that citations must go first, and order must be preserved:
   -- we use a "basic item" that strips off prefixes, suffixes, locators
-  let citations' = map cleanCitation citations ++
-                   [Citation Nothing False Nothing Nothing Nothing (map basicItem ghostItems)]
-  allCites <- renderCitations citations'
+  let citations' = map cleanCitation citations ++ ghostCitations
+  allCites <- renderAll citations'
 
   mblang <- asks (localeLanguage . contextLocale)
   styleOpts <- asks contextStyleOptions
   let strategy = styleDisambiguation styleOpts
   let allNameGroups = [ns | Tagged (TagNames _ _ ns) _ <-
-                              concatMap universe allCites]
+                              concatMap (universe . rcOutput) allCites]
   let allNames = nubOrd $ concat allNameGroups
   let primaryNames = nubOrd $ concatMap (take 1) allNameGroups
   allCites' <-
@@ -504,53 +522,118 @@ disambiguateCitations style bibSortKeyMap citations = do
                      (unReferenceMap $ stateRefMap st)
                      refIds }
            -- redo citations
-           renderCitations citations'
+           renderAll citations'
 
-  case getAmbiguities allCites' of
+  disambStates <- getDisambStates
+  case groupAmbiguities (concatMap rcDisambData allCites') of
     []          -> return ()
-    ambiguities -> analyzeAmbiguities mblang strategy citations' ambiguities
+    ambiguities -> analyzeAmbiguities mblang strategy citations' allCites'
+                      disambStates ambiguities
   renderCitations citations
 
  where
 
   renderCitations :: [Citation a] -> Eval a [Output a]
-  renderCitations cs =
+  renderCitations cs = map rcOutput <$> renderAll cs
+
+  renderedCitation :: PositionState -> Output a -> RenderedCitation a
+  renderedCitation posState result =
+    RenderedCitation posState result
+      (map toDisambData (extractTagItems [result]))
+
+  -- Render citations, capturing for each one the position-tracking
+  -- state in effect just before it is rendered.  This state depends
+  -- only on the citation structure, which never changes during
+  -- disambiguation, so a captured snapshot allows the citation to be
+  -- re-rendered individually in a later pass (see refreshCitations).
+  renderAll :: [Citation a] -> Eval a [RenderedCitation a]
+  renderAll cs =
     withRWST (\ctx st -> (ctx,
                           st { stateLastCitedMap = mempty
                              , stateNoteMap = mempty })) $
-     mapM (evalLayout (styleCitation style)) (zip [1..] cs)
+     mapM (\(num, citation) -> do
+             posState <- gets $ \st -> (stateLastCitedMap st,
+                                        stateNoteMap st)
+             result <- evalLayout (styleCitation style) (num, citation)
+             return $ renderedCitation posState result)
+          (zip [1..] cs)
 
-  refreshAmbiguities :: [Citation a] -> Eval a [[DisambData]]
-  refreshAmbiguities = fmap getAmbiguities . renderCitations
+  -- referenceDisambiguation for each reference; a change in these is
+  -- the only thing that can alter how a citation is rendered from one
+  -- disambiguation pass to the next.
+  getDisambStates :: Eval a (M.Map ItemId (Maybe DisambiguationData))
+  getDisambStates =
+    gets (M.map referenceDisambiguation . unReferenceMap . stateRefMap)
+
+  -- Re-render only the citations containing an item whose
+  -- disambiguation data changed since the last rendering (whose
+  -- disambiguation states are given by prevDisambs); for the rest,
+  -- reuse the cached rendering.
+  refreshCitations :: [Citation a]
+                   -> [RenderedCitation a]
+                   -> M.Map ItemId (Maybe DisambiguationData)
+                   -> Eval a ([RenderedCitation a],
+                              M.Map ItemId (Maybe DisambiguationData))
+  refreshCitations cs rendered prevDisambs = do
+    newDisambs <- getDisambStates
+    let changed = M.keysSet $
+          M.differenceWith
+            (\new old -> if new == old then Nothing else Just new)
+            newDisambs prevDisambs
+    let isAffected = any ((`Set.member` changed) . citationItemId)
+                      . citationItems
+    let rerender (num, citation, cached)
+          | isAffected citation = do
+              let posState@(lastCited, noteMap) = rcPositionState cached
+              result <- withRWST
+                (\ctx st -> (ctx, st{ stateLastCitedMap = lastCited
+                                    , stateNoteMap = noteMap })) $
+                evalLayout (styleCitation style) (num, citation)
+              return $ renderedCitation posState result
+          | otherwise = return cached
+    rendered' <- mapM rerender (zip3 [1..] cs rendered)
+    return (rendered', newDisambs)
+
+  refreshAmbiguities :: [Citation a]
+                     -> [RenderedCitation a]
+                     -> M.Map ItemId (Maybe DisambiguationData)
+                     -> Eval a ([[DisambData]],
+                                [RenderedCitation a],
+                                M.Map ItemId (Maybe DisambiguationData))
+  refreshAmbiguities cs rendered prevDisambs = do
+    (rendered', disambs') <- refreshCitations cs rendered prevDisambs
+    return (groupAmbiguities (concatMap rcDisambData rendered'),
+            rendered', disambs')
 
   analyzeAmbiguities :: Maybe Lang
                      -> DisambiguationStrategy
                      -> [Citation a]
+                     -> [RenderedCitation a]
+                     -> M.Map ItemId (Maybe DisambiguationData)
                      -> [[DisambData]]
                      -> Eval a ()
-  analyzeAmbiguities mblang strategy cs ambiguities = do
+  analyzeAmbiguities mblang strategy cs rendered0 disambs0 ambiguities = do
     -- add names to et al.
-    return ambiguities
-      >>= (\as ->
-           (if not (null as) && disambiguateAddNames strategy
-               then do
-                 mapM_ (tryAddNames mblang (disambiguateAddGivenNames strategy)) as
-                 refreshAmbiguities cs
-               else
-                 return as))
-      >>= (\as ->
-           (case disambiguateAddGivenNames strategy of
-                  Just ByCite | not (null as) -> do
-                     mapM_ (tryAddGivenNames mblang) as
-                     refreshAmbiguities cs
-                  _           -> return as))
-      >>= (\as ->
-           (if not (null as) && disambiguateAddYearSuffix strategy
-               then do
-                 addYearSuffixes bibSortKeyMap as
-                 refreshAmbiguities cs
-               else return as))
-      >>= mapM_ tryDisambiguateCondition
+    (as1, rendered1, disambs1) <-
+      if not (null ambiguities) && disambiguateAddNames strategy
+         then do
+           mapM_ (tryAddNames mblang (disambiguateAddGivenNames strategy))
+                 ambiguities
+           refreshAmbiguities cs rendered0 disambs0
+         else return (ambiguities, rendered0, disambs0)
+    (as2, rendered2, disambs2) <-
+      case disambiguateAddGivenNames strategy of
+        Just ByCite | not (null as1) -> do
+          mapM_ (tryAddGivenNames mblang) as1
+          refreshAmbiguities cs rendered1 disambs1
+        _ -> return (as1, rendered1, disambs1)
+    (as3, _, _) <-
+      if not (null as2) && disambiguateAddYearSuffix strategy
+         then do
+           addYearSuffixes bibSortKeyMap as2
+           refreshAmbiguities cs rendered2 disambs2
+         else return (as2, rendered2, disambs2)
+    mapM_ tryDisambiguateCondition as3
 
 basicItem :: ItemId -> CitationItem a
 basicItem iid = CitationItem
@@ -729,8 +812,8 @@ setDisambCondition x = M.adjust
        (alterReferenceDisambiguation
          (\d -> d{ disambCondition = x }))
 
-getAmbiguities :: CiteprocOutput a => [Output a] -> [[DisambData]]
-getAmbiguities =
+groupAmbiguities :: [DisambData] -> [[DisambData]]
+groupAmbiguities =
         mapMaybe
            (\zs ->
                case zs of
@@ -744,8 +827,6 @@ getAmbiguities =
                              _          -> Nothing)
       . groupBy (\x y -> ddRendered x == ddRendered y)
       . sortOn ddRendered
-      . map toDisambData
-      . extractTagItems
 
 extractTagItems :: [Output a] -> [(ItemId, Output a)]
 extractTagItems xs =
