@@ -129,6 +129,17 @@ executable citeproc
   else
      buildable:        False
 
+test-suite unit
+  import:              hie-options
+  type:                exitcode-stdio-1.0
+  hs-source-dirs:      test
+  main-is:             Unit.hs
+  build-depends:       base >= 4.8 && < 5
+                     , citeproc
+                     , pandoc-types
+  ghc-options:         -Wall
+  default-language:    Haskell2010
+
 test-suite spec
   import:              hie-options
   type:                exitcode-stdio-1.0
