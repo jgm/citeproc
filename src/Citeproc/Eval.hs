@@ -360,7 +360,12 @@ replaceMatch rule replacement (names, raw) (z:zs) =
   go y@(Tagged (TagNames _ _ ns) r) =
     case (if null names then CompleteAll else rule) of
         CompleteAll ->
-          if ns == names && (not (null names) || r == raw)
+          -- Compare names as rendered, not name data: name lists that
+          -- differ in data can render identically (e.g. names
+          -- truncated by et-al, or a one-part family name vs. the
+          -- same name as a literal), and the substitution exists to
+          -- avoid exactly this kind of visible repetition.
+          if sameRenderedNames r
              then Just $ replaceAll y
              else Nothing
         CompleteEach ->
@@ -376,6 +381,15 @@ replaceMatch rule replacement (names, raw) (z:zs) =
             num | num >= (1 :: Int) -> Just $ transform (replaceFirst 1) y
             _ -> Nothing
   go _ = Nothing
+  -- The rendered text of the individual names, in order (ignoring
+  -- the label and the "et al" marker).
+  renderedNames x = [outputToText o | Tagged (TagName _) o <- universe x]
+  sameRenderedNames r =
+    case (renderedNames raw, renderedNames r) of
+      -- no names rendered on either side (e.g. a substituted title):
+      -- compare the whole rendered output
+      ([], []) -> outputToText r == outputToText raw
+      (xs, ys) -> xs == ys
   replaceAll (Tagged (TagNames t' nf ns') x)
      = Tagged (TagNames t' nf ns') $
        -- removeName will leave label "ed."
@@ -390,6 +404,7 @@ replaceMatch rule replacement (names, raw) (z:zs) =
               _               -> Literal replacement
   replaceAll x = x
   removeName (Tagged (TagName _) _) = NullOutput
+  removeName (Tagged (TagTerm _) _) = NullOutput -- the "et al" marker
   removeName x = x
   replaceEach (Tagged (TagName n) _)
     | n `elem` names
@@ -2383,18 +2398,23 @@ formatNames namesFormat nameFormat formatting (var, Just (NamesVal names)) =
                        _                         -> etAlPreSpace
             PrecedesAlways            -> delim
             PrecedesNever             -> etAlPreSpace
+  -- The "et al" marker is tagged so that subsequent-author-substitute
+  -- can identify and remove it (see 'replaceMatch').
+  let tagEtAl term = Tagged (TagTerm emptyTerm{ termName = term })
   etAl <- case namesEtAl namesFormat of
-                Just (term, f) -> withFormatting f{
+                Just (term, f) -> tagEtAl term <$>
+                 (withFormatting f{
                     formatPrefix = removeDoubleSpaces <$>
                       Just beforeEtAl <> formatPrefix f } $
-                 lookupTerm' emptyTerm{ termName = term }
+                  lookupTerm' emptyTerm{ termName = term })
                 Nothing
                   | etAlUseLast && not finalNameIsOthers ->
-                    return $
+                    return $ tagEtAl "et-al" $
                       Formatted mempty{ formatPrefix = Just beforeEtAl }
                         [literal "\x2026 "] -- ellipses
                   | otherwise   ->
-                      Formatted mempty{ formatPrefix = Just beforeEtAl }
+                      tagEtAl "et-al"
+                      . Formatted mempty{ formatPrefix = Just beforeEtAl }
                       . (:[]) <$> lookupTerm' emptyTerm{ termName = "et-al" }
   let addNameAndDelim name idx
        | etAlThreshold == Just 0 = NullOutput
