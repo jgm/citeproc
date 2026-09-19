@@ -72,6 +72,7 @@ data EvalState a =
   , stateNoteMap        :: M.Map Int (Set.Set ItemId) -- ids cited in note
   , stateRefMap         :: ReferenceMap a
   , stateReference      :: Reference a
+  , stateReferenceLang  :: Maybe Lang
   , stateUsedYearSuffix :: Bool
   , stateUsedIdentifier :: Bool
   -- ^ tracks whether an identifier (DOI,PMCID,PMID,URL) has yet been used
@@ -126,6 +127,7 @@ evalStyle style mblang refs' citations =
       , stateNoteMap = mempty
       , stateRefMap = refmap
       , stateReference = Reference mempty mempty Nothing mempty
+      , stateReferenceLang = Nothing
       , stateUsedYearSuffix = False
       , stateUsedIdentifier = False
       , stateUsedTitle = False
@@ -1140,7 +1142,11 @@ evalSortKey citeId (SortKeyMacro sortdir nameformat macroname) = do
       newContext oldContext s =
         (oldContext{ contextNameFormat = combineNameFormat
                        nameformat (contextNameFormat oldContext)},
-         s{ stateReference = ref })
+         s{ stateReference = ref
+          , stateReferenceLang =
+              M.lookup "language" (referenceVariables ref) >>=
+                 valToText >>= eitherToMaybe . parseLang
+          })
 evalSortKey citeId (SortKeyVariable sortdir var) = do
   refmap <- gets stateRefMap
   SortKeyValue sortdir <$>
@@ -1351,6 +1357,9 @@ evalItem layout (position, item) = do
            , contextPosition = position
            },
         st{ stateReference = ref
+          , stateReferenceLang = 
+              M.lookup "language" (referenceVariables ref) >>=
+                 valToText >>= eitherToMaybe . parseLang
           , stateUsedYearSuffix = False
           , stateUsedIdentifier = False
           , stateUsedTitle = False
@@ -1547,8 +1556,7 @@ eElement (Element etype formatting) =
     ENames vars namesFormat subst ->
       (:[]) <$> eNames vars namesFormat subst formatting
 
-withFormatting :: CiteprocOutput a
-               => Formatting -> Eval a (Output a) -> Eval a (Output a)
+withFormatting :: Formatting -> Eval a (Output a) -> Eval a (Output a)
 withFormatting (Formatting Nothing Nothing Nothing Nothing Nothing Nothing
                            Nothing Nothing Nothing Nothing Nothing
                            False False False) p
@@ -1556,13 +1564,7 @@ withFormatting (Formatting Nothing Nothing Nothing Nothing Nothing Nothing
 withFormatting formatting p = do
   -- Title case conversion only affects English-language items.
   lang <- asks (localeLanguage . contextLocale)
-  ref <- gets stateReference
-  let reflang = case M.lookup "language" (referenceVariables ref) of
-                  Just (TextVal t)  ->
-                    either (const Nothing) Just $ parseLang t
-                  Just (FancyVal x) ->
-                    either (const Nothing) Just $ parseLang $ toText x
-                  _                 -> Nothing
+  reflang <- gets stateReferenceLang
   let mainLangIsEn Nothing = False
       mainLangIsEn (Just l) = langLanguage l == "en"
   let isEnglish = case reflang of
@@ -2950,4 +2952,8 @@ endsWithSpace t = not (T.null t) && isSpace (T.last t)
 
 beginsWithSpace :: Text -> Bool
 beginsWithSpace t = not (T.null t) && isSpace (T.head t)
+
+eitherToMaybe :: Either a b -> Maybe b
+eitherToMaybe (Left _) = Nothing
+eitherToMaybe (Right x) = Just x
 
