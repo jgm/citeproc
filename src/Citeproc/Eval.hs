@@ -1968,6 +1968,7 @@ eDate var dateType mbShowDateParts dps formatting
     return NullOutput
   | otherwise = do
     datevar <- askVariable var
+    unless (isNothing datevar) $ deleteSubstitutedVariables [var]
     localeDateElt <- M.lookup dateType <$> asks (localeDate . contextLocale)
     let addOverride newdps olddp accum =
           case find ((== dpName olddp) . dpName) newdps of
