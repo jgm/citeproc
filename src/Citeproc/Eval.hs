@@ -19,7 +19,7 @@ import qualified Data.Map as M
 import qualified Data.Set as Set
 import Data.Coerce (coerce)
 import Data.List (find, intersperse, sortBy, sortOn, groupBy, foldl', transpose,
-                  sort, (\\))
+                  partition, sort, (\\))
 import Data.Text (Text)
 import qualified Data.Text as T
 import Data.Char (isSpace, isDigit, isUpper, isLower, isLetter,
@@ -865,6 +865,19 @@ toDisambData (iid, x) =
 -- Grouping and collapsing
 --
 
+-- | A rendered citation item, annotated with precomputed properties
+-- that grouping consults repeatedly (so that they are not recomputed
+-- once per pair of items): whether the item has a prefix or suffix,
+-- and the names (or date) used to determine whether two items can be
+-- grouped ('extractTagged').
+data GroupingItem a =
+  GroupingItem
+  { giOutput    :: Output a
+  , giHasPrefix :: Bool
+  , giHasSuffix :: Bool
+  , giTagged    :: Maybe (Output a)
+  }
+
 groupAndCollapseCitations :: forall a . CiteprocOutput a
                           => Text
                           -> Maybe Text
@@ -881,30 +894,43 @@ groupAndCollapseCitations citeGroupDelim yearSuffixDelim afterCollapseDelim
                   (groupSuccessive isAdjacentCitationNumber xs)
       Just collapseType ->
           Formatted f{ formatDelimiter = Nothing } $
-            foldr (collapseGroup collapseType) [] (groupWith sameNames xs)
+            foldr (collapseGroup collapseType) [] groupedItems
       Nothing ->
           Formatted f $
              map (Formatted mempty{ formatDelimiter = Just citeGroupDelim })
-                 (groupWith sameNames xs)
+                 groupedItems
  where
+  -- To avoid traversing each rendered item once per PAIR of items,
+  -- we annotate every item up front with the data the grouping
+  -- functions consult repeatedly (see 'GroupingItem').
+  groupedItems :: [[Output a]]
+  groupedItems = map (map giOutput) $ groupWith $ map annotate xs
+
+  annotate :: Output a -> GroupingItem a
+  annotate x = GroupingItem
+    { giOutput    = x
+    , giHasPrefix = hasPrefix x
+    , giHasSuffix = hasSuffix x
+    , giTagged    = extractTagged x
+    }
+
   --   Note that we cannot assume we've sorted by name,
-  --   so we can't just use Data.ListgroupBy.  We also
+  --   so we can't just use Data.List.groupBy.  We also
   --   take care not to move anything past a prefix or suffix.
-  groupWith :: (Output a -> Output a -> Bool)
-            -> [Output a]
-            -> [[Output a]]
-  groupWith _ [] = []
-  groupWith isMatched (z:zs)
-   | hasSuffix z = [z] : groupWith isMatched zs
+  groupWith :: [GroupingItem a] -> [[GroupingItem a]]
+  groupWith [] = []
+  groupWith (z:zs)
+   | giHasSuffix z = [z] : groupWith zs
    | otherwise =  -- we allow a prefix on first item in collapsed group
     case span hasNoPrefixOrSuffix zs of
-      ([],ys) -> [z] : groupWith isMatched ys
+      ([],ys) -> [z] : groupWith ys
       (ws,ys) ->
-        (z : filter (isMatched z) ws) :
-          groupWith isMatched (filter (not . isMatched z) ws ++ ys)
+        case partition (sameNames z) ws of
+          (matched, unmatched) ->
+            (z : matched) : groupWith (unmatched ++ ys)
 
-  hasNoPrefixOrSuffix :: Output a -> Bool
-  hasNoPrefixOrSuffix x = not (hasPrefix x) && not (hasSuffix x)
+  hasNoPrefixOrSuffix :: GroupingItem a -> Bool
+  hasNoPrefixOrSuffix x = not (giHasPrefix x) && not (giHasSuffix x)
 
   hasPrefix :: Output a -> Bool
   hasPrefix x = not $ null [y | y@(Tagged TagPrefix _) <- universe x]
@@ -1037,9 +1063,9 @@ groupAndCollapseCitations citeGroupDelim yearSuffixDelim afterCollapseDelim
     = n2 == n1 + 1
   isAdjacentCitationNumber _ _ = False
 
-  sameNames :: Output a -> Output a -> Bool
+  sameNames :: GroupingItem a -> GroupingItem a -> Bool
   sameNames x y =
-    case (extractTagged x, extractTagged y) of
+    case (giTagged x, giTagged y) of
       (Just (Tagged (TagNames t1 _nf1 ns1) ws1),
        Just (Tagged (TagNames t2 _nf2 ns2) ws2))
         -> t1 == t2 && (if ns1 == ns2
