@@ -20,6 +20,7 @@ import Control.Monad (unless, when)
 import Data.Char (isSpace, isPunctuation, isAlphaNum)
 
 instance CiteprocOutput Inlines where
+  isEmpty               = null
   toText                = stringify
   fromText t            = (if " " `T.isPrefixOf` t
                               then B.space

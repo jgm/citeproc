@@ -200,6 +200,7 @@ prettyCiteprocError (CiteprocLocaleNotFound t) =
 -- that corresponds to the markup allowed in CSL JSON. See
 -- the 'Citeproc.Pandoc' module for an instance for Pandoc 'Inlines'.
 class (Semigroup a, Monoid a, Show a, Eq a, Ord a) => CiteprocOutput a where
+  isEmpty                     :: a -> Bool
   toText                      :: a -> Text
   fromText                    :: Text -> a
   dropTextWhile               :: (Char -> Bool) -> a -> a
@@ -220,7 +221,7 @@ class (Semigroup a, Monoid a, Show a, Eq a, Ord a) => CiteprocOutput a where
 
 addFormatting :: CiteprocOutput a => Locale -> Formatting -> a -> a
 addFormatting locale f x =
-  if T.null (toText x)  -- TODO inefficient
+  if isEmpty x
      then mempty
      else
        maybe id addDisplay (formatDisplay f) .

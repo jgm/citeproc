@@ -100,6 +100,12 @@ instance Biplate (CslJson a) (CslJson a) where
   biplate = plateSelf
 
 instance CiteprocOutput (CslJson Text) where
+  isEmpty               = \x ->
+     case x of
+       CslEmpty -> True
+       CslText "" -> True
+       CslConcat y z -> isEmpty y && isEmpty z
+       _ -> False
   toText                = fold
   fromText              = \t -> if T.null t
                                    then CslEmpty
