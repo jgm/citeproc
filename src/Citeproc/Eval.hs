@@ -12,7 +12,7 @@ import Citeproc.Style (mergeLocales)
 import qualified Citeproc.Unicode as Unicode
 import Control.Monad.Trans.RWS.CPS
 import Data.Containers.ListUtils (nubOrdOn, nubOrd)
-import Safe (headMay, headDef, lastMay, initSafe, tailSafe, maximumMay)
+import Safe (atMay, headMay, headDef, lastMay, initSafe, tailSafe, maximumMay)
 import Data.Maybe
 import Control.Monad (foldM, foldM_, zipWithM, when, unless)
 import qualified Data.Map as M
@@ -2332,6 +2332,15 @@ formatNames namesFormat nameFormat formatting (var, Just (NamesVal names)) =
                                | numnames < x
                                , finalNameIsOthers -> Just (numnames - 1)
                         _ -> Nothing
+  -- Is the name at (1-based) index i rendered inverted (family name
+  -- first)?  Only personal names can be inverted; literal names
+  -- cannot.  See name_DelimiterAfterInverted.txt.
+  let nameIsInverted i = maybe False (isJust . nameFamily)
+                           (atMay names (i - 1)) &&
+                         case nameAsSortOrder nameFormat of
+                           Just NameAsSortOrderAll   -> True
+                           Just NameAsSortOrderFirst -> i == 1
+                           Nothing                   -> False
   let beforeLastDelim =
         case mbAndTerm of
           Nothing -> delim
@@ -2342,11 +2351,8 @@ formatNames namesFormat nameFormat formatting (var, Just (NamesVal names)) =
                   | numnames > 2          -> delim
                   | otherwise             -> ""
                 PrecedesAfterInvertedName
-                  -> case nameAsSortOrder nameFormat of
-                       Just NameAsSortOrderAll -> delim
-                       Just NameAsSortOrderFirst
-                         | numnames < 3        -> delim
-                       _                       -> ""
+                  | nameIsInverted (numnames - 1) -> delim
+                  | otherwise                     -> ""
                 PrecedesAlways            -> delim
                 PrecedesNever             -> ""
   let andPreSpace = case beforeLastDelim of
@@ -2372,11 +2378,9 @@ formatNames namesFormat nameFormat formatting (var, Just (NamesVal names)) =
               , etAlThreshold > Just 1 -> delim
               | otherwise              -> etAlPreSpace
             PrecedesAfterInvertedName
-                  -> case nameAsSortOrder nameFormat of
-                       Just NameAsSortOrderAll  -> delim
-                       Just NameAsSortOrderFirst
-                         | etAlThreshold < Just 2 -> delim
-                       _                          -> etAlPreSpace
+                  -> case etAlThreshold of
+                       Just t | nameIsInverted t -> delim
+                       _                         -> etAlPreSpace
             PrecedesAlways            -> delim
             PrecedesNever             -> etAlPreSpace
   etAl <- case namesEtAl namesFormat of

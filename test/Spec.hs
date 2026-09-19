@@ -421,7 +421,6 @@ expectedFailures = [
   "test/csl/magic_SubsequentAuthorSubstituteNotFooled.txt",
   "test/csl/magic_TermCapitalizationWithPrefix.txt",
   "test/csl/name_CiteGroupDelimiterWithYearSuffixCollapse2.txt",
-  "test/csl/name_DelimiterAfterInverted.txt",
   "test/csl/name_EtAlWithCombined.txt",
   "test/csl/name_HebrewAnd.txt",
   "test/csl/name_InTextMarkupInitialize.txt",
