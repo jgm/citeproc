@@ -393,7 +393,6 @@ expectedFailures = [
   "test/csl/bugreports_SmallCapsEscape.txt",
   "test/csl/bugreports_SortedIeeeItalicsFail.txt",
   "test/csl/bugreports_ikeyOne.txt",
-  "test/csl/collapse_AuthorCollapseNoDateSorted.txt",
   "test/csl/date_NegativeDateSort.txt",
   "test/csl/date_NegativeDateSortViaMacro.txt",
   "test/csl/date_NegativeDateSortViaMacroOnYearMonthOnly.txt",

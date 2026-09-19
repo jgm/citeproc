@@ -974,7 +974,14 @@ groupAndCollapseCitations citeGroupDelim yearSuffixDelim afterCollapseDelim
   collapseGroup :: Collapsing -> [Output a] -> [Output a] -> [Output a]
   collapseGroup _ [] zs = zs
   collapseGroup collapseType (y:ys) zs =
-    let ys' = y : map (transform removeNames) ys
+        -- After removing the names, a cite with no date renders empty
+        -- (e.g. a cite with no issued date under collapse="year");
+        -- drop it so we don't emit a stray delimiter.  See
+        -- collapse_AuthorCollapseNoDateSorted.txt.
+    let removeNamesFromCite u =
+          let u' = transform removeNames u
+           in if outputToText u' == mempty then Nothing else Just u'
+        ys' = y : mapMaybe removeNamesFromCite ys
         ws = collapseYearSuffix collapseType ys'
         noCollapse = ws == y:ys
         noYearSuffixCollapse = ws == ys'
