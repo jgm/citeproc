@@ -11,6 +11,11 @@
 -- * sparse: only every 20th reference collides; the rest have unique
 --   authors.  This is the realistic case for large bibliographies.
 --
+-- * collapse: the style has collapse="year" and the citation clusters
+--   have 100 items each, to exercise the cite grouping/collapsing
+--   code; authors are unique so that disambiguation stays quiet (and
+--   grouping does all-pairs comparisons, its worst case).
+--
 -- Run with, e.g.:
 --   cabal bench --benchmark-options="800 1600 3200"
 module Main (main) where
@@ -31,19 +36,23 @@ main :: IO ()
 main = do
   args <- getArgs
   let sizes = if null args then [800, 1600, 3200] else map read args
-  parseResult <- parseStyle (\_ -> return "") styleText
-  style <- case parseResult of
-             Left err  -> print err >> exitFailure
-             Right sty -> return (sty :: Style (CslJson Text))
-  let scenarios = [ ("dense",  const True)
-                  , ("sparse", \i -> i `mod` 20 == 0)
-                  ] :: [(String, Int -> Bool)]
-  forM_ scenarios $ \(scenario, collides) ->
+  let getStyle collapse = do
+        parseResult <- parseStyle (\_ -> return "") (styleText collapse)
+        case parseResult of
+          Left err  -> print err >> exitFailure
+          Right sty -> return (sty :: Style (CslJson Text))
+  style <- getStyle False
+  collapseStyle <- getStyle True
+  let scenarios = [ ("dense",    const True,            3,   style)
+                  , ("sparse",   \i -> i `mod` 20 == 0, 3,   style)
+                  , ("collapse", const False,           100, collapseStyle)
+                  ] :: [(String, Int -> Bool, Int, Style (CslJson Text))]
+  forM_ scenarios $ \(scenario, collides, clusterSize, sty) ->
       forM_ sizes $ \n -> do
         refs <- either fail return $ mapM refFromValue
                   $ mkRefValues collides n
-        let result = citeproc defaultCiteprocOptions style Nothing refs
-                       (mkCitations n)
+        let result = citeproc defaultCiteprocOptions sty Nothing refs
+                       (mkCitations clusterSize n)
         (t, outlen) <- timeItT $ evaluate $ T.length $ T.concat
                          $ map (renderCslJson False mempty)
                          $ resultCitations result
@@ -81,8 +90,8 @@ mkRefValues collides n = map mkRef [1..n]
   givens = ["Alexandra", "Benjamin", "Catherine",
             "Daniel", "Eleanor", "Frederick"]
 
-mkCitations :: Int -> [Citation (CslJson Text)]
-mkCitations n = map mkCitation (chunksOf 3 [1..n])
+mkCitations :: Int -> Int -> [Citation (CslJson Text)]
+mkCitations clusterSize n = map mkCitation (chunksOf clusterSize [1..n])
  where
   chunksOf _ [] = []
   chunksOf k xs = let (as, bs) = splitAt k xs in as : chunksOf k bs
@@ -107,14 +116,16 @@ mkCitations n = map mkCitation (chunksOf 3 [1..n])
 itemName :: Int -> Text
 itemName i = "ref" <> T.pack (show i)
 
--- An author-date style with every disambiguation strategy enabled.
-styleText :: Text
-styleText = T.unlines
+-- An author-date style with every disambiguation strategy enabled
+-- (and, if the argument is True, collapse=\"year\").
+styleText :: Bool -> Text
+styleText collapse = T.unlines
   [ "<style xmlns=\"http://purl.org/net/xbiblio/csl\" class=\"in-text\" version=\"1.0\">"
   , "  <info> <id/> <title/> <updated>2020-01-01T00:00:00Z</updated> </info>"
   , "  <citation disambiguate-add-names=\"true\""
   , "            disambiguate-add-givenname=\"true\""
   , "            disambiguate-add-year-suffix=\"true\""
+  , if collapse then "            collapse=\"year\"" else ""
   , "            et-al-min=\"3\" et-al-use-first=\"1\">"
   , "    <layout prefix=\"(\" suffix=\")\" delimiter=\"; \">"
   , "      <group delimiter=\" \">"
