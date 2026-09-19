@@ -502,10 +502,16 @@ disambiguateCitations style bibSortKeyMap citations = do
                    PrimaryNameWithInitials -> primaryNames
                    PrimaryName -> primaryNames
                    _ -> allNames
-           let familyNames = nubOrd $ mapMaybe nameFamily relevantNames
+           -- The short form of a name includes the non-dropping
+           -- particle, so e.g. "dos Santos" and "Santos" are not
+           -- ambiguous with each other.  See
+           -- disambiguate_PrimaryNameWithNonDroppingParticle.txt.
+           let shortName v = (nameNonDroppingParticle v, nameFamily v)
+           let familyNames = nubOrd [shortName v | v <- relevantNames
+                                                 , isJust (nameFamily v)]
            let grps = map (\name ->
                              [v | v <- relevantNames
-                                , nameFamily v == Just name])
+                                , shortName v == name])
                           familyNames
            let toHint names name =
                   if any (initialsMatch mblang name) (filter (/= name) names)
@@ -790,7 +796,9 @@ addNameHint :: Maybe Lang -> [Name] -> (ItemId, Name) -> Eval a (Maybe ItemId)
 addNameHint mblang names (item, name) = do
   let familyMatches = [n | n <- names
                          , n /= name
-                         , nameFamily n == nameFamily name]
+                         , nameFamily n == nameFamily name
+                         , nameNonDroppingParticle n ==
+                           nameNonDroppingParticle name]
   case familyMatches of
     [] -> return Nothing
     _  -> do

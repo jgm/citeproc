@@ -402,8 +402,6 @@ expectedFailures = [
   "test/csl/disambiguate_DisambiguationHang.txt",
   "test/csl/disambiguate_IncrementalExtraText.txt",
   "test/csl/disambiguate_InitializeWithButNoDisambiguation.txt",
-  "test/csl/disambiguate_PrimaryNameWithNonDroppingParticle.txt",
-  "test/csl/disambiguate_PrimaryNameWithParticle.txt",
   "test/csl/disambiguate_YearCollapseWithInstitution.txt",
   "test/csl/disambiguate_YearSuffixAtTwoLevels.txt",
   "test/csl/disambiguate_YearSuffixWithEtAlSubequent.txt",
