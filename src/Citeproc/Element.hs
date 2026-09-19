@@ -145,9 +145,16 @@ parseTerm m node = do
   name <- case lookupAttribute "name" attr of
                 Just n   -> return n
                 Nothing  -> parseFailure "Text node has no name attribute"
-  let single = mconcat $ map getTextContent $ getChildren "single" node
-  let multiple = mconcat $ map getTextContent $ getChildren "multiple" node
-  let txt = getTextContent node
+  -- Whitespace-only content (e.g. <term name="and others">
+  -- </term> in a pretty-printed style) defines an empty term;
+  -- but leading/trailing whitespace in an otherwise nonempty term
+  -- is significant (e.g. <term name="ad"> AD</term>).
+  let unlessBlank t = if T.null (T.strip t) then mempty else t
+  let single = unlessBlank $ mconcat $ map getTextContent $
+                 getChildren "single" node
+  let multiple = unlessBlank $ mconcat $ map getTextContent $
+                   getChildren "multiple" node
+  let txt = unlessBlank $ getTextContent node
   let form = case lookupAttribute "form" attr of
                Just "short"      -> Short
                Just "verb"       -> Verb

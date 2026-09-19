@@ -414,7 +414,6 @@ expectedFailures = [
   "test/overrides/fullstyles_ABdNT.txt",
   "test/csl/integration_FirstReferenceNoteNumberPositionChange.txt",
   "test/csl/integration_IbidOnInsert.txt",
-  "test/csl/label_EditorTranslator1.txt",
   "test/csl/magic_CapitalizeFirstOccurringTerm.txt",
   "test/csl/magic_PunctuationInQuoteNested.txt",
   "test/csl/magic_SubsequentAuthorSubstituteNotFooled.txt",
