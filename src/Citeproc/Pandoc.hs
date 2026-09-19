@@ -122,31 +122,25 @@ punctuationInsideQuotes = B.fromList . go . walk go . B.toList
   go (Span ("",["csl-quoted"],[]) xs : Str t : rest)
     | startsWithMovable t
       = Span ("",["csl-quoted"],[])
-           (xs ++ [Str (T.take 1 t) | not (endWithPunct True xs)]) :
+           (xs ++ [Str (T.take 1 t) | not (endWithPunct xs)]) :
         if T.length t == 1
            then go rest
            else Str (T.drop 1 t) : go rest
   go (Quoted qt xs : Str t : rest)
     | startsWithMovable t
       = Quoted qt
-           (xs ++ [Str (T.take 1 t) | not (endWithPunct True xs)]) :
+           (xs ++ [Str (T.take 1 t) | not (endWithPunct xs)]) :
         if T.length t == 1
            then go rest
            else Str (T.drop 1 t) : go rest
   go (x:xs) = x : go xs
 
-endWithPunct :: Bool -> [Inline] -> Bool
-endWithPunct _ [] = False
-endWithPunct onlyFinal xs@(_:_) =
-  case reverse (T.unpack $ stringify xs) of
-       []                       -> True
-       -- covers .), .", etc.:
-       (d:c:_) | isPunctuation d
-                 && not onlyFinal
-                 && isEndPunct c -> True
-       (c:_) | isEndPunct c      -> True
-             | otherwise         -> False
-  where isEndPunct c = c `elem` (".,;:!?" :: String)
+endWithPunct :: [Inline] -> Bool
+endWithPunct [] = False
+endWithPunct xs =
+  case T.unsnoc (stringify xs) of
+    Nothing     -> True   -- no text content
+    Just (_, c) -> c `elem` (".,;:!?" :: String)
 
 -- Trimming can reduce a Str, Space, or SoftBreak to an empty Str;
 -- remove these leftovers, at all nesting levels.
