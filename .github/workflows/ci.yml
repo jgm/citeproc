@@ -15,17 +15,13 @@ jobs:
         os: [ubuntu-latest]
         cabal: ["latest"]
         ghc:
-          - "8.10"
-          - "9.0"
-          - "9.2"
-          - "9.4"
           - "9.6"
           - "9.8"
           - "9.10"
           - "9.12"
 
     steps:
-    - uses: actions/checkout@v4
+    - uses: actions/checkout@v7
       if: github.event.action == 'opened' || github.event.action == 'synchronize' || github.event.ref == 'refs/heads/master'
 
     - name: Install cabal/ghc
@@ -35,7 +31,7 @@ jobs:
 
     - name: Cache cabal global package db
       id:   cabal-global
-      uses: actions/cache@v4
+      uses: actions/cache@v6
       with:
         path: |
           ~/.cabal
@@ -43,7 +39,7 @@ jobs:
 
     - name: Cache cabal work
       id:   cabal-local
-      uses: actions/cache@v4
+      uses: actions/cache@v6
       with:
         path: |
           dist-newstyle
@@ -65,38 +61,3 @@ jobs:
       run: |
         cabal test --disable-optimization all
 
-  stack:
-    name: stack / ghc ${{ matrix.ghc }}
-    runs-on: ubuntu-latest
-    strategy:
-      matrix:
-        stack: ["3.1.1"]
-        ghc: ["9.8.4"]
-        stackopts: ["--flag citeproc:icu", ""]
-
-    steps:
-    - uses: actions/checkout@v4
-      if: github.event.action == 'opened' || github.event.action == 'synchronize' || github.event.ref == 'refs/heads/master'
-
-    # We should have ghc 8.10, cabal, stack pre-installed
-    # - uses: haskell/actions/setup@v1
-    #   with:
-    #     enable-stack: true
-    #     stack-version: 'latest'
-
-    - uses: actions/cache@v4
-      name: Cache ~/.stack
-      with:
-        path: ~/.stack
-        key: ${{ runner.os }}-${{ matrix.ghc }}-stack
-
-    - name: Install icu
-      run: |
-        sudo apt-get install libicu-dev
-
-    - name: Build
-      run: |
-        stack build ${{ matrix.stackopts }} --system-ghc --fast --test --bench --no-run-tests --no-run-benchmarks
-
-    # We don't run tests because of some slight discrepancies in test
-    # results with icu; right now we just want to make sure it builds.
