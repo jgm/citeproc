@@ -96,6 +96,10 @@ writes a JSON-encoded `Result` object to `stdout`. (It does so
 using `CslJson Text` as the underlying type.) This executable can
 be used to add citation processing to non-Haskell projects.
 
+When CSL abbreviations are provided, they are applied when a variable
+is rendered with `form="short"`.  This includes short-form rendering
+of literal names.
+
 `citeproc --help` will summarize usage information.  See
 the [man page](man/citeproc.1.md) for more information.
 

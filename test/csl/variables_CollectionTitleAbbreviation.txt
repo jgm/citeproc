@@ -1,0 +1,54 @@
+>>===== MODE =====>>
+citation
+<<===== MODE =====<<
+
+
+>>===== RESULT =====>>
+OMT
+<<===== RESULT =====<<
+
+
+>>===== CSL =====>>
+<style
+      xmlns="http://purl.org/net/xbiblio/csl"
+      class="note"
+      version="1.0">
+  <info>
+    <id />
+    <title />
+    <updated>2026-05-04T00:00:00+00:00</updated>
+  </info>
+  <citation>
+    <layout>
+      <text variable="collection-title" form="short"/>
+    </layout>
+  </citation>
+</style>
+<<===== CSL =====<<
+
+
+>>===== INPUT =====>>
+[
+  {
+    "collection-title": "Oxford Medieval Texts",
+    "id": "ITEM-1",
+    "type": "book"
+  }
+]
+<<===== INPUT =====<<
+
+
+>>===== ABBREVIATIONS =====>>
+{
+  "default": {
+    "collection-title": {
+      "Oxford Medieval Texts": "OMT"
+    }
+  }
+}
+<<===== ABBREVIATIONS =====<<
+
+
+>>===== VERSION =====>>
+1.0
+<<===== VERSION =====<<
