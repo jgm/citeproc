@@ -1,5 +1,68 @@
 # citeproc changelog
 
+## 0.14
+
+  * [API change] Replace unlawful Ord Term instance with `termMatches`.
+    The old instance violated the Ord laws. It was only used for term
+    matching in lookupTerm, so we now export a function `termMatches`
+    for that purpose.
+
+  * [API change] Add `isEmpty` to CiteprocOutput class.
+    This allows us to avoid rendering to Text just to check for
+    emptiness.
+
+  * Fix flip-flop state bugs in `cslJsonToJson`.
+
+  * Fix end-trimming bugs in the pandoc backend's `dropTextWhileEnd'`.
+
+  * Fix EDTF year 0000 (1 BC) rendering as an open date range.
+    EDTF uses astronomical year numbering, in which 0000 means 1 BC, but
+    the parser passed year 0 through unchanged, colliding with the internal
+    year-0 sentinel for the empty side of an open date range; a 1 BC date
+    therefore rendered as nothing.
+
+  * Fix `punctuationInsideQuotes` missing nested quoted content.
+
+  * Remove empty Str elemnets left behind by Pandoc inline trimming.
+
+  * Fix `showYearSuffix` overflow past "zz".
+
+  * Use locale-aware lowercasing in `initialize`.
+
+  * Make `removeDoubleSpaces` collapse all space runs.
+
+  * Add some benchmarks for disambiguation and collapsing.
+
+  * Make disambiguation re-render only affected citations.
+
+  * Avoid repeated traversals in citation grouping.
+
+  * Cache reference lang so we don't reparse it all the time.
+
+  * Simplify `endWithPunct`.
+
+  * Only apply `after-inverted-name` delimiter after actually inverted names.
+    Fixes `test/csl/name_DelimiterAfterInverted.txt`.
+
+  * Compare rendered names in subsequent-author-substitute.
+    Fixes `fullstyles_ChicagoAuthorDateSimple.txt`, `sort_ChicagoYearSuffix1.txt`,
+    and `sort_ChicagoYearSuffix2.txt`.
+
+  * Treat whitespace-only term definitions as empty.
+    Fixes `test/csl/label_EditorTranslator1.txt`.
+
+  * Suppress date variables rendered via `cs:substitute`.
+    Improves `test/csl/bugreports_LegislationCrash.txt`, which
+    however still is an expected failure because of a spurious
+    space in the expected output.
+
+  * Drop cites that render empty after collapsing.
+    Fixes `test/csl/collapse_AuthorCollapseNoDateSorted.txt`.
+
+  * Include non-dropping particle when grouping names for disambiguation.
+    Fixes `test/csl/disambiguate_PrimaryNameWithParticle.txt` and
+    `test/csl/disambiguate_PrimaryNameWithNonDroppingParticle.txt`.
+
 ## 0.13.0.1
 
   * Detect terminal punctuation hidden by closing quotes (#179,
