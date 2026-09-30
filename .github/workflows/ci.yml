@@ -34,7 +34,7 @@ jobs:
       uses: actions/cache@v6
       with:
         path: |
-          ~/.cabal
+          ~/.local/state/cabal
         key: ${{ runner.os }}-${{ matrix.ghc }}-${{ matrix.cabal }}-cabal-global-${{ hashFiles('cabal.project') }}
 
     - name: Cache cabal work
