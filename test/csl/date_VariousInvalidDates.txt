@@ -3,6 +3,25 @@ citation
 <<===== MODE =====<<
 
 
+>>==== DESCRIPTION ====>>
+
+This depends on correct handling of seasons expressed in month parts per the
+discussion at
+https://discourse.citationstyles.org/t/edtf-and-date-representation/1663
+
+Additionally, it depends on further, special handling for month values 17 and
+18 per the code comment at
+
+https://github.com/Juris-M/citeproc-js/blob/master/src/node_datepart.js#L249
+
+which describes seasons derived from months "with a value of 13, 14, 15, 16,
+or (to allow correct ranging with Down Under dates) 17 or 18."
+
+This test is also described in
+https://github.com/zotero/citeproc-rs/blob/master/crates/citeproc/tests/data/snapshot.txt#L60
+
+<<==== DESCRIPTION ====<<
+
 
 >>===== RESULT =====>>
 Date: (); Date: (Spring); Date: (Spring); Date: (); Date: (Winter)
@@ -10,7 +29,7 @@ Date: (); Date: (Spring); Date: (Spring); Date: (); Date: (Winter)
 
 
 >>===== CSL =====>>
-<style 
+<style
       xmlns="http://purl.org/net/xbiblio/csl"
       class="note"
       version="1.0">
@@ -106,4 +125,3 @@ Date: (); Date: (Spring); Date: (Spring); Date: (); Date: (Winter)
 >>===== VERSION =====>>
 1.0
 <<===== VERSION =====<<
-

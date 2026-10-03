@@ -1929,7 +1929,7 @@ pCslJson locale = P.choice
   pCslSub = addVerticalAlign SubAlign . mconcat <$>
     (P.string "<sub>" *> P.manyTill' pCsl (P.string "</sub>"))
   pCslBaseline = addVerticalAlign BaselineAlign . mconcat <$>
-    (P.string "<span" *> pSpace *> P.string "style=\"baseline\">" *>
+    (P.string "<span" *> pSpace *> P.string "class=\"baseline\">" *>
       P.manyTill' pCsl (P.string "</span>"))
   pCslSmallCaps = addFontVariant SmallCapsVariant . mconcat <$>
     ((P.string "<span" *> pSpace *>

@@ -13,7 +13,7 @@ bibliography
 
 
 >>===== CSL =====>>
-<style 
+<style
       xmlns="http://purl.org/net/xbiblio/csl"
       class="note"
       version="1.0">
@@ -29,8 +29,8 @@ bibliography
     </names>
   </macro>
   <macro name="publisher">
-    <text variable="publisher" suffix=", "/>       
-    <text variable="publisher-place" suffix=", "/>     
+    <text variable="publisher" suffix=", "/>
+    <text variable="publisher-place" suffix=", "/>
     <text macro="date"/>
   </macro>
   <macro name="date">
@@ -104,7 +104,8 @@ bibliography
   <!--   formatting citation      -->
   <citation et-al-min="3" et-al-use-first="1" disambiguate-add-year-suffix="true" collapse="year">
     <layout>
-      <text value="BOGUS"/>
+      <text macro="title" suffix=". "/>
+      <text macro="publisher"/>
     </layout>
   </citation>
   <!--   formatting bibliography      -->
@@ -193,4 +194,3 @@ bibliography
 >>===== VERSION =====>>
 1.0
 <<===== VERSION =====<<
-

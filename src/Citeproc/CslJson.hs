@@ -259,7 +259,7 @@ renderCslJson useEntities locale =
                           go ctx{ useSmallCaps = True } x <> "</span>"
       CslSup x -> "<sup>" <> go ctx x <> "</sup>"
       CslSub x -> "<sub>" <> go ctx x <> "</sub>"
-      CslBaseline x -> "<span style=\"baseline\">" <> go ctx x <> "</span>"
+      CslBaseline x -> "<span class=\"baseline\">" <> go ctx x <> "</span>"
       CslDiv t x -> "<div class=\"csl-" <> t <> "\">" <> go ctx x <> "</div>"
       CslLink t x -> "<a href=\"" <> t <> "\">" <> go ctx x <> "</a>"
       CslNoCase x -> go ctx x -- nocase is just for internal purposes

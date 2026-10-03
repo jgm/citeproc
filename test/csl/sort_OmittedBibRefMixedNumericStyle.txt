@@ -2,6 +2,27 @@
 bibliography
 <<==== MODE ====<<
 
+>>==== DESCRIPTION ====>>
+
+This depends on
+
+1. identifying when citation-number is used,
+
+2. outputting a particular error message in place of a reference that produces
+   no output, to maintain citation-number sequencing, and
+
+2. rendering the <bibliography/> <text variable="citation-number"/>
+   for the omitted reference, ignoring the conditions that omitted the
+   reference.
+
+For an implementation example, see
+https://github.com/zotero/citeproc-rs/blob/master/crates/proc/src/db.rs#L1414
+
+Compare to the sort_OmittedBibRefNonNumericStyle test which has a similar
+non-rendering reference but no citation-numbers.
+
+<<==== DESCRIPTION ====<<
+
 >>==== RESULT ====>>
 <div class="csl-bib-body">
   <div class="csl-entry">1. Anderson, Book One</div>
@@ -27,7 +48,7 @@ bibliography
 <<==== CITATION-ITEMS ====<<
 
 >>==== CSL ====>>
-<style 
+<style
       xmlns="http://purl.org/net/xbiblio/csl"
       class="note"
       version="1.0">
@@ -120,4 +141,3 @@ bibliography
 >>===== VERSION =====>>
 1.0
 <<===== VERSION =====<<
-

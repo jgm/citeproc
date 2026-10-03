@@ -22,6 +22,7 @@ Example O, at 11564–78
 Example P, at 13792–803
 Example Q, at 1496–1504
 Example R, at 2787–2816
+Example S, at 11153–2359
 <<===== RESULT =====<<
 
 
@@ -115,6 +116,11 @@ Example R, at 2787–2816
     [
         {
             "id": "ITEM-18"
+        }
+    ],
+    [
+        {
+            "id": "ITEM-19"
         }
     ]
 ]
@@ -252,9 +258,15 @@ Example R, at 2787–2816
         "type": "book"
     }, 
     {
-        "id": "ITEM-18", 
-        "page": "2787-816", 
-        "title": "Example R", 
+        "id": "ITEM-18",
+        "page": "2787-816",
+        "title": "Example R",
+        "type": "book"
+    },
+    {
+        "id": "ITEM-19",
+        "page": "11153-12359",
+        "title": "Example S",
         "type": "book"
     }
 ]
