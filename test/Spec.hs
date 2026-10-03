@@ -7,12 +7,12 @@ import Citeproc
 import Citeproc.CslJson
 import Data.Algorithm.DiffContext
 import System.TimeIt (timeIt)
-import Control.Monad (unless)
+import Control.Monad (unless, when)
 import Control.Monad.Trans.State
 import Control.Monad.IO.Class (liftIO)
 import System.Environment (getArgs)
 import System.Exit
-import System.Directory (getDirectoryContents, doesFileExist)
+import System.Directory (getDirectoryContents, doesFileExist, removeFile)
 import Data.Text (Text)
 import qualified Data.Set as Set
 import qualified Text.PrettyPrint as Pretty
@@ -49,6 +49,7 @@ data CiteprocTest a =
   , citations     :: Maybe [Citation a]
   , abbreviations :: Maybe Abbreviations
   , skipReason    :: Maybe Text
+  , expectedFailure :: Maybe Text
   , options       :: Maybe TestOptions
   } deriving (Show)
 
@@ -73,9 +74,17 @@ data TestResult =
   | Errored CiteprocError
   deriving (Show, Eq)
 
-runTest :: CiteprocTest (CslJson Text)
+-- | Command line options of the test suite itself.
+data SpecOptions =
+  SpecOptions
+  { accept  :: Bool  -- ^ record failures in .expected files
+  , verbose :: Bool  -- ^ report warnings, passes and expected failures
+  } deriving (Show)
+
+runTest :: SpecOptions
+        -> CiteprocTest (CslJson Text)
         -> StateT Counts IO TestResult
-runTest test = do
+runTest specOpts test = do
   let opts = fromMaybe defaultTestOptions . options $ test
   let cites =
         case citations test of
@@ -116,16 +125,16 @@ runTest test = do
             let loc = mergeLocales Nothing style
             let actual = citeproc (testCiteprocOpts opts)
                            style Nothing (input test) cites
-            unless (null (resultWarnings actual)) $ do
+            when (verbose specOpts && not (null (resultWarnings actual))) $
               liftIO $ do
                 TIO.putStrLn $ "[WARNING]  " <> T.pack (path test)
                 mapM_ (TIO.putStrLn . ("==> " <>))
                      $ resultWarnings actual
             case mode test of
-              "citation" -> compareTest test
+              "citation" -> compareTest specOpts test
                   (T.intercalate "\n" $ map (renderCslJson' loc)
                                           (resultCitations actual))
-              "bibliography" -> compareTest test
+              "bibliography" -> compareTest specOpts test
                   (T.intercalate "\n"
                     (addDivs $ map (renderCslJson' loc . snd)
                                           (resultBibliography actual)))
@@ -176,27 +185,54 @@ removeCitationNums =
                                  c == '[' || c == ']' || isDigit c)
 
 
-compareTest :: CiteprocTest (CslJson Text)
+compareTest :: SpecOptions
+            -> CiteprocTest (CslJson Text)
             -> Text
             -> StateT Counts IO TestResult
-compareTest test actual = do
+compareTest specOpts test actual = do
   let expected = if mode test == "citation" && isJust (citations test)
                     then removeCitationNums $ result test
                     else result test
+  let expectedFailureFile = expectedFailurePath (path test)
   if actual == expected
      then do
        modify $ \st -> st{ passed = (category test, path test) : passed st }
-       -- suppress PASSED messages
-       -- liftIO $ TIO.putStrLn $ "[PASSED] " <> path test
+       when (verbose specOpts) $
+         liftIO $ TIO.putStrLn $ "[PASSED]   " <> T.pack (path test)
+       case expectedFailure test of
+         Nothing -> return ()
+         Just _
+           | accept specOpts -> liftIO $ do
+               removeFile expectedFailureFile
+               putStrLn $ "[REMOVED]  " <> expectedFailureFile
+           | otherwise -> modify $ \st ->
+               st{ unexpectedPasses = path test : unexpectedPasses st }
        return Passed
      else do
        modify $ \st -> st{ failed = (category test, path test) : failed st }
-       liftIO $ do
-         TIO.putStrLn $ (if path test `elem` expectedFailures
-                            then "[FAILED:EXPECTED] "
-                            else "[FAILED:UNEXPECTED] ") <> T.pack (path test)
-         showDiff expected actual
+       if expectedFailure test == Just actual
+          then when (verbose specOpts) $ liftIO $ do
+                 TIO.putStrLn $ "[FAILED:EXPECTED] " <> T.pack (path test)
+                 showDiff expected actual
+          else if accept specOpts
+                  then liftIO $ do
+                    TIO.writeFile expectedFailureFile (actual <> "\n")
+                    putStrLn $ "[ACCEPTED] " <> expectedFailureFile
+                  else do
+                    modify $ \st ->
+                      st{ unexpectedFailures =
+                            path test : unexpectedFailures st }
+                    liftIO $ do
+                      TIO.putStrLn $
+                        "[FAILED:UNEXPECTED] " <> T.pack (path test)
+                      showDiff expected actual
        return $ Failed actual expected
+
+-- A test that is known to fail has, alongside its .txt file, an .expected
+-- file containing the output we currently produce.  The failure counts as
+-- an expected failure only if the output still matches this file exactly.
+expectedFailurePath :: FilePath -> FilePath
+expectedFailurePath fp = fp -<.> ".expected"
 
 splitSections :: ByteString -> [(Text, ByteString)]
 splitSections = snd . foldl' go startingState . B.lines . removeBOM
@@ -234,6 +270,13 @@ loadTestCase fp = do
     if exists
        then Just <$> TIO.readFile (fp <> ".skip")
        else return Nothing
+  expectedFail <- do
+    let expectedFp = expectedFailurePath fp
+    exists <- doesFileExist expectedFp
+    if exists
+       -- the file has a final newline, the test output does not
+       then Just . T.dropWhileEnd (== '\n') <$> TIO.readFile expectedFp
+       else return Nothing
   return CiteprocTest
     { name = T.pack $ dropExtension $ takeBaseName fp
     , path = fp
@@ -254,6 +297,7 @@ loadTestCase fp = do
     , abbreviations = fromJSON "ABBREVIATIONS" <$>
                      lookup "abbreviations" sections
     , skipReason = reason
+    , expectedFailure = expectedFail
     , options = fromJSON "TESTOPTIONS" <$> lookup "options" sections
     }
 
@@ -281,12 +325,18 @@ extraDir = "test" </> "extra"
 main :: IO ()
 main = do
   args <- getArgs
+  -- with --accept, the .expected file of every failing test is (re)written
+  -- with its current output, and that of every passing test is removed;
+  -- with --verbose, passes and expected failures are reported too
+  let specOpts = SpecOptions{ accept  = "--accept" `elem` args
+                            , verbose = "--verbose" `elem` args }
+  let patterns = filter (`notElem` ["--accept", "--verbose"]) args
   let matchesPattern x =
         takeExtension x == ".txt" &&
-        case args of
+        case patterns of
           [] -> True
-          _  -> any (\arg -> map toLower arg `isInfixOf` map toLower x) args
-  overrides <- if any ('/' `elem`) args
+          _  -> any (\arg -> map toLower arg `isInfixOf` map toLower x) patterns
+  overrides <- if any ('/' `elem`) patterns
                   then return []
                   else filter matchesPattern <$>
                           getDirectoryContents overrideDir
@@ -295,8 +345,8 @@ main = do
                      then overrideDir </> fp
                      else testDir </> fp
 
-  testFiles <- if any ('/' `elem`) args
-                  then return args
+  testFiles <- if any ('/' `elem`) patterns
+                  then return patterns
                   else do
                     cslTests <- map addDir . filter matchesPattern
                                  <$> getDirectoryContents testDir
@@ -307,11 +357,13 @@ main = do
 
   testCases <- sortOn name <$> mapM loadTestCase testFiles
   (_,counts) <- timeIt $
-                 runStateT (mapM_ runTest testCases)
+                 runStateT (mapM_ (runTest specOpts) testCases)
                            Counts{ failed   = []
                                  , errored  = []
                                  , passed   = []
-                                 , skipped  = [] }
+                                 , skipped  = []
+                                 , unexpectedFailures = []
+                                 , unexpectedPasses   = [] }
   putStrLn ""
   let categories = sort $ Set.toList
                         $ foldr (Set.insert . category) mempty testCases
@@ -343,23 +395,19 @@ main = do
                (length (failed counts))
                (length (errored counts))
                (length (skipped counts))
-  let unexpectedFailures =
-        filter ((`notElem` expectedFailures) . snd) (failed counts)
-  let unexpectedPasses =
-        filter ((`elem` expectedFailures) . snd) (passed counts)
-  unless (null unexpectedFailures) $ do
+  unless (null (unexpectedFailures counts)) $ do
     putStrLn ""
     putStrLn "Unexpected failures"
     putStrLn "-------------------"
-    mapM_ (putStrLn . snd) unexpectedFailures
+    mapM_ putStrLn (unexpectedFailures counts)
     putStrLn ""
-  unless (null unexpectedPasses) $ do
+  unless (null (unexpectedPasses counts)) $ do
     putStrLn ""
     putStrLn "Unexpected passes"
     putStrLn "-----------------"
-    mapM_ (putStrLn . snd) unexpectedPasses
+    mapM_ putStrLn (unexpectedPasses counts)
     putStrLn ""
-  case length unexpectedFailures + length (errored counts) of
+  case length (unexpectedFailures counts) + length (errored counts) of
     0 -> do
       putStrLn "(All failures were expected failures.)"
       exitSuccess
@@ -371,6 +419,8 @@ data Counts  =
     , errored  :: [(Text,FilePath)]
     , passed   :: [(Text,FilePath)]
     , skipped  :: [(Text,FilePath)]
+    , unexpectedFailures :: [FilePath]  -- failed, but not as recorded
+    , unexpectedPasses   :: [FilePath]  -- passed, though a failure was recorded
     } deriving (Show)
 
 showDiff :: Text -> Text -> IO ()
@@ -385,70 +435,3 @@ showDiff expected actual = do
     (Pretty.text "actual")
     (Pretty.text . T.unpack . unnumber)
     $ getContextDiff Nothing (T.lines expected) (T.lines actual)
-
-expectedFailures :: [FilePath]
-expectedFailures = [
-  "test/csl/bugreports_OverwriteCitationItems.txt",
-  "test/csl/bugreports_SingleQuoteXml.txt",
-  "test/csl/bugreports_SmallCapsEscape.txt",
-  "test/csl/bugreports_SortedIeeeItalicsFail.txt",
-  "test/csl/bugreports_ikeyOne.txt",
-  "test/csl/date_NegativeDateSort.txt",
-  "test/csl/date_NegativeDateSortViaMacro.txt",
-  "test/csl/date_NegativeDateSortViaMacroOnYearMonthOnly.txt",
-  "test/csl/date_YearSuffixImplicitWithNoDate.txt",
-  "test/csl/date_YearSuffixWithNoDate.txt",
-  "test/csl/disambiguate_DifferentSpacingInInitials.txt",
-  "test/csl/disambiguate_DisambiguationHang.txt",
-  "test/csl/disambiguate_IncrementalExtraText.txt",
-  "test/csl/disambiguate_InitializeWithButNoDisambiguation.txt",
-  "test/csl/disambiguate_YearCollapseWithInstitution.txt",
-  "test/csl/disambiguate_YearSuffixAtTwoLevels.txt",
-  "test/csl/disambiguate_YearSuffixWithEtAlSubequent.txt",
-  "test/csl/disambiguate_YearSuffixWithEtAlSubsequent.txt",
-  "test/csl/flipflop_LeadingMarkupWithApostrophe.txt",
-  "test/csl/flipflop_OrphanQuote.txt",
-  "test/overrides/fullstyles_ABdNT.txt",
-  "test/csl/integration_FirstReferenceNoteNumberPositionChange.txt",
-  "test/csl/integration_IbidOnInsert.txt",
-  "test/csl/magic_CapitalizeFirstOccurringTerm.txt",
-  "test/csl/magic_PunctuationInQuoteNested.txt",
-  "test/csl/magic_SubsequentAuthorSubstituteNotFooled.txt",
-  "test/csl/magic_TermCapitalizationWithPrefix.txt",
-  "test/csl/name_CiteGroupDelimiterWithYearSuffixCollapse2.txt",
-  "test/csl/name_EtAlWithCombined.txt",
-  "test/csl/name_HebrewAnd.txt",
-  "test/csl/name_InTextMarkupInitialize.txt",
-  "test/csl/name_InTextMarkupNormalizeInitials.txt",
-  "test/csl/number_OrdinalSpacing.txt",
-  "test/csl/number_PlainHyphenOrEnDashAlwaysPlural.txt",
-  "test/csl/position_FirstTrueOnlyOnce.txt",
-  "test/csl/position_IbidInText.txt",
-  "test/csl/position_IbidSeparateCiteSameNote.txt",
-  "test/csl/position_IbidWithLocator.txt",
-  "test/csl/position_IbidWithMultipleSoloCitesInBackref.txt",
-  "test/csl/position_IfIbidWithLocatorIsTrueThenIbidIsTrue.txt",
-  "test/csl/position_NearNoteSameNote.txt",
-  "test/csl/position_ResetNoteNumbers.txt",
-  "test/csl/punctuation_FullMontyQuotesIn.txt",
-  "test/csl/quotes_QuotesUnderQuotesFalse.txt",
-  "test/csl/sort_BibliographyCitationNumberDescending.txt",
-  "test/csl/sort_BibliographyCitationNumberDescendingViaCompositeMacro.txt",
-  "test/csl/sort_BibliographyCitationNumberDescendingViaMacro.txt",
-  "test/csl/sort_LeadingApostropheOnNameParticle.txt",
-  "test/csl/sort_OmittedBibRefMixedNumericStyle.txt",
-  "test/csl/sort_OmittedBibRefNonNumericStyle.txt",
-  "test/csl/sort_RangeUnaffected.txt",
-  "test/csl/substitute_SubstituteOnlyOnceTermEmpty.txt",
-  "test/csl/bugreports_NoCaseEscape.txt",
-  "test/csl/bugreports_LegislationCrash.txt",
-  "test/csl/bugreports_EnvAndUrb.txt",
-  "test/csl/bugreports_DemoPageFullCiteCruftOnSubsequent.txt",
-  "test/csl/bugreports_ChicagoAuthorDateLooping.txt",
-  "test/csl/bugreports_AutomaticallyDeleteItemsFails.txt",
-  "test/csl/affix_WithCommas.txt",
-  "test/csl/affix_CommaAfterQuote.txt",
-  "test/overrides/flipflop_NumericField.txt",
-  "test/csl/testers_SecondAutoGeneratedZoteroPluginTest.txt",
-  "test/csl/testers_FirstAutoGeneratedZoteroPluginTest.txt"
-  ]

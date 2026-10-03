@@ -21,8 +21,10 @@ extra-source-files:  locales/*.xml
                      locales/locales.json
                      test/NOTES.md
                      test/csl/*.txt
+                     test/csl/*.expected
                      test/extra/*.txt
                      test/overrides/*.txt
+                     test/overrides/*.expected
 
 source-repository    head
   type:              git
