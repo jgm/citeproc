@@ -1212,10 +1212,9 @@ fixApos = T.map fixAposC
 instance FromJSON Name where
   parseJSON (String t) = parseCheaterName t
   parseJSON x =
-    extractParticles <$>
      (withObject "Name" $ \v -> Name
-      <$> (fmap fixApos <$> v .:? "family")
-      <*> (fmap fixApos <$> v .:? "given")
+      <$> (fmap (removeOuterQuotes . fixApos) <$> v .:? "family")
+      <*> (fmap (removeOuterQuotes . fixApos) <$> v .:? "given")
       <*> (fmap fixApos <$> v .:? "dropping-particle")
       <*> (fmap fixApos <$> v .:? "non-dropping-particle")
       <*> (fmap fixApos <$> v .:? "suffix")
@@ -1295,6 +1294,13 @@ extractParticles =
   isParticlePunct c = c == '\'' || c == '’' || c == '-' || c == '\x2013' ||
                       c == '.'
   isParticleChar c = isLower c || isParticlePunct c
+
+removeOuterQuotes :: Text -> Text
+removeOuterQuotes t
+  | "\"" `T.isPrefixOf` t
+  , "\"" `T.isSuffixOf` t
+   = T.drop 1 $ T.dropEnd 1 t
+  | otherwise = t
 
 -- cheater syntax for name: used in parsing note:
 --  editor: Thompson || Hunter S.
