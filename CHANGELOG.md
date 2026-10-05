@@ -1,5 +1,35 @@
 # citeproc changelog
 
+## 0.14.1
+
+  * Stop extracting particles from given and family names.
+    citeproc.js implemented a system by which particles would
+    be extracted automatically from given and family names (so
+    that users of Zotero wouldn't have to know about the various
+    types of particles). The test suite does this unless the
+    name is enclosed in straight quotes, in which case it is
+    considered literally. We don't want this feature, because it is
+    not part of the CSL spec, and the CSL JSON files exported from
+    Zotero don't put the quotes where they would be needed for this to
+    work. However, we still remove an outer pair of quotes, in case
+    there is legacy use of this feature.
+    See discussion at jgm/pandoc#11911 .
+
+  * Record how known failures fail, instead of just that they fail. A
+    test we don't yet pass now has an `.expected` file alongside its
+    `.txt` file, containing the output we currently produce. It counts
+    as an expected failure only if its output still matches that file
+    exactly, so a change in a known-bad result is no longer silently
+    tolerated. This replaces the flat list of expected failures in
+    test/Spec.hs, five entries of which had gone stale.
+
+  * Two new test-suite options: `--accept` (re)writes the `.expected` file of
+    every failing test and removes that of every test that now passes, and
+    `--verbose` reports warnings, passes, and expected failures with diffs,
+    which are otherwise suppressed.
+
+  * Add five new tests from upstream (all passing).
+
 ## 0.14
 
   * [API change] Replace unlawful Ord Term instance with `termMatches`.
