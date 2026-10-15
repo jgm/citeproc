@@ -2618,6 +2618,8 @@ initialize mblang makeInitials useHyphen initializeWith =
                | isUpper c -> Unicode.toUpper mblang (T.singleton c)
              _ -> mempty  -- e.g. Ji-ping -> J. not J.-p.
          Just (c, t')
+           -- a caseless romanesque script (Arabic, Hebrew, Thai)
+           | isCaseless c -> T.singleton c
            | isUpper c ->
              case T.uncons t' of
                Just (d, t'')
@@ -2627,6 +2629,8 @@ initialize mblang makeInitials useHyphen initializeWith =
                  -> T.singleton c <> Unicode.toLower mblang (T.singleton d)
                _ -> T.singleton c
          _ -> t
+   isCaseless c = isLetter c && not (isUpper c) && not (isLower c)
+                  && isByzantine (T.singleton c)
    initializeWord (Left t) -- Left values already initialized
      = addSuffix t
    initializeWord (Right t) -- Right values not already initialized
