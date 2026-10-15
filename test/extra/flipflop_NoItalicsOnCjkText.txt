@@ -1,0 +1,38 @@
+>>===== MODE =====>>
+citation
+<<===== MODE =====<<
+
+
+>>===== RESULT =====>>
+农业经济; <i>Seed Science</i>; <i>مجلة الزراعة</i>
+<<===== RESULT =====<<
+
+
+>>===== CSL =====>>
+<style xmlns="http://purl.org/net/xbiblio/csl" class="in-text" version="1.0">
+  <info>
+    <id />
+    <title />
+    <updated>2026-10-11T00:00:00+00:00</updated>
+  </info>
+  <citation>
+    <layout delimiter="; ">
+      <text variable="container-title" font-style="italic"/>
+    </layout>
+  </citation>
+</style>
+<<===== CSL =====<<
+
+
+>>===== INPUT =====>>
+[
+  {"id": "ITEM-1", "type": "article-journal", "container-title": "农业经济"},
+  {"id": "ITEM-2", "type": "article-journal", "container-title": "Seed Science"},
+  {"id": "ITEM-3", "type": "article-journal", "container-title": "مجلة الزراعة"}
+]
+<<===== INPUT =====<<
+
+
+>>===== VERSION =====>>
+1.0
+<<===== VERSION =====<<

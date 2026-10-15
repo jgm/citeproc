@@ -1621,10 +1621,26 @@ renderOutput opts locale (Formatted f [Linked url xs])
     anchor = mconcat (map outputToText xs)
     prefix = fromMaybe "" (formatPrefix f)
 renderOutput opts locale (Formatted formatting xs) =
-  addFormatting locale formatting . mconcat . fixPunct .
+  addFormatting locale formatting' . mconcat . fixPunct .
     (case formatDelimiter formatting of
        Just d  -> addDelimiters (fromText d)
        Nothing -> id) . filter (/= mempty) $ map (renderOutput opts locale) xs
+  where
+    -- italics/oblique set on an element that renders text directly
+    -- are not applied when that text has no romanesque character
+    -- (e.g. CJK), as citeproc-js does
+    formatting'
+      | formatFontStyle formatting `elem` [Just ItalicFont, Just ObliqueFont]
+      , all isTextLeaf xs
+      , txt <- mconcat (map outputToText xs)
+      , T.any isLetter txt
+      , not (isByzantine txt)
+      = formatting{ formatFontStyle = Nothing }
+      | otherwise = formatting
+    -- only text rendered directly by this element, not a nested group
+    isTextLeaf (Literal _)  = True
+    isTextLeaf (Tagged _ y) = isTextLeaf y
+    isTextLeaf _            = False
 renderOutput opts locale (Linked url xs)
   = (if linkBibliography opts
        then addHyperlink url
