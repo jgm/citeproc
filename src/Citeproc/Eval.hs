@@ -901,6 +901,9 @@ data GroupingItem a =
   , giHasPrefix :: Bool
   , giHasSuffix :: Bool
   , giTagged    :: Maybe (Output a)
+  , giLead      :: Text
+    -- ^ the text the item renders before its first date (prefix
+    -- excluded); without names it stands in the names' place
   }
 
 groupAndCollapseCitations :: forall a . CiteprocOutput a
@@ -937,6 +940,7 @@ groupAndCollapseCitations citeGroupDelim yearSuffixDelim afterCollapseDelim
     , giHasPrefix = hasPrefix x
     , giHasSuffix = hasSuffix x
     , giTagged    = extractTagged x
+    , giLead      = leadingText x
     }
 
   --   Note that we cannot assume we've sorted by name,
@@ -1104,11 +1108,32 @@ groupAndCollapseCitations citeGroupDelim yearSuffixDelim afterCollapseDelim
                            then not (null ns1) || ws1 == ws2
                            else ws1 == ws2)
       -- case where it's just a date with no name or anything;
-      -- we treat this as same name e.g. (1955a,b)
+      -- we treat this as same name e.g. (1955a,b), but only when
+      -- whatever precedes the dates (e.g. a title standing in for
+      -- the author) is the same
       (Just (Tagged TagDate{} _), Just (Tagged TagDate{} _))
-        -> True
+        -> giLead x == giLead y
           -- case where title is substituted
       _ -> False
+
+  -- the text an item renders before its first date, prefix excluded
+  leadingText :: Output a -> Text
+  leadingText = T.unwords . fst . leading
+   where
+    leading :: Output a -> ([Text], Bool)
+    leading (Tagged TagDate{} _) = ([], True)
+    leading (Tagged TagPrefix _) = ([], False)
+    leading (Tagged _ y)         = leading y
+    leading (Formatted _ ys)     = leadingList ys
+    leading (Linked _ ys)        = leadingList ys
+    leading (InNote y)           = leading y
+    leading (Literal t)          = ([toText t], False)
+    leading NullOutput           = ([], False)
+    leadingList [] = ([], False)
+    leadingList (y:ys) =
+      case leading y of
+        (ts, True)  -> (ts, True)
+        (ts, False) -> let (us, d) = leadingList ys in (ts ++ us, d)
 
   extractTagged :: Output a -> Maybe (Output a)
   extractTagged x =
