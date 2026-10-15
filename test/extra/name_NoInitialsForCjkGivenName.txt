@@ -1,0 +1,39 @@
+>>===== MODE =====>>
+citation
+<<===== MODE =====<<
+
+
+>>===== RESULT =====>>
+王小明; J. Doe
+<<===== RESULT =====<<
+
+
+>>===== CSL =====>>
+<style xmlns="http://purl.org/net/xbiblio/csl" class="in-text" version="1.0">
+  <info>
+    <id />
+    <title />
+    <updated>2026-10-11T00:00:00+00:00</updated>
+  </info>
+  <citation>
+    <layout delimiter="; ">
+      <names variable="author">
+        <name initialize-with=". "/>
+      </names>
+    </layout>
+  </citation>
+</style>
+<<===== CSL =====<<
+
+
+>>===== INPUT =====>>
+[
+  {"id": "ITEM-1", "type": "book", "author": [{"family": "王", "given": "小明"}]},
+  {"id": "ITEM-2", "type": "book", "author": [{"family": "Doe", "given": "John"}]}
+]
+<<===== INPUT =====<<
+
+
+>>===== VERSION =====>>
+1.0
+<<===== VERSION =====<<

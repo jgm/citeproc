@@ -2592,6 +2592,9 @@ initialize mblang makeInitials useHyphen initializeWith =
      | T.all isLower t = if endsWithSpace initializeWith
                             then t <> " "
                             else " " <> t <> " "
+       -- a word in a non-romanesque script (e.g. CJK) is not
+       -- initialized, and takes no initialize-with suffix
+     | not (isByzantine t) = t <> " "
      | makeInitials    = (addSuffix . toInitial) t
      | otherwise       = t <> " "
 
