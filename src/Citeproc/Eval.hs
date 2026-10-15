@@ -1905,6 +1905,33 @@ isSepPunct '-' = True
 isSepPunct '\x2013' = True
 isSepPunct _   = False
 
+-- | One number, possibly with a word around it ("US 9876543"): no
+-- separator punctuation, no "&" or "and", and exactly one word that
+-- holds a digit.  CSL pluralizes a label only for a range or several
+-- numbers.
+isOneIdentifier :: Text -> Bool
+isOneIdentifier t =
+  not (T.any isSepPunct t) &&
+  not (T.any (== '&') t) &&
+  "and" `notElem` ws &&
+  length (filter (T.any isDigit) ws) == 1
+ where
+  ws = T.words t
+
+-- | Drop the commas of thousands grouping ("9,876,543" -> "9876543"):
+-- a comma between a digit and exactly three digits not followed by
+-- another digit.
+dropDigitGrouping :: Text -> Text
+dropDigitGrouping = T.pack . go . T.unpack
+ where
+  go (a:',':b:c:d:rest)
+    | isDigit a, isDigit b, isDigit c, isDigit d
+    , not (startsWithDigit rest) = a : go (b:c:d:rest)
+  go (x:xs) = x : go xs
+  go [] = []
+  startsWithDigit (e:_) = isDigit e
+  startsWithDigit [] = False
+
 eLabel :: CiteprocOutput a
        => Variable
        -> TermForm
@@ -1920,9 +1947,15 @@ eLabel var termform pluralize formatting = do
              | var == "number-of-volumes"
              , t /= "1" && t /= "0"      = Plural
              | "\\-" `T.isInfixOf` t     = Singular
+             | isOneIdentifier (ungroup t) = Singular
              | length (splitNums t) > 1  = Plural
                -- see label_CollapsedPageNumberPluralDetection.txt
              | otherwise                 = Singular
+            -- a digit-grouped number ("US 9,876,543") is one number,
+            -- not a list; pages and locators keep the comma-list reading
+            ungroup t
+             | var == "page" || var == "locator" = t
+             | otherwise = dropDigitGrouping t
         let number = case pluralize of
                          AlwaysPluralize     -> Plural
                          NeverPluralize      -> Singular
