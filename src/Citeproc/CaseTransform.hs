@@ -155,5 +155,8 @@ isStopWord "von" = True
 isStopWord "de" = True
 isStopWord "d" = True
 isStopWord "l" = True
+-- the French conjunction, as citeproc-js (its "et" skip word): a title
+-- such as "Theorie et pratique" must not become "Theorie Et Pratique"
+isStopWord "et" = True
 isStopWord _ = False
 
