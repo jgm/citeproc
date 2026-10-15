@@ -42,6 +42,7 @@ module Citeproc.Types
   , Name(..)
   , extractParticles
   , isByzantineName
+  , isByzantine
   , DelimiterPrecedes(..)
   , Condition(..)
   , Position(..)
