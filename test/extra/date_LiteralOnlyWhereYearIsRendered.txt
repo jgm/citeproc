@@ -1,0 +1,45 @@
+>>===== MODE =====>>
+citation
+<<===== MODE =====<<
+
+
+>>===== RESULT =====>>
+in press Forthcoming results; 2020 Earlier results (May)
+<<===== RESULT =====<<
+
+
+>>===== CSL =====>>
+<style xmlns="http://purl.org/net/xbiblio/csl" class="in-text" version="1.0">
+  <info>
+    <id />
+    <title />
+    <updated>2026-10-11T00:00:00+00:00</updated>
+  </info>
+  <citation>
+    <layout delimiter="; ">
+      <group delimiter=" ">
+        <date variable="issued">
+          <date-part name="year"/>
+        </date>
+        <text variable="title"/>
+        <date variable="issued" prefix="(" suffix=")">
+          <date-part name="month"/>
+        </date>
+      </group>
+    </layout>
+  </citation>
+</style>
+<<===== CSL =====<<
+
+
+>>===== INPUT =====>>
+[
+  {"id": "ITEM-1", "type": "article-journal", "title": "Forthcoming results", "issued": {"literal": "in press"}},
+  {"id": "ITEM-2", "type": "article-journal", "title": "Earlier results", "issued": {"date-parts": [[2020, 5]]}}
+]
+<<===== INPUT =====<<
+
+
+>>===== VERSION =====>>
+1.0
+<<===== VERSION =====<<
