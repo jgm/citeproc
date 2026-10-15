@@ -2040,7 +2040,14 @@ eDate var dateType mbShowDateParts dps formatting
         return NullOutput
       Just (DateVal date) ->
         case dateLiteral date of
-          Just t -> return $ formatted formatting' [Literal $ fromText t]
+          -- a literal stands in for the year: a date element that
+          -- prints only month or day leaves it out (as citeproc-js)
+          Just t
+            | null dps' || any ((== DPYear) . dpName) dps'
+              -> return $ formatted formatting' [Literal $ fromText t]
+            | otherwise -> do
+              updateVarCount 0 (-1)
+              return NullOutput
           Nothing -> do
             let dateparts = case dateSeason date of
                               Just i  ->
