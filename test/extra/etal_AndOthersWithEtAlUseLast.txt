@@ -1,0 +1,101 @@
+Literal "others" as the last name, which is what BibTeX's "and others"
+becomes, is rendered as "et al." with et-al-use-last="true", whether the
+list is shorter than et-al-min, exactly as long, or longer.  It is not
+a real last name: it must not be printed after "et al." and must not
+turn the "et al." into an ellipsis.  A complete list still gets the
+ellipsis and its real last name.
+
+>>===== MODE =====>>
+bibliography
+<<===== MODE =====<<
+
+
+>>===== RESULT =====>>
+<div class="csl-bib-body">
+  <div class="csl-entry">Alice Adams, Bob Brown, Carol Clark, et al.</div>
+  <div class="csl-entry">Alice Adams, Bob Brown, Carol Clark, et al.</div>
+  <div class="csl-entry">Alice Adams, Bob Brown, et al.</div>
+  <div class="csl-entry">Alice Adams, Bob Brown, Carol Clark, … Frank Foster</div>
+</div>
+<<===== RESULT =====<<
+
+
+>>===== CSL =====>>
+<style
+      xmlns="http://purl.org/net/xbiblio/csl"
+      class="note"
+      version="1.0">
+  <info>
+    <id />
+    <title />
+    <updated>2009-08-10T04:49:00+09:00</updated>
+  </info>
+  <citation>
+    <layout>
+      <text value="Oops"/>
+    </layout>
+  </citation>
+  <bibliography>
+    <layout>
+      <names variable="author">
+        <name et-al-min="5" et-al-use-first="3" et-al-use-last="true"/>
+      </names>
+    </layout>
+  </bibliography>
+</style>
+<<===== CSL =====<<
+
+
+>>===== INPUT =====>>
+[
+  {
+    "id": "others-above-min",
+    "type": "article-journal",
+    "author": [
+      {"family": "Adams", "given": "Alice"},
+      {"family": "Brown", "given": "Bob"},
+      {"family": "Clark", "given": "Carol"},
+      {"family": "Davis", "given": "Dan"},
+      {"family": "Evans", "given": "Eve"},
+      {"literal": "others"}
+    ]
+  },
+  {
+    "id": "others-at-min",
+    "type": "article-journal",
+    "author": [
+      {"family": "Adams", "given": "Alice"},
+      {"family": "Brown", "given": "Bob"},
+      {"family": "Clark", "given": "Carol"},
+      {"family": "Davis", "given": "Dan"},
+      {"literal": "others"}
+    ]
+  },
+  {
+    "id": "others-below-min",
+    "type": "article-journal",
+    "author": [
+      {"family": "Adams", "given": "Alice"},
+      {"family": "Brown", "given": "Bob"},
+      {"literal": "others"}
+    ]
+  },
+  {
+    "id": "complete-above-min",
+    "type": "article-journal",
+    "author": [
+      {"family": "Adams", "given": "Alice"},
+      {"family": "Brown", "given": "Bob"},
+      {"family": "Clark", "given": "Carol"},
+      {"family": "Davis", "given": "Dan"},
+      {"family": "Evans", "given": "Eve"},
+      {"family": "Foster", "given": "Frank"}
+    ]
+  }
+]
+<<===== INPUT =====<<
+
+
+>>===== VERSION =====>>
+1.0
+<<===== VERSION =====<<

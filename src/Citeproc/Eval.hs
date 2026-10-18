@@ -2441,6 +2441,7 @@ formatNames namesFormat nameFormat formatting (var, Just (NamesVal names)) =
             else etAl
        | idx == numnames
        , etAlUseLast
+       , not finalNameIsOthers
        , maybe False (idx - 1 >=) etAlThreshold
          = name
        | maybe False (idx - 1 >) etAlThreshold = NullOutput
