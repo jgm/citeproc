@@ -1,5 +1,31 @@
 # citeproc changelog
 
+## 0.14.1.1
+
+  * Group name-less cites only when the text before their dates matches
+    (#184, Daniel Gregg).
+
+  * Initialize given names in caseless romanesque scripts (#186,
+    Daniel Gregg).
+
+  * Do not initialize given names in non-romanesque scripts (#189,
+    Daniel Gregg).
+
+  * Render a literal date only where the date element shows the year
+    (#188, Daniel Gregg).
+
+  * Fix "et al.others" with et-al-use-last and a final "others" name
+    (Don Yin).
+
+  * A single number with digit grouping or a word takes the singular
+    label (#185, Daniel Gregg).
+
+  * Do not italicize text with no romanesque character (#190,
+    Daniel Gregg).
+
+  * Update stop words from canonical list upstream. This affects
+    title case.
+
 ## 0.14.1
 
   * Stop extracting particles from given and family names.
