@@ -283,7 +283,7 @@ data CitationItem a =
   , citationItemData           :: Maybe (Reference a)
   } deriving (Show, Eq, Ord)
 
-instance (FromJSON a, Eq a) => FromJSON (CitationItem a) where
+instance FromJSON a => FromJSON (CitationItem a) where
   parseJSON = withObject "CitationItem" $ \v -> CitationItem
     <$> (v .: "id" >>= fmap ItemId . asText)
     <*> v .:? "label"
@@ -333,7 +333,7 @@ data Citation a =
            }
   deriving (Show, Eq, Ord)
 
-instance (FromJSON a, Eq a) => FromJSON (Citation a) where
+instance FromJSON a => FromJSON (Citation a) where
  parseJSON v =
    withArray "Citation"
      (\ary ->
@@ -1859,7 +1859,7 @@ instance ToJSON a => ToJSON (Inputs a) where
     , ("lang",          toJSON $ renderLang <$> inputsLang inp)
     ]
 
-instance (FromJSON a, Eq a) => FromJSON (Inputs a) where
+instance FromJSON a => FromJSON (Inputs a) where
   parseJSON = withObject "Inputs" $ \v ->
     Inputs <$> v .:? "citations"
            <*> v .:? "references"
