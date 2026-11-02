@@ -135,7 +135,7 @@ evalStyle style mblang refs' citations =
 
   assignCitationNumbers sortedIds =
     modify $ \st ->
-              st{ stateRefMap = ReferenceMap $ foldl'
+              st{ stateRefMap = ReferenceMap $ Data.List.foldl'
                      (\m (citeId, num) ->
                          M.adjust (\ref ->
                            ref{ referenceVariables =
@@ -1048,11 +1048,11 @@ groupAndCollapseCitations citeGroupDelim yearSuffixDelim afterCollapseDelim
   collapseYearSuffix CollapseYearSuffix zs =
     reverse $ yearSuffixGroup False cur : items
    where
-     (cur, items) = foldl' (goYearSuffix False) ([], []) zs
+     (cur, items) = Data.List.foldl' (goYearSuffix False) ([], []) zs
   collapseYearSuffix CollapseYearSuffixRanged zs =
     reverse $ yearSuffixGroup True cur : items
    where
-     (cur, items) = foldl' (goYearSuffix True) ([], []) zs
+     (cur, items) = Data.List.foldl' (goYearSuffix True) ([], []) zs
   collapseYearSuffix _ zs = zs
 
   getDates :: Output a -> [Date]
