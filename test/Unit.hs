@@ -63,6 +63,9 @@ inlineCases =
   , ("dropTextWhile: drops a leading Space",
      dropTextWhile (== ' ') (fromList [Space, Str "hi"]),
      fromList [Str "hi"])
+  , ("punctuationInsideQuotes: moves a bold label's suffix inside quotes",
+     movePunctuationInsideQuotes (strong (addQuotes (text "Title")) <> text "."),
+     strong (addQuotes (fromList [Str "Title", Str "."])))
   ]
 
 -- flip-flop formatting state in cslJsonToJson's JSON output:

@@ -494,15 +494,15 @@ punctuationInsideQuotes = go
     case el of
       CslConcat CslEmpty x -> go x
       CslConcat x CslEmpty -> go x
-      CslConcat (CslQuoted x) y ->
+      CslConcat x y | Just (wrap, quoted) <- endingQuote x ->
          case go y of
            (CslText t) | startsWithMovable t
-             -> CslQuoted (go (x <> CslText (T.take 1 t)))
+             -> wrap (go (quoted <> CslText (T.take 1 t)))
                <> CslText (T.drop 1 t)
            (CslConcat (CslText t) z) | startsWithMovable t
-             -> CslQuoted (go (x <> CslText (T.take 1 t))) <>
+             -> wrap (go (quoted <> CslText (T.take 1 t))) <>
                  CslText (T.drop 1 t) <> z
-           z                      -> CslQuoted (go x) <> z
+           z                      -> wrap (go quoted) <> z
       CslConcat (CslConcat x y) z -> go (CslConcat x (CslConcat y z))
       CslConcat x y               -> go x <> go y
       CslQuoted x                 -> CslQuoted (go x)
@@ -520,4 +520,14 @@ punctuationInsideQuotes = go
       CslLink t x                 -> CslLink t (go x)
       CslText t                   -> CslText t
       CslEmpty                    -> CslEmpty
+  endingQuote (CslQuoted x) = Just (CslQuoted, x)
+  endingQuote (CslConcat x y) = do
+    (wrap, quoted) <- endingQuote y
+    return ((go x <>) . wrap, quoted)
+  endingQuote x =
+    case children x of
+      [child] -> do
+        (wrap, quoted) <- endingQuote child
+        return (\ys -> descend (const (wrap ys)) x, quoted)
+      _ -> Nothing
 

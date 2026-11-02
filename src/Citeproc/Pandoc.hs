@@ -119,21 +119,28 @@ punctuationInsideQuotes = B.fromList . go . walk go . B.toList
       Just (c,_) -> c == '.' || c == ','
       Nothing    -> False
   go [] = []
-  go (Span ("",["csl-quoted"],[]) xs : Str t : rest)
+  go (x : Str t : rest)
     | startsWithMovable t
-      = Span ("",["csl-quoted"],[])
-           (xs ++ [Str (T.take 1 t) | not (endWithPunct xs)]) :
-        if T.length t == 1
-           then go rest
-           else Str (T.drop 1 t) : go rest
-  go (Quoted qt xs : Str t : rest)
-    | startsWithMovable t
-      = Quoted qt
-           (xs ++ [Str (T.take 1 t) | not (endWithPunct xs)]) :
+    , Just (wrap, xs) <- endingQuote x
+      = wrap (xs ++ [Str (T.take 1 t) | not (endWithPunct xs)]) :
         if T.length t == 1
            then go rest
            else Str (T.drop 1 t) : go rest
   go (x:xs) = x : go xs
+  endingQuote (Span ("",["csl-quoted"],[]) xs) =
+    Just (Span ("",["csl-quoted"],[]), xs)
+  endingQuote (Quoted qt xs) = Just (Quoted qt, xs)
+  endingQuote (Emph xs) = lastQuote Emph xs
+  endingQuote (Strong xs) = lastQuote Strong xs
+  endingQuote (SmallCaps xs) = lastQuote SmallCaps xs
+  endingQuote (Underline xs) = lastQuote Underline xs
+  endingQuote (Span attr xs) = lastQuote (Span attr) xs
+  endingQuote (Link attr xs target) = lastQuote (\ys -> Link attr ys target) xs
+  endingQuote _ = Nothing
+  lastQuote _ [] = Nothing
+  lastQuote wrap xs = do
+    (wrapQuote, quoted) <- endingQuote (last xs)
+    return (\ys -> wrap (init xs ++ [wrapQuote ys]), quoted)
 
 endWithPunct :: [Inline] -> Bool
 endWithPunct [] = False
