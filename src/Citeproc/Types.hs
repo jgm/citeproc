@@ -901,7 +901,7 @@ data NameHints =
   | AddGivenNameIfPrimary
   deriving (Show, Ord, Eq)
 
-instance (Eq a, FromJSON a)  => FromJSON (Reference a) where
+instance FromJSON a => FromJSON (Reference a) where
   parseJSON v = parseJSON v >>= parseReference
 
 lookupVariable :: CiteprocOutput a => Variable -> Reference a -> Maybe (Val a)
