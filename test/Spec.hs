@@ -235,7 +235,7 @@ expectedFailurePath :: FilePath -> FilePath
 expectedFailurePath fp = fp -<.> ".expected"
 
 splitSections :: ByteString -> [(Text, ByteString)]
-splitSections = snd . foldl' go startingState . B.lines . removeBOM
+splitSections = snd . Data.List.foldl' go startingState . B.lines . removeBOM
  where
   removeBOM bs = if "\xef\xbb\xbf" `B.isPrefixOf` bs
                     then B.drop 3 bs
