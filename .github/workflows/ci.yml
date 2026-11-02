@@ -1,63 +1,127 @@
-name: CI
+name: CI tests
 
-# Trigger the workflow on push or pull request, but only for the master branch
 on:
-  pull_request:
   push:
-    branches: [master]
+    branches: [main]
+    tags: ['*']
+  pull_request:
+  workflow_dispatch:
 
 jobs:
-  cabal:
-    name: ${{ matrix.os }} / ghc ${{ matrix.ghc }}
-    runs-on: ${{ matrix.os }}
+  linux:
+
+    runs-on: ubuntu-latest
     strategy:
+      fail-fast: true
       matrix:
-        os: [ubuntu-latest]
-        cabal: ["latest"]
-        ghc:
-          - "9.6"
-          - "9.8"
-          - "9.10"
-          - "9.12"
+        versions:
+          - ghc: '9.6'
+            cabal: 'latest'
+            cabalopts: '--ghc-option=-Werror'
+          - ghc: '9.8'
+            cabal: 'latest'
+            cabalopts: '--ghc-option=-Werror'
+          - ghc: '9.10'
+            cabal: 'latest'
+            cabalopts: '--ghc-option=-Werror'
+          - ghc: '9.12'
+            cabal: 'latest'
+            cabalopts: '--ghc-option=-Werror'
+          - ghc: '9.14'
+            cabal: 'latest'
+            cabalopts: '--ghc-option=-Werror'
 
     steps:
     - uses: actions/checkout@v7
-      if: github.event.action == 'opened' || github.event.action == 'synchronize' || github.event.ref == 'refs/heads/master'
+    - name: Resolve GHC version
+      id:   ghc
+      shell: bash
+      run: |
+          version=$(ghcup list -t ghc -c available -r | awk -v prefix="${{ matrix.versions.ghc }}." 'index($2, prefix) == 1 { print $2 }' | sort -V | tail -1)
+          test -n "$version"
+          dir="$(ghcup whereis basedir)/ghc/$version"
+          echo "version=$version" >> "$GITHUB_OUTPUT"
+          echo "dir=$dir" >> "$GITHUB_OUTPUT"
+          echo "preinstalled=$(test -d "$dir" && echo true || echo false)" >> "$GITHUB_OUTPUT"
+          echo "os=$(. /etc/os-release && echo "$ID-$VERSION_ID")" >> "$GITHUB_OUTPUT"
+
+    - name: Cache GHC installation
+      if:   steps.ghc.outputs.preinstalled != 'true'
+      uses: actions/cache@v6
+      with:
+        path: |
+          ${{ steps.ghc.outputs.dir }}
+        key: ${{ steps.ghc.outputs.os }}-ghc-install-${{ secrets.CACHE_VERSION }}-${{ steps.ghc.outputs.version }}
 
     - name: Install cabal/ghc
       run: |
-        ghcup install ghc --set ${{ matrix.ghc }}
-        ghcup install cabal --set ${{ matrix.cabal }}
+        ghcup install ghc ${{ steps.ghc.outputs.version }}
+        ghcup set ghc ${{ steps.ghc.outputs.version }}
+        ghcup install cabal --set ${{ matrix.versions.cabal }}
+
+    - name: Update cabal and get store path
+      id:   cabal-store
+      shell: bash
+      run: |
+          cabal update -z
+          echo "dir=$(cabal path -z --store-dir)" >> "$GITHUB_OUTPUT"
+
+    - name: Compute build plan
+      run: |
+          cabal build --enable-tests --disable-optimization -fexecutable ${{ matrix.versions.cabalopts }} --dry-run
 
     - name: Cache cabal global package db
       id:   cabal-global
       uses: actions/cache@v6
       with:
         path: |
-          ~/.local/state/cabal
-        key: ${{ runner.os }}-${{ matrix.ghc }}-${{ matrix.cabal }}-cabal-global-${{ hashFiles('cabal.project') }}
-
-    - name: Cache cabal work
-      id:   cabal-local
-      uses: actions/cache@v6
-      with:
-        path: |
-          dist-newstyle
-        key: ${{ runner.os }}-${{ matrix.ghc }}-${{ matrix.cabal }}-cabal-local
-
-    - name: Build dependencies
-      run: |
-        cabal update
-        cabal configure --enable-tests --enable-benchmarks --test-show-details=direct
-        cabal build --dependencies-only --disable-optimization all
+          ${{ steps.cabal-store.outputs.dir }}
+        key: ${{ runner.os }}-ghc-${{ matrix.versions.ghc }}-cabal-${{ secrets.CACHE_VERSION }}-${{ hashFiles('dist-newstyle/cache/plan.json') }}
+        restore-keys: |
+          ${{ runner.os }}-ghc-${{ matrix.versions.ghc }}-cabal-${{ secrets.CACHE_VERSION }}-
 
     - name: Build
       run: |
-        cabal build --disable-optimization all 2>&1 | tee build.log
-        # fail if warnings in local build
-        # ! grep -q ": *[Ww]arning:" build.log || exit 1
+          cabal build --enable-tests --disable-optimization -fexecutable ${{ matrix.versions.cabalopts }}
 
     - name: Test
       run: |
-        cabal test --disable-optimization all
+          cabal test --disable-optimization ${{ matrix.versions.cabalopts }}
+
+  windows:
+
+    runs-on: windows-latest
+
+    steps:
+    - uses: actions/checkout@v7
+
+    # Use the versions of cabal and ghc that are included in the runner image.
+    - name: Update cabal and get versions and store path
+      id:   cabal-store
+      shell: bash
+      run: |
+          cabal update -z
+          echo "ghc=$(ghc --numeric-version)" >> "$GITHUB_OUTPUT"
+          echo "dir=$(cabal path -z --store-dir)" >> "$GITHUB_OUTPUT"
+
+    - name: Compute build plan
+      run: |
+          cabal build --enable-tests --disable-optimization -fexecutable --ghc-option=-Werror --dry-run
+
+    - name: Cache cabal global package db
+      uses: actions/cache@v6
+      with:
+        path: |
+          ${{ steps.cabal-store.outputs.dir }}
+        key: ${{ runner.os }}-ghc-${{ steps.cabal-store.outputs.ghc }}-cabal-${{ secrets.CACHE_VERSION }}-${{ hashFiles('dist-newstyle/cache/plan.json') }}
+        restore-keys: |
+          ${{ runner.os }}-ghc-${{ steps.cabal-store.outputs.ghc }}-cabal-${{ secrets.CACHE_VERSION }}-
+
+    - name: Build
+      run: |
+          cabal build --enable-tests --disable-optimization -fexecutable --ghc-option=-Werror
+
+    - name: Test
+      run: |
+          cabal test --disable-optimization --ghc-option=-Werror
 
