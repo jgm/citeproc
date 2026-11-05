@@ -114,4 +114,12 @@ quoteCases =
           <> CslText " rest"),
      CslQuoted (CslQuoted (CslText "inner" <> CslText ",") <> CslText " outer")
        <> CslText " rest")
+  -- a quote that ends formatted text with other content before it:
+  , ("punctuationInsideQuotes: quote at the end of italic text",
+     movePunctuationInsideQuotes
+       (CslItalic (CslText "See" <> CslText " " <> CslQuoted (CslText "A"))
+          <> CslText ". 1900"),
+     CslItalic (CslText "See" <> CslText " "
+                  <> CslQuoted (CslText "A" <> CslText "."))
+       <> CslText " 1900")
   ]
