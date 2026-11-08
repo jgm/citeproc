@@ -102,222 +102,272 @@ evalStyle  :: CiteprocOutput a
 evalStyle style mblang refs' citations =
   (citationOs, bibliographyOs, Set.toList warnings)
  where
-  refs'' = refs' ++ extractItemData citations
-  (refs, refmap) = makeReferenceMap refs''
+  (refs, refmap) = makeReferenceMap (refs' ++ extractItemData citations)
+  ((citationOs, bibliographyOs), warnings) =
+    evalRWS (evalCitationsAndBibliography style refs citations)
+      (initialContext style mblang)
+      (initialState refmap)
 
-  ((citationOs, bibliographyOs), warnings) = evalRWS go
-     Context
-      { contextLocale              = mergeLocales mblang style
-      , contextCollate             = compSortKeyValues (Unicode.comp mblang)
-      , contextAbbreviations       = styleAbbreviations style
-      , contextStyleOptions        = styleOptions style
-      , contextMacros              = styleMacros style
-      , contextLocator             = Nothing
-      , contextLabel               = Nothing
-      , contextPosition            = []
-      , contextInSubstitute        = False
-      , contextInSortKey           = False
-      , contextInBibliography      = False
-      , contextSubstituteNamesForm = Nothing
-      , contextNameFormat          = styleNameFormat (styleOptions style)
-      }
-      EvalState
-      { stateVarCount = VarCount 0 0
-      , stateLastCitedMap = mempty
-      , stateNoteMap = mempty
-      , stateRefMap = refmap
-      , stateReference = Reference mempty mempty Nothing mempty
-      , stateReferenceLang = Nothing
-      , stateUsedYearSuffix = False
-      , stateUsedIdentifier = False
-      , stateUsedTitle = False
-      }
+initialContext :: Style a -> Maybe Lang -> Context a
+initialContext style mblang =
+  Context
+  { contextLocale              = mergeLocales mblang style
+  , contextCollate             = compSortKeyValues (Unicode.comp mblang)
+  , contextAbbreviations       = styleAbbreviations style
+  , contextStyleOptions        = styleOptions style
+  , contextMacros              = styleMacros style
+  , contextLocator             = Nothing
+  , contextLabel               = Nothing
+  , contextPosition            = []
+  , contextInSubstitute        = False
+  , contextInSortKey           = False
+  , contextInBibliography      = False
+  , contextSubstituteNamesForm = Nothing
+  , contextNameFormat          = styleNameFormat (styleOptions style)
+  }
 
-  assignCitationNumbers sortedIds =
-    modify $ \st ->
-              st{ stateRefMap = ReferenceMap $ Data.List.foldl'
-                     (\m (citeId, num) ->
-                         M.adjust (\ref ->
-                           ref{ referenceVariables =
-                                 M.insert "citation-number"
-                                    (NumVal num) .
-                                 M.insert "citation-key"
-                                     (TextVal (unItemId citeId)) .
-                                 M.alter (addIfMissing (citationLabel ref))
-                                    "citation-label"
-                                 $ referenceVariables ref
-                              }) citeId m)
-                     (unReferenceMap (stateRefMap st))
-                     (zip sortedIds [1..]) }
+initialState :: ReferenceMap a -> EvalState a
+initialState refmap =
+  EvalState
+  { stateVarCount = VarCount 0 0
+  , stateLastCitedMap = mempty
+  , stateNoteMap = mempty
+  , stateRefMap = refmap
+  , stateReference = Reference mempty mempty Nothing mempty
+  , stateReferenceLang = Nothing
+  , stateUsedYearSuffix = False
+  , stateUsedIdentifier = False
+  , stateUsedTitle = False
+  }
 
+-- | The main processing pipeline.  The order of the phases matters:
+-- sort keys may depend on citation numbers, citation numbers depend
+-- on bibliography sorting, and the bibliography must be rendered
+-- after disambiguation so that it reflects added year suffixes.
+evalCitationsAndBibliography :: CiteprocOutput a
+                             => Style a
+                             -> [Reference a]
+                             -> [Citation a]
+                             -> Eval a ([Output a], [(Text, Output a)])
+evalCitationsAndBibliography style refs citations = do
+  let citeOrderIds = idsInCitationOrder refs citations
+  assignCitationNumbers citeOrderIds
+  (bibIds, bibSortKeyMap) <- sortBibliography style refs citeOrderIds
+  sortedCitations <- sortCitationItems style citations
+  cs <- disambiguateCitations style bibSortKeyMap sortedCitations
+  let cs' = map (finalizeCitation style) (collapseCitations style cs)
+  bs <- evalBibliography style bibIds
+  return (cs', bs)
+
+-- | Reference ids ordered by first citation; uncited references
+-- follow in their original order.
+idsInCitationOrder :: [Reference a] -> [Citation a] -> [ItemId]
+idsInCitationOrder refs citations =
+  sortOn (fromMaybe maxBound . (`M.lookup` firstCited)) (map referenceId refs)
+ where
+  firstCited = M.fromList $ reverse $ zip
+    (concatMap (map citationItemId . citationItems) citations)
+    [(1 :: Int)..]
+
+-- | Set citation-number (and citation-key, citation-label) on
+-- references, numbering them in the order given.
+assignCitationNumbers :: [ItemId] -> Eval a ()
+assignCitationNumbers sortedIds =
+  modify $ \st ->
+            st{ stateRefMap = ReferenceMap $ Data.List.foldl'
+                   (\m (citeId, num) ->
+                       M.adjust (\ref ->
+                         ref{ referenceVariables =
+                               M.insert "citation-number"
+                                  (NumVal num) .
+                               M.insert "citation-key"
+                                   (TextVal (unItemId citeId)) .
+                               M.alter (addIfMissing (citationLabel ref))
+                                  "citation-label"
+                               $ referenceVariables ref
+                            }) citeId m)
+                   (unReferenceMap (stateRefMap st))
+                   (zip sortedIds [1..]) }
+ where
   addIfMissing x Nothing  = Just x
   addIfMissing _ (Just x) = Just x
 
-  go = do
-      -- list of citationItemIds that are actually cited
-      let citationOrder = M.fromList $ reverse $ zip
-            (concatMap (map citationItemId . citationItems) citations)
-            [(1 :: Int)..]
-      let citeIds = M.keysSet citationOrder
-      let sortedCiteIds = sortOn
-              (fromMaybe maxBound . (`M.lookup` citationOrder))
-              (map referenceId refs)
-      let layoutOpts = layoutOptions $ styleCitation style
-      let mbcgDelim =
-            case styleCiteGroupDelimiter (styleOptions style) of
-              Just x -> Just x
-              Nothing
-                -- grouping is activated whenever there is
-                -- collapsing; this is the default
-                -- cite-group-delimiter
-                | isJust (layoutCollapse layoutOpts) -> Just ", "
-                | otherwise -> Nothing
-
-      assignCitationNumbers sortedCiteIds
-      -- sorting of bibliography, insertion of citation-number
+-- | Sort the bibliography and renumber references to match.  Returns
+-- the sorted ids and the bibliography sort keys (which are also
+-- used in disambiguation).
+sortBibliography :: CiteprocOutput a
+                 => Style a
+                 -> [Reference a]
+                 -> [ItemId]  -- ^ ids in citation order
+                 -> Eval a ([ItemId], M.Map ItemId [SortKeyValue])
+sortBibliography style refs citeOrderIds =
+  case styleBibliography style of
+    Nothing -> return ([], mempty)
+    Just biblayout -> do
       collate <- asks contextCollate
+      let refIds = map referenceId refs
+      bibSortKeyMap <- M.fromList
+                <$> mapM (\citeId ->
+                            (citeId,) <$> evalSortKeys biblayout citeId)
+                         refIds
+      let sortedIds =
+            if null (layoutSortKeys biblayout)
+               then citeOrderIds
+               else sortBy
+                 (\x y -> collate
+                            (fromMaybe [] $ M.lookup x bibSortKeyMap)
+                            (fromMaybe [] $ M.lookup y bibSortKeyMap))
+                      refIds
+      assignCitationNumbers $
+        case layoutSortKeys biblayout of
+          (SortKeyVariable Descending "citation-number":_)
+            -> reverse sortedIds
+          (SortKeyMacro Descending _ _:_)
+            -> reverse sortedIds
+          _ -> sortedIds
+      return (sortedIds, bibSortKeyMap)
 
-      (bibCitations, bibSortKeyMap) <-
-        case styleBibliography style of
-          Nothing -> return ([], mempty)
-          Just biblayout -> do
-            bibSortKeyMap <- M.fromList
-                      <$> mapM
-                          ((\citeId ->
-                             (citeId,) <$> evalSortKeys biblayout citeId)
-                             . referenceId)
-                          refs
-            let sortedIds =
-                  if null (layoutSortKeys biblayout)
-                     then sortedCiteIds
-                     else sortBy
-                       (\x y -> collate
-                                  (fromMaybe [] $ M.lookup x bibSortKeyMap)
-                                  (fromMaybe [] $ M.lookup y bibSortKeyMap))
-                            (map referenceId refs)
-            assignCitationNumbers $
-              case layoutSortKeys biblayout of
-                (SortKeyVariable Descending "citation-number":_)
-                  -> reverse sortedIds
-                (SortKeyMacro Descending _ _:_)
-                  -> reverse sortedIds
-                _ -> sortedIds
-            let bibCitations = map (\ident ->
-                  Citation (Just $ unItemId ident) False Nothing Nothing Nothing
-                   [CitationItem ident Nothing Nothing
-                      NormalCite Nothing Nothing Nothing]) sortedIds
-            return (bibCitations, bibSortKeyMap)
-      -- styling of citations
-      sortKeyMap <-
-        foldM (\m citeId -> do
-                  sk <- evalSortKeys (styleCitation style) citeId
-                  return $ M.insert citeId sk m)
-               M.empty
-               citeIds
-      -- We can't just sort all the citations, because
-      -- this can make a hash out of prefixes and suffixes.
-      -- See e.g. pandoc-citeproc issue #292.
-      -- We need to first break into groups so that any item
-      -- with a prefix or suffix is insulated from sorting.
-      -- We sort the groups, then combine again:
-      let canGroup i1 i2
-           =   isNothing (citationItemSuffix i1) &&
-               isNothing (citationItemPrefix i2) &&
-               isNothing (citationItemSuffix i2) &&
-               isNothing (citationItemPrefix i1)
-      let sortCitationItems citation' =
-            citation'{ citationItems =
-                          concatMap
-                           (sortBy
-                             (\item1 item2 ->
-                               collate
-                                (fromMaybe [] $ M.lookup
-                                   (citationItemId item1) sortKeyMap)
-                                (fromMaybe [] $ M.lookup
-                                   (citationItemId item2) sortKeyMap)))
-                        $ groupBy canGroup
-                        $ citationItems citation' }
-      let citCitations = map sortCitationItems citations
-      cs <- disambiguateCitations style bibSortKeyMap citCitations
-      let cs' = case mbcgDelim of
-                   Nothing -> cs
-                   Just citeGroupDelim -> map
-                      (groupAndCollapseCitations citeGroupDelim
-                       (layoutYearSuffixDelimiter layoutOpts)
-                       (layoutAfterCollapseDelimiter layoutOpts)
-                       (layoutCollapse layoutOpts))
-                      cs
+-- | Sort the items within each citation.
+-- We can't just sort all the citations, because
+-- this can make a hash out of prefixes and suffixes.
+-- See e.g. pandoc-citeproc issue #292.
+-- We need to first break into groups so that any item
+-- with a prefix or suffix is insulated from sorting.
+-- We sort the groups, then combine again.
+sortCitationItems :: CiteprocOutput a
+                  => Style a
+                  -> [Citation a]
+                  -> Eval a [Citation a]
+sortCitationItems style citations = do
+  collate <- asks contextCollate
+  let citeIds = Set.fromList $
+        concatMap (map citationItemId . citationItems) citations
+  sortKeyMap <-
+    foldM (\m citeId -> do
+              sk <- evalSortKeys (styleCitation style) citeId
+              return $ M.insert citeId sk m)
+           M.empty
+           citeIds
+  let canGroup i1 i2
+       =   isNothing (citationItemSuffix i1) &&
+           isNothing (citationItemPrefix i2) &&
+           isNothing (citationItemSuffix i2) &&
+           isNothing (citationItemPrefix i1)
+  let sortItems citation' =
+        citation'{ citationItems =
+                      concatMap
+                       (sortBy
+                         (\item1 item2 ->
+                           collate
+                            (fromMaybe [] $ M.lookup
+                               (citationItemId item1) sortKeyMap)
+                            (fromMaybe [] $ M.lookup
+                               (citationItemId item2) sortKeyMap)))
+                    $ groupBy canGroup
+                    $ citationItems citation' }
+  return $ map sortItems citations
 
-      let removeIfEqual x y
-           | x == y    = NullOutput
-           | otherwise = y
-      let removeNamesIfSuppressAuthor
-           (Tagged (TagItem SuppressAuthor cid') x)
-             = let y = getAuthors x
-                in Tagged (TagItem SuppressAuthor cid')
-                     (transform (removeIfEqual y) x)
-          removeNamesIfSuppressAuthor x = x
+-- | Group and collapse items in rendered citations, if the
+-- style calls for it.
+collapseCitations :: CiteprocOutput a
+                  => Style a -> [Output a] -> [Output a]
+collapseCitations style =
+  case mbcgDelim of
+    Nothing -> id
+    Just citeGroupDelim -> map
+       (groupAndCollapseCitations citeGroupDelim
+        (layoutYearSuffixDelimiter layoutOpts)
+        (layoutAfterCollapseDelimiter layoutOpts)
+        (layoutCollapse layoutOpts))
+ where
+  layoutOpts = layoutOptions $ styleCitation style
+  mbcgDelim =
+    case styleCiteGroupDelimiter (styleOptions style) of
+      Just x -> Just x
+      Nothing
+        -- grouping is activated whenever there is
+        -- collapsing; this is the default
+        -- cite-group-delimiter
+        | isJust (layoutCollapse layoutOpts) -> Just ", "
+        | otherwise -> Nothing
 
-      -- we need to do this after disambiguation and collapsing
-      let handleSuppressAuthors = transform removeNamesIfSuppressAuthor
+-- | Final adjustments to a rendered citation for author-only and
+-- suppress-author items.  These need to happen after disambiguation
+-- and collapsing.
+finalizeCitation :: CiteprocOutput a => Style a -> Output a -> Output a
+finalizeCitation style =
+  handleSuppressAuthors . handleAuthorOnly (styleIsNoteStyle (styleOptions style))
 
-      let isNoteCitation = styleIsNoteStyle (styleOptions style)
+handleSuppressAuthors :: CiteprocOutput a => Output a -> Output a
+handleSuppressAuthors = transform removeNamesIfSuppressAuthor
+ where
+  removeIfEqual x y
+    | x == y    = NullOutput
+    | otherwise = y
+  removeNamesIfSuppressAuthor (Tagged (TagItem SuppressAuthor cid') x)
+    = let y = getAuthors x
+       in Tagged (TagItem SuppressAuthor cid')
+            (transform (removeIfEqual y) x)
+  removeNamesIfSuppressAuthor x = x
 
-      -- if we have an author-only citation at the beginning
-      -- separate it out:
-      let handleAuthorOnly formattedCit =
-            case formattedCit of
-              Formatted f
-                (x@(Tagged (TagItem AuthorOnly _) _):xs)
-                  | isNoteCitation
-                    -> formatted mempty
-                        (x : [InNote (formatted f xs) | not (null xs)])
-                  | otherwise
-                    -> formatted mempty
-                        (x :
-                         if null xs
-                            then []
-                            else [Literal (fromText " "),
-                                  formatted f xs])
-              Formatted f
-                (Formatted f'
-                  (x@(Tagged (TagItem AuthorOnly _) _):xs) : ys)
-                  | isNoteCitation
-                    -> formatted mempty
-                        (x :
-                         if null xs && null ys
-                            then []
-                            else [InNote (formatted f
-                                           (formatted f' xs : ys))])
-                  | otherwise
-                    -> Formatted mempty
-                        (x :
-                         if null xs && null ys
-                            then []
-                            else [Literal (fromText " "),
-                                  formatted f (formatted f' xs : ys)])
-              _ | isNoteCitation -> InNote formattedCit
-                | otherwise      -> formattedCit
+-- | If we have an author-only citation at the beginning,
+-- separate it out.  In note styles, the rest of the citation
+-- goes in a note.
+handleAuthorOnly :: CiteprocOutput a => Bool -> Output a -> Output a
+handleAuthorOnly isNoteCitation formattedCit =
+  case formattedCit of
+    Formatted f
+      (x@(Tagged (TagItem AuthorOnly _) _):xs)
+        | isNoteCitation
+          -> formatted mempty
+              (x : [InNote (formatted f xs) | not (null xs)])
+        | otherwise
+          -> formatted mempty
+              (x :
+               if null xs
+                  then []
+                  else [Literal (fromText " "),
+                        formatted f xs])
+    Formatted f
+      (Formatted f'
+        (x@(Tagged (TagItem AuthorOnly _) _):xs) : ys)
+        | isNoteCitation
+          -> formatted mempty
+              (x :
+               if null xs && null ys
+                  then []
+                  else [InNote (formatted f
+                                 (formatted f' xs : ys))])
+        | otherwise
+          -> Formatted mempty
+              (x :
+               if null xs && null ys
+                  then []
+                  else [Literal (fromText " "),
+                        formatted f (formatted f' xs : ys)])
+    _ | isNoteCitation -> InNote formattedCit
+      | otherwise      -> formattedCit
 
-      let cs'' = map (handleSuppressAuthors . handleAuthorOnly) cs'
-
-      -- styling of bibliography (this needs to go here to take account
-      -- of year suffixes added in disambiguation)
-      bs <- case styleBibliography style of
-               Just biblayout
-                 -> local (\context ->
-                             context{ contextInBibliography = True }) $
-                    mapM (evalLayout biblayout) (zip [1..] bibCitations)
-                    >>= \bs ->
-                      case styleSubsequentAuthorSubstitute
-                            (styleOptions style) of
-                        Nothing -> return bs
-                        Just subs -> subsequentAuthorSubstitutes subs bs
-               Nothing -> return []
-      return (cs'', case styleBibliography style of
-                     Nothing -> []
-                     Just _  ->
-                       zip (map (fromMaybe "" . citationId) bibCitations) bs)
+-- | Render bibliography entries, in the order given, paired with
+-- their ids.
+evalBibliography :: CiteprocOutput a
+                 => Style a
+                 -> [ItemId]
+                 -> Eval a [(Text, Output a)]
+evalBibliography style bibIds =
+  case styleBibliography style of
+    Nothing -> return []
+    Just biblayout -> do
+      bs <- local (\context -> context{ contextInBibliography = True }) $
+              mapM (evalLayout biblayout) (zip [1..] (map bibCitation bibIds))
+      bs' <- case styleSubsequentAuthorSubstitute (styleOptions style) of
+               Nothing -> return bs
+               Just subs -> subsequentAuthorSubstitutes subs bs
+      return $ zip (map unItemId bibIds) bs'
+ where
+  bibCitation ident =
+    Citation (Just $ unItemId ident) False Nothing Nothing Nothing
+      [CitationItem ident Nothing Nothing NormalCite Nothing Nothing Nothing]
 
 extractItemData :: [Citation a] -> [Reference a]
 extractItemData = concatMap (mapMaybe citationItemData . citationItems)
