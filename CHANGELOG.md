@@ -1,5 +1,17 @@
 # citeproc changelog
 
+## 0.14.2
+
+  * Move punctuation inside quotes wrapped in formatting (#48, Don Yin).
+
+  * Refactor `evalStyle` into separate phases, for readability.
+
+  * Update tests from upstream. There is one less expected failure.
+
+  * Update locales from upstream.
+
+  * Clean up code so we don't get warnings on GHC 9.14.
+
 ## 0.14.1.1
 
   * Group name-less cites only when the text before their dates matches
