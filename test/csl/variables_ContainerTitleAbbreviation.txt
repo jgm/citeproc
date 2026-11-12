@@ -1,0 +1,54 @@
+>>===== MODE =====>>
+citation
+<<===== MODE =====<<
+
+
+>>===== RESULT =====>>
+TRHS
+<<===== RESULT =====<<
+
+
+>>===== CSL =====>>
+<style
+      xmlns="http://purl.org/net/xbiblio/csl"
+      class="note"
+      version="1.0">
+  <info>
+    <id />
+    <title />
+    <updated>2026-05-04T00:00:00+00:00</updated>
+  </info>
+  <citation>
+    <layout>
+      <text variable="container-title" form="short"/>
+    </layout>
+  </citation>
+</style>
+<<===== CSL =====<<
+
+
+>>===== INPUT =====>>
+[
+  {
+    "container-title": "Transactions of the Royal Historical Society",
+    "id": "ITEM-1",
+    "type": "article-journal"
+  }
+]
+<<===== INPUT =====<<
+
+
+>>===== ABBREVIATIONS =====>>
+{
+  "default": {
+    "container-title": {
+      "Transactions of the Royal Historical Society": "TRHS"
+    }
+  }
+}
+<<===== ABBREVIATIONS =====<<
+
+
+>>===== VERSION =====>>
+1.0
+<<===== VERSION =====<<

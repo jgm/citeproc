@@ -1,0 +1,60 @@
+>>===== MODE =====>>
+citation
+<<===== MODE =====<<
+
+
+>>===== RESULT =====>>
+Arist.
+<<===== RESULT =====<<
+
+
+>>===== CSL =====>>
+<style
+      xmlns="http://purl.org/net/xbiblio/csl"
+      class="note"
+      version="1.0">
+  <info>
+    <id />
+    <title />
+    <updated>2026-05-04T00:00:00+00:00</updated>
+  </info>
+  <citation>
+    <layout>
+      <names variable="author">
+        <name form="short"/>
+      </names>
+    </layout>
+  </citation>
+</style>
+<<===== CSL =====<<
+
+
+>>===== INPUT =====>>
+[
+  {
+    "author": [
+      {
+        "literal": "Aristotle"
+      }
+    ],
+    "id": "ITEM-1",
+    "type": "classic"
+  }
+]
+<<===== INPUT =====<<
+
+
+>>===== ABBREVIATIONS =====>>
+{
+  "default": {
+    "author": {
+      "Aristotle": "Arist."
+    }
+  }
+}
+<<===== ABBREVIATIONS =====<<
+
+
+>>===== VERSION =====>>
+1.0
+<<===== VERSION =====<<
