@@ -275,7 +275,7 @@ caseTransform' f ils =
         return $ Many $ xs' Seq.|> x'
     _ -> mapM go ils
  where
-  go (Str t) = Str . mconcat <$> mapM g (splitUp t)
+  go (Str t) = Str . mconcat <$> gs Nothing (splitUp t)
   go Space = Space <$ g " "
   go (SmallCaps zs) = return' $ SmallCaps zs
   go (Superscript zs) = return' $ Superscript zs
@@ -303,6 +303,18 @@ caseTransform' f ils =
 
   fromStr (Str t) = t
   fromStr _ = mempty
+
+  -- A stop word that starts a hyphenated compound is capitalized like the
+  -- last word, e.g. "Per-Pixel", but not one inside it, e.g. "Out-of-Fashion".
+  -- Compounds interrupted by formatting are not detected.
+  gs _ [] = return []
+  gs prev (x:xs) = do
+    st <- get
+    when (st == AfterWordEnd && startsCompound prev x xs) $
+      put BeforeLastWord
+    (:) <$> g x <*> gs (Just x) xs
+  startsCompound prev x xs =
+    T.all isAlphaNum x && prev /= Just "-" && take 1 xs == ["-"]
 
   g :: Text -> State CaseTransformState Text
   g t = do

@@ -425,7 +425,8 @@ caseTransform' f lev el =
        x' <- caseTransform' f lev x
        let lastWord = lev == 0 && not (hasWordBreak y)
        st <- get
-       when (lastWord &&
+       when (st == AfterWordEnd && startsCompound x y ||
+             lastWord &&
              (st == AfterWordEnd || st == StartSentence || st == Start)) $
         put BeforeLastWord
        y' <- caseTransform' f lev y
@@ -447,6 +448,13 @@ caseTransform' f lev el =
  where
   -- we need to apply g to update the state:
   return' x = x <$ g (toText x)
+
+  -- A stop word that starts a hyphenated compound is capitalized like the
+  -- last word, e.g. "Per-Pixel", but not one inside it, e.g. "Out-of-Fashion".
+  startsCompound x y =
+    not ("-" `T.isSuffixOf` toText x) &&
+    case T.span isAlphaNum (toText y) of
+      (w, rest) -> not (T.null w) && T.takeWhile isPunctuation rest == "-"
 
   g :: Text -> State CaseTransformState Text
   g t = do
